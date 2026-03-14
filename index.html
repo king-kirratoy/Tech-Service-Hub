@@ -309,7 +309,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div class="stat-grid" id="sg"></div>
     <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Ticket Types</h3><canvas id="cTypes" style="min-height:180px"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#fdcb6e"></span>CSAT Score Breakdown</h3><canvas id="cCsat" style="min-height:180px"></canvas></div></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#0095C8"></span>Avg Response (Biz Hours)</h3><canvas id="cResp"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:var(--danger)"></span>Avg Resolution (Biz Days)</h3><canvas id="cRes"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
   </div>
   <div id="capTab">
@@ -374,7 +373,7 @@ const BL_CAT={"End User>Email Recovery":0.25,"End User>Account Login Issue":0.25
 
 const SH=7,EH=18,HH=128,BIZ_S=8.5,BIZ_E=16.5,BIZ_D=8,FRT_SLA=4,TU_MIN=5,TU_MAX=6;
 const TCOL=["#84BD00","#0095C8","#fdcb6e","#ff7675","#74b9ff","#fd79a8","#a29bfe","#00cec9","#e17055","#dfe6e9"];
-const PC={Critical:"#ff5c5c",High:"#ffb74d",Medium:"#0095C8",Low:"#6C6C6C"};
+const PC={Critical:"#fb9e00",High:"#ffb74d",Medium:"#0095C8",Low:"#6C6C6C"};
 const SC={New:"#88ed61","In Progress":"#f2f400","Pending Reply":"#e27300","Client Update":"#ef0a90","Re-Assigned":"#653294","Pending AM":"#0c797d","Pending Vendor":"#aea1ff","Pending Opportunity":"#194d33","Re-Opened":"#f44e3b",Scheduled:"#999999",Monitoring:"#009ce0","License Update":"#fda1ff",Licensing:"#fda1ff","Pending Followup":"#e27300"};
 const SHIFTS=[{l:"7:30 AM — 4:30 PM",s:7.5,e:16.5},{l:"8:30 AM — 5:30 PM",s:8.5,e:17.5}];
 const LUNCHES=[{l:"11:15 — 12:15",s:11.25,e:12.25},{l:"12:30 — 1:30",s:12.5,e:13.5},{l:"1:45 — 2:45",s:13.75,e:14.75}];
@@ -867,39 +866,26 @@ function renderCharts(){
   const typeData=typeLabels.map(k=>typeCounts[k]);
   const typeTotal=typeData.reduce((s,v)=>s+v,0);
   const typeColors=["rgba(162,155,254,0.5)","rgba(0,149,200,0.5)","rgba(132,189,0,0.5)","rgba(255,183,77,0.5)","rgba(255,92,92,0.5)","rgba(0,206,201,0.5)","rgba(253,161,255,0.5)","rgba(116,185,255,0.5)"];
-  const typeBorders=["#a29bfe","#0095C8","#84BD00","#ffb74d","#ff5c5c","#00cec9","#fda1ff","#74b9ff"];
+  const typeBorders=["#a29bfe","#0095C8","#84BD00","#ffb74d","#fb9e00","#00cec9","#fda1ff","#74b9ff"];
   charts.types=new Chart(document.getElementById("cTypes"),{type:"bar",data:{labels:typeLabels,datasets:[{data:typeData,backgroundColor:typeLabels.map((_,i)=>typeColors[i%typeColors.length]),borderColor:typeLabels.map((_,i)=>typeBorders[i%typeBorders.length]),borderWidth:1,borderRadius:5}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:`${typeTotal} total tickets`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"},beginAtZero:true},y:{ticks:{color:"#8aa4c4",font:{size:11,weight:"600"},autoSkip:false},grid:{display:false}}}}});
 
   const csatTotals={4:0,3:0,2:0,1:0};
   dm.forEach(m=>{if(m.csatBk){csatTotals[4]+=m.csatBk[4];csatTotals[3]+=m.csatBk[3];csatTotals[2]+=m.csatBk[2];csatTotals[1]+=m.csatBk[1]}});
   const csatTotal=csatTotals[4]+csatTotals[3]+csatTotals[2]+csatTotals[1];
-  charts.csat=new Chart(document.getElementById("cCsat"),{type:"bar",data:{labels:["Excellent","Good","Okay","Poor"],datasets:[{data:[csatTotals[4],csatTotals[3],csatTotals[2],csatTotals[1]],backgroundColor:["rgba(132,189,0,0.5)","rgba(0,149,200,0.5)","rgba(255,183,77,0.5)","rgba(255,92,92,0.5)"],borderColor:["#84BD00","#0095C8","#ffb74d","#ff5c5c"],borderWidth:1,borderRadius:5}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:`${csatTotal} total responses`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"},beginAtZero:true},y:{ticks:{color:"#8aa4c4",font:{size:12,weight:"600"}},grid:{display:false}}}}});
+  charts.csat=new Chart(document.getElementById("cCsat"),{type:"bar",data:{labels:["Excellent","Good","Okay","Poor"],datasets:[{data:[csatTotals[4],csatTotals[3],csatTotals[2],csatTotals[1]],backgroundColor:["rgba(132,189,0,0.5)","rgba(0,149,200,0.5)","rgba(255,183,77,0.5)","rgba(255,92,92,0.5)"],borderColor:["#84BD00","#0095C8","#ffb74d","#fb9e00"],borderWidth:1,borderRadius:5}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:`${csatTotal} total responses`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"},beginAtZero:true},y:{ticks:{color:"#8aa4c4",font:{size:12,weight:"600"}},grid:{display:false}}}}});
 
-  // Row 3: Avg Response + Avg Resolution (color based on weekly average)
-  const validAr=dm.map(d=>d.ar).filter(v=>v>0);
-  const weekAvgResp=validAr.length?validAr.reduce((a,b)=>a+b,0)/validAr.length:0;
-  const arChartColor=weekAvgResp<=2?"#84BD00":weekAvgResp<=3?"#fb9e00":"#ff5c5c";
-  const arChartBg=weekAvgResp<=2?"rgba(132,189,0,0.08)":weekAvgResp<=3?"rgba(251,158,0,0.08)":"rgba(255,92,92,0.08)";
-  charts.r=new Chart(document.getElementById("cResp"),{type:"line",data:{labels:lb,datasets:[{data:dm.map(d=>d.ar),borderColor:arChartColor,backgroundColor:arChartBg,tension:.4,pointRadius:4,pointBackgroundColor:arChartColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true}}}});
-
-  const validAd=dm.map(d=>d.ard).filter(v=>v>0);
-  const weekAvgRes=validAd.length?validAd.reduce((a,b)=>a+b,0)/validAd.length:0;
-  const adChartColor=weekAvgRes<=3?"#84BD00":weekAvgRes<=7?"#fb9e00":"#ff5c5c";
-  const adChartBg=weekAvgRes<=3?"rgba(132,189,0,0.08)":weekAvgRes<=7?"rgba(251,158,0,0.08)":"rgba(255,92,92,0.08)";
-  charts.d=new Chart(document.getElementById("cRes"),{type:"line",data:{labels:lb,datasets:[{data:dm.map(d=>d.ard),borderColor:adChartColor,backgroundColor:adChartBg,tension:.4,pointRadius:4,pointBackgroundColor:adChartColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true}}}});
-
-  // Row 4: Response SLA % + Resolution SLA % (color based on weekly average)
+  // Response SLA % + Resolution SLA % (color based on weekly average)
   const respSlaData=dm.map(d=>d.respSlaPct);
   const validRespSla=respSlaData.filter(v=>v!==null);
   const weekRespSla=validRespSla.length?validRespSla.reduce((a,b)=>a+b,0)/validRespSla.length:100;
-  const rSlaColor=weekRespSla>=90?"#84BD00":weekRespSla>=80?"#fb9e00":"#ff5c5c";
+  const rSlaColor=weekRespSla>=90?"#84BD00":weekRespSla>=80?"#fcdc00":"#fb9e00";
   const rSlaBg=weekRespSla>=90?"rgba(132,189,0,0.08)":weekRespSla>=80?"rgba(251,158,0,0.08)":"rgba(255,92,92,0.08)";
   charts.rSla=new Chart(document.getElementById("cRespSla"),{type:"line",data:{labels:lb,datasets:[{data:respSlaData,borderColor:rSlaColor,backgroundColor:rSlaBg,tension:.4,pointRadius:4,pointBackgroundColor:rSlaColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true,spanGaps:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true,max:105}}}});
 
   const resSlaData=dm.map(d=>d.resSlaPct);
   const validResSla=resSlaData.filter(v=>v!==null);
   const weekResSla=validResSla.length?validResSla.reduce((a,b)=>a+b,0)/validResSla.length:100;
-  const dSlaColor=weekResSla>=90?"#84BD00":weekResSla>=80?"#fb9e00":"#ff5c5c";
+  const dSlaColor=weekResSla>=90?"#84BD00":weekResSla>=80?"#fcdc00":"#fb9e00";
   const dSlaBg=weekResSla>=90?"rgba(132,189,0,0.08)":weekResSla>=80?"rgba(251,158,0,0.08)":"rgba(255,92,92,0.08)";
   charts.dSla=new Chart(document.getElementById("cResSla"),{type:"line",data:{labels:lb,datasets:[{data:resSlaData,borderColor:dSlaColor,backgroundColor:dSlaBg,tension:.4,pointRadius:4,pointBackgroundColor:dSlaColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true,spanGaps:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true,max:105}}}});
 }
@@ -1030,12 +1016,12 @@ function renderSidebar(){
 
     // Color logic for hours today: can the tech finish NRD-due-today work in remaining shift?
     let hoursColor="#84BD00"; // green - has time
-    if(hoursToday>0&&remainingHrs>0&&hoursToday>remainingHrs)hoursColor="#ff5c5c"; // red - more work due than time left
-    else if(hoursToday>0&&remainingHrs>0&&hoursToday>=remainingHrs*0.8)hoursColor="#fb9e00"; // orange - tight fit
+    if(hoursToday>0&&remainingHrs>0&&hoursToday>remainingHrs)hoursColor="#fb9e00"; // red - more work due than time left
+    else if(hoursToday>0&&remainingHrs>0&&hoursToday>=remainingHrs*0.8)hoursColor="#fcdc00"; // orange - tight fit
     // SLA risk color: 0=green, >=1 orange, >=4 red
-    const riskColor=atRisk>=4?"#ff5c5c":atRisk>=1?"#fb9e00":"#84BD00";
+    const riskColor=atRisk>=4?"#fb9e00":atRisk>=1?"#fcdc00":"#84BD00";
     // Active tix color: >=0 green, >=8 orange, >=16 red
-    const tixColor=totalTix>=16?"#ff5c5c":totalTix>=8?"#fb9e00":"#84BD00";
+    const tixColor=totalTix>=16?"#fb9e00":totalTix>=8?"#fcdc00":"#84BD00";
 
     // New tickets today (created today, assigned to this tech - both active and closed)
     const newTodayActive=tt.filter(x=>x.dateAssigned&&isSD(x.dateAssigned,today)).length;
@@ -1044,9 +1030,9 @@ function renderSidebar(){
     // Closed tickets today
     const closedToday=closedTix.filter(x=>x.assignedTo===t.id&&x.dateClosed&&isSD(x.dateClosed,today)).length;
     // New today color: >=0 green, >=8 orange, >=16 red
-    const newTodayColor=newToday>=16?"#ff5c5c":newToday>=8?"#fb9e00":"#84BD00";
+    const newTodayColor=newToday>=16?"#fb9e00":newToday>=8?"#fcdc00":"#84BD00";
     // Closed today color: >=0 red, >=5 orange, >=8 green, >=11 blue
-    const closedTodayColor=closedToday>=11?"#00E5FF":closedToday>=8?"#84BD00":closedToday>=5?"#fb9e00":"#ff5c5c";
+    const closedTodayColor=closedToday>=11?"#00E5FF":closedToday>=8?"#84BD00":closedToday>=5?"#fcdc00":"#fb9e00";
 
     const a=selTech===t.id;
     const isReal=t.id>0;
@@ -1054,8 +1040,8 @@ function renderSidebar(){
     const riskText=atRisk>0?` · <span style="color:${riskColor}">${atRisk} at risk</span>`:"";
     const totalHrs=tt.reduce((s,x)=>s+x.est,0);
     // Total hours color: >=6 red, >=4 orange, <4 green
-    const totalHrsColor=totalHrs>=6?"#ff5c5c":totalHrs>=4?"#fb9e00":"#84BD00";
-    let html=`<div class="tech-option ${a?"active":""}" data-t="${t.id}"><div class="tech-radio" style="${a?`background:${t.color};border-color:${t.color}`:""}"><div class="tech-radio-inner" style="background:white"></div></div><div style="min-width:0;flex:1"><div class="tname">${t.name}</div><div class="thours"><span style="color:${tixColor}">${totalTix} act</span> · <span style="color:${totalHrsColor}">${totalHrs.toFixed(1)}h est</span></div><div class="thours"><span style="color:${riskColor}">${atRisk} sla</span> · <span style="color:${hoursColor}">${hoursToday.toFixed(1)}h due</span></div><div class="thours"><span style="color:${newTodayColor}">${newToday} new</span> · <span style="color:${closedTodayColor}">${closedToday} closed</span></div></div>${gearBtn}</div>`;
+    const totalHrsColor=totalHrs>=6?"#fb9e00":totalHrs>=4?"#fcdc00":"#84BD00";
+    let html=`<div class="tech-option ${a?"active":""}" data-t="${t.id}"><div class="tech-radio" style="${a?`background:${t.color};border-color:${t.color}`:""}"><div class="tech-radio-inner" style="background:white"></div></div><div style="min-width:0;flex:1"><div class="tname">${t.name}</div><div class="thours"><span style="color:${tixColor}">${totalTix} act</span> · <span style="color:${totalHrsColor}">${totalHrs.toFixed(1)}h est</span></div><div class="thours"><span style="color:${newTodayColor}">${newToday} new</span> · <span style="color:${hoursColor}">${hoursToday.toFixed(1)}h due</span></div></div>${gearBtn}</div>`;
     if(isReal&&openSchedTech===t.id){
       const s=getSched(t.id),si=s.si!=null?s.si:1,li=s.li!=null?s.li:1;
       html+=`<div class="tech-sched-panel" data-sp="${t.id}"><label>Shift</label><select data-t="${t.id}" data-f="s">${sO.replace(`value="${si}"`,`value="${si}" selected`)}</select><label>Lunch</label><select data-t="${t.id}" data-f="l">${lO.replace(`value="${li}"`,`value="${li}" selected`)}</select></div>`;
@@ -1207,7 +1193,6 @@ function renderPlayerCards(){
     hp-=totalTix*3;    // -3 per active ticket
     hp-=totalHrs*5;    // -5 per est hour
     hp-=atRisk*3;      // -3 per SLA risk ticket
-    hp=Math.max(0,Math.min(100,Math.round(hp)));
 
     // XP/Level: from closed tickets this week
     let totalXP=0;
@@ -1240,6 +1225,9 @@ function renderPlayerCards(){
       }
       totalXP+=xp;
     });
+    // Restore HP from closed tickets (+2 per closed)
+    hp+=techClosedHist.length*2;
+    hp=Math.max(0,Math.min(100,Math.round(hp)));
 
     const level=Math.floor(totalXP/100);
     const xpInLevel=totalXP%100;
@@ -1248,14 +1236,14 @@ function renderPlayerCards(){
     let rank,rankColor,rankBg;
     if(level>=25){rank="NIGHTMARE";rankColor="#00E5FF";rankBg="rgba(0,229,255,0.15)"}
     else if(level>=18){rank="ULTRA VIOLENCE";rankColor="#84BD00";rankBg="rgba(132,189,0,0.15)"}
-    else if(level>=11){rank="HURT ME PLENTY";rankColor="#fb9e00";rankBg="rgba(251,158,0,0.15)"}
-    else{rank="ASPIRING SLAYER";rankColor="#ff5c5c";rankBg="rgba(255,92,92,0.15)"}
+    else if(level>=11){rank="HURT ME PLENTY";rankColor="#fcdc00";rankBg="rgba(252,220,0,0.15)"}
+    else{rank="ASPIRING SLAYER";rankColor="#fb9e00";rankBg="rgba(251,158,0,0.15)"}
 
     // HP bar color
     let hpColor,hpBg;
     if(hp>=60){hpColor="#84BD00";hpBg="rgba(132,189,0,0.8)"}
-    else if(hp>=30){hpColor="#fb9e00";hpBg="rgba(251,158,0,0.8)"}
-    else{hpColor="#ff5c5c";hpBg="rgba(255,92,92,0.8)"}
+    else if(hp>=30){hpColor="#fcdc00";hpBg="rgba(251,158,0,0.8)"}
+    else{hpColor="#fb9e00";hpBg="rgba(255,92,92,0.8)"}
 
     return{tech:t,hp,hpColor,hpBg,level,xpInLevel,totalXP,rank,rankColor,rankBg,totalTix};
   });
@@ -1509,7 +1497,7 @@ function renderCap(){
     const bh=tt.reduce((s,x)=>s+x.est,0),rem=Math.max(TU_MAX-bh,0);
     const ut=((bh/TU_MAX)*100).toFixed(0);
     const bc=bh>TU_MAX?"var(--danger)":bh>=TU_MIN?"var(--green)":"var(--warning)";
-    const tc=bh>TU_MAX?"#ff5c5c":bh>=TU_MIN?"#84BD00":"#fb9e00";
+    const tc=bh>TU_MAX?"#fb9e00":bh>=TU_MIN?"#84BD00":"#fcdc00";
     const st=bh>TU_MAX?"Over":bh>=TU_MIN?"On target":"Under";
     return`<div class="glass cap-card"><div class="cname"><div class="tdot" style="background:${t.color};color:${t.color}"></div><span>${t.name}</span></div><div class="cstats"><span>Today: <b>${tt.length} tix</b></span><span><b>${bh.toFixed(1)}h</b> / ${TU_MAX}h</span></div><div class="cbar"><div class="cbar-fill" style="width:${Math.min(ut,100)}%;background:${bc}"></div></div><div class="cfooter"><span class="mono" style="font-weight:700;color:${tc}">${st}</span><span style="color:var(--text-dim)">${rem.toFixed(1)}h avail</span></div></div>`
   }).join("");
@@ -1682,8 +1670,6 @@ function renderTeamAll(){
     {key:"assigned",label:"Tickets Assigned"},
     {key:"emailWeb",label:"Email/Web"},
     {key:"phoneManual",label:"Phone/Manual"},
-    {key:"avgRespHrs",label:"Avg Resp (hrs)"},
-    {key:"avgResDays",label:"Avg Res (days)"},
     {key:"frtPct",label:"Resp SLA %"},
     {key:"slaPct",label:"Res SLA %"},
     {key:"csatRate",label:"CSAT Rate %"},
@@ -1758,12 +1744,6 @@ function renderTeamAll(){
       else pmColor="color:#84BD00";
     }
     h+=`<td style="${pmColor}">${a.phoneManual.toLocaleString()}</td>`;
-    // Avg Resp color: <=2 green, <=4 orange, >4 red
-    const arColor=a.avgRespHrs<=2?"color:#84BD00":a.avgRespHrs<=3?"color:#fb9e00":"color:#ff5c5c";
-    h+=`<td style="${arColor}">${a.avgRespHrs.toFixed(1)}</td>`;
-    // Avg Res color: <=3 green, <=7 orange, >7 red
-    const adColor=a.avgResDays<=3?"color:#84BD00":a.avgResDays<=7?"color:#fb9e00":"color:#ff5c5c";
-    h+=`<td style="${adColor}">${a.avgResDays.toFixed(1)}</td>`;
     // Resp SLA % color: >=90 green, >=80 orange, <80 red
     const frtColor=a.frtPct>=90?"color:#84BD00":a.frtPct>=80?"color:#fb9e00":"color:#ff5c5c";
     h+=`<td style="${frtColor}">${a.frtPct.toFixed(1)}</td>`;
@@ -2250,6 +2230,9 @@ const BF={
       });
       w.level=Math.floor(totalXP/100);
       w.closedCount=techClosedHist.length;
+      // Restore HP from closed tickets (+2 per closed)
+      hp+=techClosedHist.length*2;
+      hp=Math.max(0,Math.min(100,Math.round(hp)));
     });
 
     // Sort warriors by closed count (most closed = front/right, least = back/left)
@@ -2277,7 +2260,7 @@ const BF={
         const fireRate=w.level>=25?20:w.level>=18?25:w.level>=11?30:w.level>=4?35:45;
         w.atkTimer=fireRate+Math.floor(Math.random()*20);
         // Spawn projectile with random life so it stops at different points in enemy horde
-        const pColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fb9e00":w.level>=4?"#74b9ff":"#ccc";
+        const pColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fcdc00":w.level>=4?"#74b9ff":"#ccc";
         const pSize=w.level>=25?5:w.level>=18?4:w.level>=11?3.5:w.level>=4?3:2;
         const pSpeed=w.level>=25?8:w.level>=18?7:w.level>=11?6:w.level>=4?5:4;
         const hasTrail=w.level>=11;
@@ -2400,7 +2383,7 @@ const BF={
 
     // Blaster weapon (held at arm level)
     const gunY=yy-8*sz;
-    const gunColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fb9e00":w.level>=4?"#C0C0C0":"#888";
+    const gunColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fcdc00":w.level>=4?"#C0C0C0":"#888";
     // Gun body
     c.fillStyle=darken(gunColor,0.2);
     c.fillRect(x+4*sz,gunY,5*sz,2*sz);
@@ -2423,7 +2406,7 @@ const BF={
     const hpW=14*sz;
     c.fillStyle="rgba(0,0,0,0.6)";
     c.fillRect(x-hpW/2,yy-17*sz,hpW,2*sz);
-    c.fillStyle=w.hp>=60?"#84BD00":w.hp>=30?"#fb9e00":"#ff5c5c";
+    c.fillStyle=w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00";
     c.fillRect(x-hpW/2,yy-17*sz,hpW*(w.hp/100),2*sz);
     c.fillStyle="rgba(255,255,255,0.3)";
     c.fillRect(x-hpW/2,yy-17*sz,hpW,sz);
@@ -2437,8 +2420,8 @@ const BF={
     const sz=e.size*s*0.85;
 
     if(hovered){
-      c.shadowColor="#ff5c5c";c.shadowBlur=10;
-      c.strokeStyle="#ff5c5c";c.lineWidth=2;
+      c.shadowColor="#fb9e00";c.shadowBlur=10;
+      c.strokeStyle="#fb9e00";c.lineWidth=2;
       c.strokeRect(x-sz*1.2,yy-sz*2.5,sz*2.4,sz*3);
       c.shadowBlur=0;
     }
@@ -2578,11 +2561,11 @@ const BF={
         let rank;
         if(w.level>=25)rank='<span style="color:#00E5FF">NIGHTMARE</span>';
         else if(w.level>=18)rank='<span style="color:#84BD00">ULTRA VIOLENCE</span>';
-        else if(w.level>=11)rank='<span style="color:#fb9e00">HURT ME PLENTY</span>';
-        else rank='<span style="color:#ff5c5c">ASPIRING SLAYER</span>';
+        else if(w.level>=11)rank='<span style="color:#fcdc00">HURT ME PLENTY</span>';
+        else rank='<span style="color:#fb9e00">ASPIRING SLAYER</span>';
         html=`<div style="font-weight:700;font-size:12px;margin-bottom:4px;color:${w.color}">${w.name}</div>`;
         html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:6px">Lvl ${w.level} \u00b7 ${rank}</div>`;
-        html+=`<div style="font-size:9px;margin-bottom:2px">HP: <span style="color:${w.hp>=60?"#84BD00":w.hp>=30?"#fb9e00":"#ff5c5c"}">${w.hp}/100</span></div>`;
+        html+=`<div style="font-size:9px;margin-bottom:2px">HP: <span style="color:${w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00"}">${w.hp}/100</span></div>`;
         html+=`<div style="font-size:9px">Active: ${tt.length} \u00b7 Est: ${tt.reduce((s2,x)=>s2+x.est,0).toFixed(1)}h</div>`;
       }else{
         const tk=found.entity.ticketRef;
