@@ -2231,8 +2231,7 @@ const BF={
       w.level=Math.floor(totalXP/100);
       w.closedCount=techClosedHist.length;
       // Restore HP from closed tickets (+2 per closed)
-      hp+=techClosedHist.length*2;
-      hp=Math.max(0,Math.min(100,Math.round(hp)));
+      w.hp=Math.max(0,Math.min(100,Math.round(w.hp+techClosedHist.length*2)));
     });
 
     // Sort warriors by closed count (most closed = front/right, least = back/left)
