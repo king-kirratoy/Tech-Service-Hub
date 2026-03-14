@@ -2326,7 +2326,7 @@ const BF={
       const cat=(tk.category||"Other").split(">")[0];
       const eColor=this.ECOLORS[cat]||this.ECOLORS.Other;
       const sz=Math.max(14,Math.min(40,Math.round(tk.est*8+12)));
-      const tier=tk.est<0.75?"small":tk.est<=1.5?"medium":"large";
+      const tier=tk.est<=0.75?"small":tk.est<1.5?"medium":"large";
       this.enemies.push({
         id:tk.id,ticketRef:tk,cat,color:eColor,size:sz,tier,
         x:battleRight+Math.random()*100*s,
@@ -2394,15 +2394,7 @@ const BF={
       c.globalAlpha=1;
     }
 
-    // HP bar above head
-    const hpW=dw*0.8;
-    const hpY=yy-dh*0.42;
-    c.fillStyle="rgba(0,0,0,0.6)";
-    c.fillRect(x-hpW/2,hpY,hpW,3*s);
-    c.fillStyle=w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00";
-    c.fillRect(x-hpW/2,hpY,hpW*(w.hp/100),3*s);
-    c.fillStyle="rgba(255,255,255,0.3)";
-    c.fillRect(x-hpW/2,hpY,hpW,1.5*s);
+    // HP bar removed - shown on player cards instead
   },
 
   drawEnemy(x,y,e){
@@ -2555,8 +2547,7 @@ const BF={
       const rect=this.canvas.parentElement.getBoundingClientRect();
       tooltip.style.left=Math.min(clientX-rect.left+12,rect.width-230)+"px";
       const tipH=tooltip.offsetHeight||80;
-      const yPos=clientY-rect.top-tipH-12;
-      tooltip.style.top=(yPos<0?clientY-rect.top+16:yPos)+"px";
+      tooltip.style.top=(clientY-rect.top-tipH-14)+"px";
     }else{tooltip.style.display="none"}
   },
 
