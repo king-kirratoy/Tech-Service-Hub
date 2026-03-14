@@ -2105,6 +2105,9 @@ const BF={
   canvas:null,ctx:null,W:0,H:160,scale:2,warriors:[],enemies:[],projectiles:[],frontLine:0.5,
   targetFront:0.5,frame:0,running:false,muted:true,hoveredEntity:null,
   prevWarriorState:{}, // Cache warrior positions across refreshes
+  spriteSheet:null,spriteLoaded:false,tintedSprites:{},
+  spriteFrameW:169,spriteFrameH:369,spriteFrames:4,
+  spriteDH:100, // display height in canvas pixels
   WCOLORS:["#4FC3F7","#AED581","#FFD54F","#FF8A65","#BA68C8","#4DD0E1","#F06292","#81C784","#FFB74D","#9575CD","#E57373","#64B5F6","#DCE775","#FF8A80","#80CBC4","#A1887F","#90A4AE","#FFF176","#CE93D8","#80DEEA"],
   ECOLORS:{"Hardware":"#6D3A1F","Software":"#5C2D82","Network":"#2E7D32","Security":"#C62828","Email":"#1565C0","End User":"#D84315","Licensing":"#5D4037","Other":"#455A64"},
   contentLeft:0,contentRight:0,
@@ -2131,7 +2134,52 @@ const BF={
       document.getElementById("battleMute").textContent=this.muted?"\uD83D\uDD07":"\uD83D\uDD0A";
     });
     this.running=true;
+    this.loadSprite();
     this.loop();
+  },
+
+  loadSprite(){
+    const img=new Image();
+    img.crossOrigin="anonymous";
+    img.onload=()=>{
+      this.spriteSheet=img;
+      this.spriteLoaded=true;
+      this.tintedSprites={};
+      console.log("Sprite sheet loaded:",img.width,"x",img.height);
+    };
+    img.onerror=()=>console.warn("Sprite sheet failed to load, using procedural fallback");
+    img.src="https://king-kirratoy.github.io/Tech-Service-Hub/assets/tech-sprite-8.png";
+  },
+
+  getTintedSprite(color){
+    if(this.tintedSprites[color])return this.tintedSprites[color];
+    if(!this.spriteSheet)return null;
+    // Create offscreen canvas with tinted version of full sheet
+    const oc=document.createElement("canvas");
+    oc.width=this.spriteSheet.width;
+    oc.height=this.spriteSheet.height;
+    const ox=oc.getContext("2d");
+    ox.drawImage(this.spriteSheet,0,0);
+    const id=ox.getImageData(0,0,oc.width,oc.height);
+    const d=id.data;
+    // Parse target color
+    const tr=parseInt(color.slice(1,3),16);
+    const tg=parseInt(color.slice(3,5),16);
+    const tb=parseInt(color.slice(5,7),16);
+    for(let i=0;i<d.length;i+=4){
+      const r=d[i],g=d[i+1],b=d[i+2];
+      // Skip near-black (background) — make transparent
+      if(r<25&&g<25&&b<25){d[i+3]=0;continue}
+      // Get luminance of original pixel
+      const lum=(r*0.299+g*0.587+b*0.114)/255;
+      // Tint: blend original luminance with target color
+      d[i]=Math.min(255,Math.round(tr*lum+r*0.15));
+      d[i+1]=Math.min(255,Math.round(tg*lum+g*0.15));
+      d[i+2]=Math.min(255,Math.round(tb*lum+b*0.15));
+    }
+    ox.putImageData(id,0,0);
+    this.tintedSprites[color]=oc;
+    return oc;
   },
 
   resize(){
@@ -2238,12 +2286,13 @@ const BF={
         const pSize=w.level>=25?5:w.level>=18?4:w.level>=11?3.5:w.level>=4?3:2;
         const pSpeed=w.level>=25?8:w.level>=18?7:w.level>=11?6:w.level>=4?5:4;
         const hasTrail=w.level>=11;
-        const sz3=s*3;
+        const dh=this.spriteDH;
+        const dw=dh*(this.spriteFrameW/this.spriteFrameH);
         const randLife=15+Math.floor(Math.random()*60);
-        this.projectiles.push({x:w.x+11*sz3,y:w.y-8*sz3+sz3,vx:pSpeed*s,color:pColor,size:pSize*s,trail:hasTrail,life:randLife,age:0});
+        this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.45,vx:pSpeed*s,color:pColor,size:pSize*s,trail:hasTrail,life:randLife,age:0});
         if(w.level>=18){// Dual shot
           const randLife2=15+Math.floor(Math.random()*60);
-          this.projectiles.push({x:w.x+11*sz3,y:w.y-8*sz3+sz3*2.5,vx:pSpeed*s,color:pColor,size:pSize*s*0.8,trail:hasTrail,life:randLife2,age:0});
+          this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.35,vx:pSpeed*s,color:pColor,size:pSize*s*0.8,trail:hasTrail,life:randLife2,age:0});
         }
       }
       if(w.attacking){w.atkFrame++;if(w.atkFrame>16)w.attacking=false}
@@ -2298,92 +2347,54 @@ const BF={
     const hovered=this.hoveredEntity&&this.hoveredEntity.type==="warrior"&&this.hoveredEntity.id===w.id;
     const bob=Math.sin(w.bobPhase)*2*s;
     const yy=y+bob;
-    const sz=s*3; // pixel unit size
 
-    // Hover glow
-    if(hovered){
-      c.shadowColor=w.color;c.shadowBlur=12;
-      c.strokeStyle=w.color;c.lineWidth=2;
-      c.strokeRect(x-6*sz-2,yy-14*sz-2,12*sz+4,16*sz+4);
-      c.shadowBlur=0;
-    }
+    // Sprite dimensions on canvas
+    const dh=this.spriteDH;
+    const dw=dh*(this.spriteFrameW/this.spriteFrameH);
+    const frameIdx=Math.floor(w.frame/10)%this.spriteFrames;
+    const sx=frameIdx*this.spriteFrameW;
 
     // Shadow on ground
     c.fillStyle="rgba(0,0,0,0.25)";
-    c.beginPath();c.ellipse(x,y+2*sz,5*sz,2*sz,0,0,Math.PI*2);c.fill();
+    c.beginPath();c.ellipse(x,y+4*s,dw*0.35,4*s,0,0,Math.PI*2);c.fill();
 
-    // Legs (animated walk)
-    const legSwing=Math.sin(w.frame*0.2)*2*sz;
-    c.fillStyle=darken(w.color,0.3);
-    c.fillRect(x-3*sz,yy-2*sz,2*sz,4*sz+legSwing);
-    c.fillRect(x+1*sz,yy-2*sz,2*sz,4*sz-legSwing);
-    // Boots
-    c.fillStyle=darken(w.color,0.5);
-    c.fillRect(x-4*sz,yy+2*sz+legSwing,3*sz,sz);
-    c.fillRect(x,yy+2*sz-legSwing,3*sz,sz);
-
-    // Body / armor
-    c.fillStyle=w.color;
-    c.fillRect(x-5*sz,yy-9*sz,10*sz,8*sz);
-    // Armor highlights
-    c.fillStyle=lighten(w.color,0.2);
-    c.fillRect(x-4*sz,yy-8*sz,2*sz,6*sz);
-    c.fillRect(x+2*sz,yy-8*sz,2*sz,6*sz);
-    // Belt
-    c.fillStyle=darken(w.color,0.4);
-    c.fillRect(x-5*sz,yy-2*sz,10*sz,sz);
-
-    // Head
-    c.fillStyle="#FFDBB4";
-    c.fillRect(x-3*sz,yy-13*sz,6*sz,4*sz);
-    // Hair/helmet based on level
-    if(w.level>=11){
-      c.fillStyle=darken(w.color,0.2);
-      c.fillRect(x-4*sz,yy-14*sz,8*sz,2*sz);
-      c.fillRect(x-4*sz,yy-13*sz,sz,3*sz);
-      c.fillRect(x+3*sz,yy-13*sz,sz,3*sz);
-      if(w.level>=18){// Plume
-        c.fillStyle=lighten(w.color,0.3);
-        c.fillRect(x-sz,yy-16*sz,2*sz,2*sz);
-      }
+    // Draw sprite (tinted or original)
+    const tinted=this.spriteLoaded?this.getTintedSprite(w.color):null;
+    if(tinted){
+      c.drawImage(tinted,sx,0,this.spriteFrameW,this.spriteFrameH,x-dw/2,yy-dh+4*s,dw,dh);
     }else{
-      c.fillStyle=darken(w.color,0.3);
-      c.fillRect(x-3*sz,yy-14*sz,6*sz,sz);
+      // Fallback: simple colored rectangle
+      c.fillStyle=w.color;
+      c.fillRect(x-8*s,yy-20*s,16*s,20*s);
     }
-    // Eyes
-    c.fillStyle="#333";
-    c.fillRect(x-2*sz,yy-12*sz,sz,sz);
-    c.fillRect(x+1*sz,yy-12*sz,sz,sz);
 
-    // Blaster weapon (held at arm level)
-    const gunY=yy-8*sz;
-    const gunColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fcdc00":w.level>=4?"#C0C0C0":"#888";
-    // Gun body
-    c.fillStyle=darken(gunColor,0.2);
-    c.fillRect(x+4*sz,gunY,5*sz,2*sz);
-    // Gun barrel
-    c.fillStyle=gunColor;
-    c.fillRect(x+7*sz,gunY+sz*0.3,4*sz,sz);
+    // Hover glow
+    if(hovered){
+      c.shadowColor=w.color;c.shadowBlur=14;
+      c.strokeStyle=w.color;c.lineWidth=2;
+      c.strokeRect(x-dw/2-2,yy-dh+4*s-2,dw+4,dh+4);
+      c.shadowBlur=0;
+    }
+
     // Muzzle flash when attacking
     if(w.attacking&&w.atkFrame<6){
-      const flashSize=(6-w.atkFrame)*sz*0.5;
+      const gunColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fcdc00":w.level>=4?"#C0C0C0":"#888";
+      const flashSize=(6-w.atkFrame)*s*1.5;
       c.fillStyle=gunColor;
       c.globalAlpha=0.7;
-      c.beginPath();c.arc(x+11*sz,gunY+sz,flashSize,0,Math.PI*2);c.fill();
+      c.beginPath();c.arc(x+dw*0.45,yy-dh*0.45,flashSize,0,Math.PI*2);c.fill();
       c.globalAlpha=1;
     }
-    // Gun grip
-    c.fillStyle=darken(w.color,0.4);
-    c.fillRect(x+5*sz,gunY+2*sz,2*sz,2*sz);
 
     // HP bar above head
-    const hpW=14*sz;
+    const hpW=dw*0.8;
+    const hpY=yy-dh-4*s;
     c.fillStyle="rgba(0,0,0,0.6)";
-    c.fillRect(x-hpW/2,yy-17*sz,hpW,2*sz);
+    c.fillRect(x-hpW/2,hpY,hpW,3*s);
     c.fillStyle=w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00";
-    c.fillRect(x-hpW/2,yy-17*sz,hpW*(w.hp/100),2*sz);
+    c.fillRect(x-hpW/2,hpY,hpW*(w.hp/100),3*s);
     c.fillStyle="rgba(255,255,255,0.3)";
-    c.fillRect(x-hpW/2,yy-17*sz,hpW,sz);
+    c.fillRect(x-hpW/2,hpY,hpW,1.5*s);
   },
 
   drawEnemy(x,y,e){
@@ -2513,8 +2524,9 @@ const BF={
     let found=null;
     const s=this.scale;
     for(const w of this.warriors){
-      const sz=s*3;
-      if(mx>=w.x-6*sz&&mx<=w.x+6*sz&&my>=w.y-17*sz&&my<=w.y+4*sz){
+      const dh=this.spriteDH;
+      const dw=dh*(this.spriteFrameW/this.spriteFrameH);
+      if(mx>=w.x-dw/2&&mx<=w.x+dw/2&&my>=w.y-dh&&my<=w.y+4*s){
         found={type:"warrior",id:w.id,entity:w};break;
       }
     }
