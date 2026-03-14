@@ -299,7 +299,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <select id="kpiAgent"><option value="">— All Agents —</option></select>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)">Agent Comparison</h3>
       <div style="display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden">
         <button class="agent-toggle active" id="agentToggleWeek" style="padding:5px 12px;font-size:10px;font-weight:600;border:none;cursor:pointer;background:rgba(0,149,200,0.2);color:var(--text);white-space:nowrap">This Week</button>
         <button class="agent-toggle" id="agentToggleToday" style="padding:5px 12px;font-size:10px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--text-dim);white-space:nowrap">Today</button>
@@ -1191,8 +1190,7 @@ function renderPlayerCards(){
     // HP: 100 max, deductions for workload
     let hp=100;
     hp-=totalTix*3;    // -3 per active ticket
-    hp-=totalHrs*5;    // -5 per est hour
-    hp-=atRisk*3;      // -3 per SLA risk ticket
+    hp-=totalHrs*3;    // -3 per est hour
 
     // XP/Level: from closed tickets this week
     let totalXP=0;
@@ -2207,7 +2205,7 @@ const BF={
     this.warriors.forEach((w,i)=>{
       const t=roster[i];if(!t)return;
       const tt=actTix.filter(x=>x.assignedTo===t.id);
-      w.hp=Math.max(0,Math.min(100,Math.round(100-tt.length*3-tt.reduce((s2,x)=>s2+x.est,0)*5-tt.filter(x=>x.nrdAtRisk).length*3)));
+      w.hp=Math.max(0,Math.min(100,Math.round(100-tt.length*3-tt.reduce((s2,x)=>s2+x.est,0)*3)));
       // Recalc level
       const techClosedHist=histRaw.filter(r=>{
         const ag=r.Agent_Resolved||r.Agent_Assigned;
