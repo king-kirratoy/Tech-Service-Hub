@@ -308,8 +308,8 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
     <div class="stat-grid" id="sg"></div>
     <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Ticket Types</h3><canvas id="cTypes" style="min-height:180px"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#fdcb6e"></span>CSAT Score Breakdown</h3><canvas id="cCsat" style="min-height:180px"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
+    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Ticket Types</h3><canvas id="cTypes" style="min-height:180px"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#fdcb6e"></span>CSAT Score Breakdown</h3><canvas id="cCsat" style="min-height:180px"></canvas></div></div>
   </div>
   <div id="capTab">
     <div style="margin-bottom:20px">
@@ -1225,8 +1225,6 @@ function renderPlayerCards(){
       }
       totalXP+=xp;
     });
-    // Restore HP from closed tickets (+2 per closed)
-    hp+=techClosedHist.length*2;
     hp=Math.max(0,Math.min(100,Math.round(hp)));
 
     const level=Math.floor(totalXP/100);
@@ -1692,27 +1690,27 @@ function renderTeamAll(){
       if(a.total===0)closedColor="color:#8aa4c4";
       else if(a.total>=11)closedColor="color:#00E5FF";
       else if(a.total>=8)closedColor="color:#84BD00";
-      else if(a.total>=4)closedColor="color:#fb9e00";
-      else closedColor="color:#ff5c5c";
+      else if(a.total>=4)closedColor="color:#fcdc00";
+      else closedColor="color:#fb9e00";
     }else{
       if(a.total===0)closedColor="color:#8aa4c4";
       else if(a.total>=55)closedColor="color:#00E5FF";
       else if(a.total>=40)closedColor="color:#84BD00";
-      else if(a.total>=25)closedColor="color:#fb9e00";
-      else closedColor="color:#ff5c5c";
+      else if(a.total>=25)closedColor="color:#fcdc00";
+      else closedColor="color:#fb9e00";
     }
     h+=`<td style="${closedColor}">${a.total.toLocaleString()}</td>`;
     // Tickets Assigned with color logic based on toggle
     let assignedColor="";
     if(agentTimeFilter==="today"){
       if(a.assigned===0)assignedColor="color:#8aa4c4";
-      else if(a.assigned>=16)assignedColor="color:#ff5c5c";
-      else if(a.assigned>=8)assignedColor="color:#fb9e00";
+      else if(a.assigned>=16)assignedColor="color:#fb9e00";
+      else if(a.assigned>=8)assignedColor="color:#fcdc00";
       else assignedColor="color:#84BD00";
     }else{
       if(a.assigned===0)assignedColor="color:#8aa4c4";
-      else if(a.assigned>=80)assignedColor="color:#ff5c5c";
-      else if(a.assigned>=40)assignedColor="color:#fb9e00";
+      else if(a.assigned>=80)assignedColor="color:#fb9e00";
+      else if(a.assigned>=40)assignedColor="color:#fcdc00";
       else assignedColor="color:#84BD00";
     }
     h+=`<td style="${assignedColor}">${a.assigned.toLocaleString()}</td>`;
@@ -1720,13 +1718,13 @@ function renderTeamAll(){
     let ewColor="";
     if(agentTimeFilter==="today"){
       if(a.emailWeb===0)ewColor="color:#8aa4c4";
-      else if(a.emailWeb>=16)ewColor="color:#ff5c5c";
-      else if(a.emailWeb>=8)ewColor="color:#fb9e00";
+      else if(a.emailWeb>=16)ewColor="color:#fb9e00";
+      else if(a.emailWeb>=8)ewColor="color:#fcdc00";
       else ewColor="color:#84BD00";
     }else{
       if(a.emailWeb===0)ewColor="color:#8aa4c4";
-      else if(a.emailWeb>=80)ewColor="color:#ff5c5c";
-      else if(a.emailWeb>=40)ewColor="color:#fb9e00";
+      else if(a.emailWeb>=80)ewColor="color:#fb9e00";
+      else if(a.emailWeb>=40)ewColor="color:#fcdc00";
       else ewColor="color:#84BD00";
     }
     h+=`<td style="${ewColor}">${a.emailWeb.toLocaleString()}</td>`;
@@ -1734,21 +1732,21 @@ function renderTeamAll(){
     let pmColor="";
     if(agentTimeFilter==="today"){
       if(a.phoneManual===0)pmColor="color:#8aa4c4";
-      else if(a.phoneManual>=16)pmColor="color:#ff5c5c";
-      else if(a.phoneManual>=8)pmColor="color:#fb9e00";
+      else if(a.phoneManual>=16)pmColor="color:#fb9e00";
+      else if(a.phoneManual>=8)pmColor="color:#fcdc00";
       else pmColor="color:#84BD00";
     }else{
       if(a.phoneManual===0)pmColor="color:#8aa4c4";
-      else if(a.phoneManual>=80)pmColor="color:#ff5c5c";
-      else if(a.phoneManual>=40)pmColor="color:#fb9e00";
+      else if(a.phoneManual>=80)pmColor="color:#fb9e00";
+      else if(a.phoneManual>=40)pmColor="color:#fcdc00";
       else pmColor="color:#84BD00";
     }
     h+=`<td style="${pmColor}">${a.phoneManual.toLocaleString()}</td>`;
     // Resp SLA % color: >=90 green, >=80 orange, <80 red
-    const frtColor=a.frtPct>=90?"color:#84BD00":a.frtPct>=80?"color:#fb9e00":"color:#ff5c5c";
+    const frtColor=a.frtPct>=90?"color:#84BD00":a.frtPct>=80?"color:#fcdc00":"color:#fb9e00";
     h+=`<td style="${frtColor}">${a.frtPct.toFixed(1)}</td>`;
     // Res SLA % color: >=90 green, >=80 orange, <80 red
-    const slaColor=a.slaPct>=90?"color:#84BD00":a.slaPct>=80?"color:#fb9e00":"color:#ff5c5c";
+    const slaColor=a.slaPct>=90?"color:#84BD00":a.slaPct>=80?"color:#fcdc00":"color:#fb9e00";
     h+=`<td style="${slaColor}">${a.slaPct.toFixed(1)}</td>`;
     // CSAT Score: label + topScore/total format
     let csatCell="—";
@@ -1756,7 +1754,7 @@ function renderTeamAll(){
       const topScore=a.csat>=3.5?4:a.csat>=2.5?3:a.csat>=1.5?2:1;
       csatCell=`${csatLabel(a.csat)} <span style="font-size:9px;color:var(--text-dim)">${a.csatCounts[topScore]}/${a.csatN}</span>`;
     }
-    h+=`<td${cellClass("csatRate",a.csatRate)}>${a.csatRate.toFixed(1)}</td>`;
+    h+=`<td style="color:#eaf2ff">${a.csatRate.toFixed(1)}</td>`;
     h+=`<td${cellClass("csat",a.csat)}>${csatCell}</td>`;
     h+=`</tr>`;
   });
@@ -2230,8 +2228,6 @@ const BF={
       });
       w.level=Math.floor(totalXP/100);
       w.closedCount=techClosedHist.length;
-      // Restore HP from closed tickets (+2 per closed)
-      w.hp=Math.max(0,Math.min(100,Math.round(w.hp+techClosedHist.length*2)));
     });
 
     // Sort warriors by closed count (most closed = front/right, least = back/left)
@@ -2561,7 +2557,7 @@ const BF={
         if(w.level>=25)rank='<span style="color:#00E5FF">NIGHTMARE</span>';
         else if(w.level>=18)rank='<span style="color:#84BD00">ULTRA VIOLENCE</span>';
         else if(w.level>=11)rank='<span style="color:#fcdc00">HURT ME PLENTY</span>';
-        else rank='<span style="color:#fb9e00">ASPIRING SLAYER</span>';
+        else rank='<span style="color:#fcdc00">ASPIRING SLAYER</span>';
         html=`<div style="font-weight:700;font-size:12px;margin-bottom:4px;color:${w.color}">${w.name}</div>`;
         html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:6px">Lvl ${w.level} \u00b7 ${rank}</div>`;
         html+=`<div style="font-size:9px;margin-bottom:2px">HP: <span style="color:${w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00"}">${w.hp}/100</span></div>`;
