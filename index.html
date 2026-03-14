@@ -2108,6 +2108,8 @@ const BF={
   spriteSheet:null,spriteLoaded:false,tintedSprites:{},
   spriteFrameW:169,spriteFrameH:369,spriteFrames:4,
   spriteDH:280, // display height in canvas pixels
+  enemySheets:{},enemySpritesLoaded:0,
+  enemySizes:{small:{dh:140,maxEst:1},medium:{dh:200,maxEst:3},large:{dh:260,maxEst:999}},
   WCOLORS:["#4FC3F7","#AED581","#FFD54F","#FF8A65","#BA68C8","#4DD0E1","#F06292","#81C784","#FFB74D","#9575CD","#E57373","#64B5F6","#DCE775","#FF8A80","#80CBC4","#A1887F","#90A4AE","#FFF176","#CE93D8","#80DEEA"],
   ECOLORS:{"Hardware":"#6D3A1F","Software":"#5C2D82","Network":"#2E7D32","Security":"#C62828","Email":"#1565C0","End User":"#D84315","Licensing":"#5D4037","Other":"#455A64"},
   contentLeft:0,contentRight:0,
@@ -2149,6 +2151,18 @@ const BF={
     };
     img.onerror=()=>console.warn("Sprite sheet failed to load, using procedural fallback");
     img.src="https://king-kirratoy.github.io/Tech-Service-Hub/assets/tech-sprite-8.png";
+    // Load enemy sprites
+    ["small","medium","large"].forEach(tier=>{
+      const ei=new Image();
+      ei.crossOrigin="anonymous";
+      ei.onload=()=>{
+        this.enemySheets[tier]=ei;
+        this.enemySpritesLoaded++;
+        console.log("Enemy sprite loaded:",tier,ei.width,"x",ei.height);
+      };
+      ei.onerror=()=>console.warn("Enemy sprite failed:",tier);
+      ei.src="https://king-kirratoy.github.io/Tech-Service-Hub/assets/enemy-"+tier+".png";
+    });
   },
 
   getTintedSprite(color){
@@ -2312,8 +2326,9 @@ const BF={
       const cat=(tk.category||"Other").split(">")[0];
       const eColor=this.ECOLORS[cat]||this.ECOLORS.Other;
       const sz=Math.max(14,Math.min(40,Math.round(tk.est*8+12)));
+      const tier=tk.est<=1?"small":tk.est<=3?"medium":"large";
       this.enemies.push({
-        id:tk.id,ticketRef:tk,cat,color:eColor,size:sz,
+        id:tk.id,ticketRef:tk,cat,color:eColor,size:sz,tier,
         x:battleRight+Math.random()*100*s,
         y:this.groundY-Math.random()*30*s,
         frame:Math.floor(Math.random()*200),bobPhase:Math.random()*Math.PI*2
@@ -2369,13 +2384,7 @@ const BF={
       c.fillRect(x-12*s,yy-30*s,24*s,30*s);
     }
 
-    // Hover glow - subtle ground highlight
-    if(hovered){
-      c.fillStyle=w.color;
-      c.globalAlpha=0.25;
-      c.beginPath();c.ellipse(x,y+4*s,dw*0.4,5*s,0,0,Math.PI*2);c.fill();
-      c.globalAlpha=1;
-    }
+    // Hover detected via hitbox only, no visual indicator
 
     // Muzzle flash when attacking
     if(w.attacking&&w.atkFrame<6){
@@ -2403,51 +2412,35 @@ const BF={
     const hovered=this.hoveredEntity&&this.hoveredEntity.type==="enemy"&&this.hoveredEntity.id===e.id;
     const bob=Math.sin(e.bobPhase)*2*s;
     const yy=y+bob;
-    const sz=e.size*s*0.85;
+    const tier=e.tier||"small";
+    const dh=this.enemySizes[tier].dh;
+    const dw=dh*(169/369);
+    const frameIdx=Math.floor(e.frame/10)%4;
+    const sx=frameIdx*169;
+    const groundOffset=dh*0.30;
 
-    if(hovered){
-      c.shadowColor="#fb9e00";c.shadowBlur=10;
-      c.strokeStyle="#fb9e00";c.lineWidth=2;
-      c.strokeRect(x-sz*1.2,yy-sz*2.5,sz*2.4,sz*3);
-      c.shadowBlur=0;
-    }
-
-    // Shadow
+    // Shadow on ground
     c.fillStyle="rgba(0,0,0,0.2)";
-    c.beginPath();c.ellipse(x,y+sz*0.5,sz*0.8,sz*0.3,0,0,Math.PI*2);c.fill();
+    c.beginPath();c.ellipse(x,y+4*s,dw*0.35,4*s,0,0,Math.PI*2);c.fill();
 
-    // Body
-    c.fillStyle=e.color;
-    c.fillRect(x-sz,yy-sz*2,sz*2,sz*2);
-    // Darker shading
-    c.fillStyle=darken(e.color,0.3);
-    c.fillRect(x-sz,yy-sz*2,sz*0.4,sz*2);
-
-    // Eyes
-    c.fillStyle="#ff3333";
-    c.fillRect(x-sz*0.6,yy-sz*1.5,sz*0.4,sz*0.4);
-    c.fillRect(x+sz*0.2,yy-sz*1.5,sz*0.4,sz*0.4);
-    c.fillStyle="#ff9999";
-    c.fillRect(x-sz*0.5,yy-sz*1.4,sz*0.2,sz*0.2);
-    c.fillRect(x+sz*0.3,yy-sz*1.4,sz*0.2,sz*0.2);
-
-    // Horns for bigger enemies
-    if(e.size>=34){
-      c.fillStyle=lighten(e.color,0.1);
-      c.fillRect(x-sz*1.1,yy-sz*2.8,sz*0.4,sz*0.8);
-      c.fillRect(x+sz*0.7,yy-sz*2.8,sz*0.4,sz*0.8);
-    }
-    // Spikes for largest
-    if(e.size>=34){
-      c.fillStyle=lighten(e.color,0.2);
-      c.fillRect(x-sz*0.2,yy-sz*3,sz*0.4,sz);
+    // Draw sprite
+    const sheet=this.enemySheets[tier];
+    if(sheet){
+      c.drawImage(sheet,sx,0,169,369,x-dw/2,yy-dh+groundOffset,dw,dh);
+    }else{
+      // Fallback
+      const sz=e.size*s*0.85;
+      c.fillStyle=e.color;
+      c.fillRect(x-sz,yy-sz*2,sz*2,sz*2);
     }
 
-    // Legs
-    const legSwing=Math.sin(e.frame*0.15)*sz*0.3;
-    c.fillStyle=darken(e.color,0.4);
-    c.fillRect(x-sz*0.6,yy,sz*0.4,sz*0.6+legSwing);
-    c.fillRect(x+sz*0.2,yy,sz*0.4,sz*0.6-legSwing);
+    // Hover highlight - subtle ground glow
+    if(hovered){
+      c.fillStyle="#fb9e00";
+      c.globalAlpha=0.3;
+      c.beginPath();c.ellipse(x,y+4*s,dw*0.4,5*s,0,0,Math.PI*2);c.fill();
+      c.globalAlpha=1;
+    }
   },
 
   drawBackground(){
@@ -2533,8 +2526,10 @@ const BF={
     }
     if(!found){
       for(const e of this.enemies){
-        const sz=e.size*s*0.85;
-        if(mx>=e.x-sz*1.5&&mx<=e.x+sz*1.5&&my>=e.y-sz*3&&my<=e.y+sz){
+        const tier=e.tier||"small";
+        const edh=this.enemySizes[tier].dh;
+        const edw=edh*(169/369);
+        if(mx>=e.x-edw/2&&mx<=e.x+edw/2&&my>=e.y-edh*0.45&&my<=e.y+4*s){
           found={type:"enemy",id:e.id,entity:e};break;
         }
       }
