@@ -888,11 +888,15 @@ function renderCharts(){
 // ═══════════ KPI CLIENT SELECTOR ═══════════
 function populateKPIClients(){
   const sel=document.getElementById("kpiClient");
+  const prevClient=sel.value;
   const clients=[...new Set(histRaw.map(r=>r.Client).filter(Boolean))].sort();
   sel.innerHTML=`<option value="">— All Clients (${clients.length}) —</option>`+clients.map(c=>`<option value="${c}">${c}</option>`).join("");
+  if(prevClient)sel.value=prevClient;
   const aSel=document.getElementById("kpiAgent");
+  const prevAgent=aSel.value;
   const agents=[...new Set(histRaw.map(r=>r.Agent_Resolved||r.Agent_Assigned).filter(a=>a&&a!=="Unassigned"&&!a.includes("Bot")))].sort();
   aSel.innerHTML=`<option value="">— All Agents (${agents.length}) —</option>`+agents.map(a=>`<option value="${a}">${a}</option>`).join("");
+  if(prevAgent)aSel.value=prevAgent;
 }
 
 
@@ -2514,7 +2518,12 @@ const BF={
         const edh=this.enemySizes[tier].dh;
         const edw=edh*(169/369);
         const eGO=edh*0.30;
-        if(mx>=e.x-edw/2&&mx<=e.x+edw/2&&my>=e.y-edh+eGO&&my<=e.y+eGO){
+        const bob=Math.sin(e.bobPhase)*2*s;
+        const eyy=e.y+bob;
+        // Character art occupies roughly 30%-70% of frame height
+        const hitTop=eyy-edh*0.70+eGO;
+        const hitBot=eyy-edh*0.10+eGO;
+        if(mx>=e.x-edw*0.4&&mx<=e.x+edw*0.4&&my>=hitTop&&my<=hitBot){
           found={type:"enemy",id:e.id,entity:e};break;
         }
       }
