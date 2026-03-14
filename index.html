@@ -2044,7 +2044,7 @@ async function fetchHaloReport(reportName,onSuccess){
     const rows=Array.isArray(data)?data:data.report_data||data.results||data.data||[];
     if(!rows.length)throw new Error("No data returned");
     const now=new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
-    st.textContent=`✓ ${rows.length} ${reportName} tickets loaded at ${now}`;st.style.color="var(--green)";
+    st.textContent=`✓ ${rows.length} total tickets loaded at ${now}`;st.style.color="var(--green)";
     onSuccess(rows);
   }catch(e){
     // If fetch fails with network error, proxy probably isn't running
@@ -2371,7 +2371,7 @@ const BF={
 
     // Shadow on ground
     c.fillStyle="rgba(0,0,0,0.25)";
-    c.beginPath();c.ellipse(x,y+10*s,dw*0.35,4*s,0,0,Math.PI*2);c.fill(); — offset up to account for empty space below feet in sprite sheet
+    c.beginPath();c.ellipse(x,y+10*s,dw*0.35,4*s,0,0,Math.PI*2);c.fill();
     // Character occupies roughly y 111-258 of 369px frame, so bottom 30% is empty
     const groundOffset=dh*0.38;
     const tinted=this.spriteLoaded?this.getTintedSprite(w.color):null;
