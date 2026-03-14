@@ -2292,7 +2292,7 @@ const BF={
       w.x+=(targetX-w.x)*0.04;
       w.y+=(targetY-w.y)*0.04;
       w.frame++;
-      w.bobPhase+=0.08;
+      w.bobPhase+=0.04;
       w.atkTimer--;
       if(w.atkTimer<=0&&!w.attacking){
         w.attacking=true;w.atkFrame=0;
@@ -2353,7 +2353,7 @@ const BF={
       e.x+=(targetX-e.x)*0.03;
       e.y+=(targetY-e.y)*0.03;
       e.frame++;
-      e.bobPhase+=0.06;
+      e.bobPhase+=0.03;
     });
 
     // Update projectiles
@@ -2370,7 +2370,7 @@ const BF={
     // Sprite dimensions on canvas
     const dh=this.spriteDH;
     const dw=dh*(this.spriteFrameW/this.spriteFrameH);
-    const frameIdx=Math.floor(w.frame/10)%this.spriteFrames;
+    const frameIdx=Math.floor(w.frame/18)%this.spriteFrames;
     const sx=frameIdx*this.spriteFrameW;
 
     // Shadow on ground
@@ -2409,7 +2409,7 @@ const BF={
     const tier=e.tier||"small";
     const dh=this.enemySizes[tier].dh;
     const dw=dh*(169/369);
-    const frameIdx=Math.floor(e.frame/10)%4;
+    const frameIdx=Math.floor(e.frame/18)%4;
     const sx=frameIdx*169;
     const groundOffset=dh*0.30;
 
