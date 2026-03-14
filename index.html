@@ -2513,7 +2513,8 @@ const BF={
         const tier=e.tier||"small";
         const edh=this.enemySizes[tier].dh;
         const edw=edh*(169/369);
-        if(mx>=e.x-edw/2&&mx<=e.x+edw/2&&my>=e.y-edh*0.45&&my<=e.y+4*s){
+        const eGO=edh*0.30;
+        if(mx>=e.x-edw/2&&mx<=e.x+edw/2&&my>=e.y-edh+eGO&&my<=e.y+eGO){
           found={type:"enemy",id:e.id,entity:e};break;
         }
       }
