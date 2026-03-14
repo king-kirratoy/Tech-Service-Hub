@@ -2107,7 +2107,7 @@ const BF={
   prevWarriorState:{}, // Cache warrior positions across refreshes
   spriteSheet:null,spriteLoaded:false,tintedSprites:{},
   spriteFrameW:169,spriteFrameH:369,spriteFrames:4,
-  spriteDH:100, // display height in canvas pixels
+  spriteDH:280, // display height in canvas pixels
   WCOLORS:["#4FC3F7","#AED581","#FFD54F","#FF8A65","#BA68C8","#4DD0E1","#F06292","#81C784","#FFB74D","#9575CD","#E57373","#64B5F6","#DCE775","#FF8A80","#80CBC4","#A1887F","#90A4AE","#FFF176","#CE93D8","#80DEEA"],
   ECOLORS:{"Hardware":"#6D3A1F","Software":"#5C2D82","Network":"#2E7D32","Security":"#C62828","Email":"#1565C0","End User":"#D84315","Licensing":"#5D4037","Other":"#455A64"},
   contentLeft:0,contentRight:0,
@@ -2358,21 +2358,22 @@ const BF={
     c.fillStyle="rgba(0,0,0,0.25)";
     c.beginPath();c.ellipse(x,y+4*s,dw*0.35,4*s,0,0,Math.PI*2);c.fill();
 
-    // Draw sprite (tinted or original)
+    // Draw sprite — offset up to account for empty space below feet in sprite sheet
+    // Character occupies roughly y 111-258 of 369px frame, so bottom 30% is empty
+    const groundOffset=dh*0.30;
     const tinted=this.spriteLoaded?this.getTintedSprite(w.color):null;
     if(tinted){
-      c.drawImage(tinted,sx,0,this.spriteFrameW,this.spriteFrameH,x-dw/2,yy-dh+4*s,dw,dh);
+      c.drawImage(tinted,sx,0,this.spriteFrameW,this.spriteFrameH,x-dw/2,yy-dh+groundOffset,dw,dh);
     }else{
-      // Fallback: simple colored rectangle
       c.fillStyle=w.color;
-      c.fillRect(x-8*s,yy-20*s,16*s,20*s);
+      c.fillRect(x-12*s,yy-30*s,24*s,30*s);
     }
 
     // Hover glow
     if(hovered){
       c.shadowColor=w.color;c.shadowBlur=14;
       c.strokeStyle=w.color;c.lineWidth=2;
-      c.strokeRect(x-dw/2-2,yy-dh+4*s-2,dw+4,dh+4);
+      c.strokeRect(x-dw/2-2,yy-dh+groundOffset-2,dw+4,dh*0.55);
       c.shadowBlur=0;
     }
 
@@ -2388,7 +2389,7 @@ const BF={
 
     // HP bar above head
     const hpW=dw*0.8;
-    const hpY=yy-dh-4*s;
+    const hpY=yy-dh*0.5;
     c.fillStyle="rgba(0,0,0,0.6)";
     c.fillRect(x-hpW/2,hpY,hpW,3*s);
     c.fillStyle=w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00";
@@ -2526,7 +2527,7 @@ const BF={
     for(const w of this.warriors){
       const dh=this.spriteDH;
       const dw=dh*(this.spriteFrameW/this.spriteFrameH);
-      if(mx>=w.x-dw/2&&mx<=w.x+dw/2&&my>=w.y-dh&&my<=w.y+4*s){
+      if(mx>=w.x-dw/2&&mx<=w.x+dw/2&&my>=w.y-dh*0.55&&my<=w.y+4*s){
         found={type:"warrior",id:w.id,entity:w};break;
       }
     }
