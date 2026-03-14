@@ -2109,7 +2109,7 @@ const BF={
   spriteFrameW:169,spriteFrameH:369,spriteFrames:4,
   spriteDH:280, // display height in canvas pixels
   enemySheets:{},enemySpritesLoaded:0,
-  enemySizes:{small:{dh:140,maxEst:1},medium:{dh:200,maxEst:3},large:{dh:260,maxEst:999}},
+  enemySizes:{small:{dh:280,maxEst:1},medium:{dh:400,maxEst:2},large:{dh:520,maxEst:999}},
   WCOLORS:["#4FC3F7","#AED581","#FFD54F","#FF8A65","#BA68C8","#4DD0E1","#F06292","#81C784","#FFB74D","#9575CD","#E57373","#64B5F6","#DCE775","#FF8A80","#80CBC4","#A1887F","#90A4AE","#FFF176","#CE93D8","#80DEEA"],
   ECOLORS:{"Hardware":"#6D3A1F","Software":"#5C2D82","Network":"#2E7D32","Security":"#C62828","Email":"#1565C0","End User":"#D84315","Licensing":"#5D4037","Other":"#455A64"},
   contentLeft:0,contentRight:0,
@@ -2326,7 +2326,7 @@ const BF={
       const cat=(tk.category||"Other").split(">")[0];
       const eColor=this.ECOLORS[cat]||this.ECOLORS.Other;
       const sz=Math.max(14,Math.min(40,Math.round(tk.est*8+12)));
-      const tier=tk.est<=1?"small":tk.est<=3?"medium":"large";
+      const tier=tk.est<=1?"small":tk.est<=2?"medium":"large";
       this.enemies.push({
         id:tk.id,ticketRef:tk,cat,color:eColor,size:sz,tier,
         x:battleRight+Math.random()*100*s,
@@ -2434,13 +2434,7 @@ const BF={
       c.fillRect(x-sz,yy-sz*2,sz*2,sz*2);
     }
 
-    // Hover highlight - subtle ground glow
-    if(hovered){
-      c.fillStyle="#fb9e00";
-      c.globalAlpha=0.3;
-      c.beginPath();c.ellipse(x,y+4*s,dw*0.4,5*s,0,0,Math.PI*2);c.fill();
-      c.globalAlpha=1;
-    }
+    // Hover detected via hitbox only, no visual indicator
   },
 
   drawBackground(){
