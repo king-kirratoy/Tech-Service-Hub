@@ -2081,7 +2081,7 @@ async function fetchHaloReport(reportName,onSuccess){
   const st=document.getElementById("fetchStatus");
   st.textContent=`Fetching ${reportName}...`;st.style.color="var(--blue)";
   try{
-    const r=await fetch(`/api/${reportName}`);
+    const r=await fetch(`http://localhost:8090/api/${reportName}`);
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
     const rows=Array.isArray(data)?data:data.report_data||data.results||data.data||[];
