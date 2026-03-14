@@ -2326,7 +2326,7 @@ const BF={
       const cat=(tk.category||"Other").split(">")[0];
       const eColor=this.ECOLORS[cat]||this.ECOLORS.Other;
       const sz=Math.max(14,Math.min(40,Math.round(tk.est*8+12)));
-      const tier=tk.est<=1?"small":tk.est<=2?"medium":"large";
+      const tier=tk.est<0.75?"small":tk.est<=1.5?"medium":"large";
       this.enemies.push({
         id:tk.id,ticketRef:tk,cat,color:eColor,size:sz,tier,
         x:battleRight+Math.random()*100*s,
