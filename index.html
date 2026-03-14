@@ -297,12 +297,8 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <select id="kpiClient"><option value="">— All Clients —</option></select>
       <label style="margin-left:16px">Agent:</label>
       <select id="kpiAgent"><option value="">— All Agents —</option></select>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-        <button class="agent-toggle active" id="agentToggleWeek" style="padding:5px 12px;font-size:10px;font-weight:600;border:none;cursor:pointer;background:rgba(0,149,200,0.2);color:var(--text);white-space:nowrap">This Week</button>
-        <button class="agent-toggle" id="agentToggleToday" style="padding:5px 12px;font-size:10px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--text-dim);white-space:nowrap">Today</button>
-      </div>
+      <label style="margin-left:16px">Period:</label>
+      <select id="agentTimePeriod"><option value="week">This Week</option><option value="today">Today</option></select>
     </div>
     <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
     <div class="stat-grid" id="sg"></div>
@@ -2029,22 +2025,8 @@ document.getElementById("kpiClient").addEventListener("change",()=>{renderKPI();
 document.getElementById("kpiAgent").addEventListener("change",()=>{renderKPI();document.getElementById("aiP").classList.add("hidden")});
 
 // Agent comparison Today/This Week toggle
-document.getElementById("agentToggleWeek").addEventListener("click",()=>{
-  if(agentTimeFilter==="week")return;
-  agentTimeFilter="week";
-  document.getElementById("agentToggleWeek").style.background="rgba(0,149,200,0.2)";
-  document.getElementById("agentToggleWeek").style.color="var(--text)";
-  document.getElementById("agentToggleToday").style.background="transparent";
-  document.getElementById("agentToggleToday").style.color="var(--text-dim)";
-  renderTeamAll();
-});
-document.getElementById("agentToggleToday").addEventListener("click",()=>{
-  if(agentTimeFilter==="today")return;
-  agentTimeFilter="today";
-  document.getElementById("agentToggleToday").style.background="rgba(0,149,200,0.2)";
-  document.getElementById("agentToggleToday").style.color="var(--text)";
-  document.getElementById("agentToggleWeek").style.background="transparent";
-  document.getElementById("agentToggleWeek").style.color="var(--text-dim)";
+document.getElementById("agentTimePeriod").addEventListener("change",function(){
+  agentTimeFilter=this.value;
   renderTeamAll();
 });
 
