@@ -185,9 +185,9 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .risk-header.open+.risk-body{display:block}
 .risk-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;margin-bottom:4px;transition:background .15s;font-size:12px;border-left:3px solid transparent}
 .risk-row:hover{background:rgba(0,149,200,0.06)}
-.risk-row.sev-high{border-left-color:var(--danger)}
-.risk-row.sev-med{border-left-color:var(--warning)}
-.risk-row.sev-low{border-left-color:var(--blue)}
+.risk-row.sev-high{border-left-color:#ff5c5c}
+.risk-row.sev-med{border-left-color:#fb9e00}
+.risk-row.sev-low{border-left-color:#fcdc00}
 .risk-id{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--blue);width:60px;flex-shrink:0}
 .risk-client{font-size:11px;color:var(--text-muted);width:140px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .risk-user{font-size:11px;color:var(--text-dim);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1865,9 +1865,8 @@ function renderRisk(){
     const slaTgt=raw?pD(raw.SLA_Resolution_Target):null;
     if(!slaTgt)return;
     if(now>slaTgt){
-      // SLA is breached — calculate how many biz hours overdue
       const overdueH=bizH(slaTgt,now);
-      slaBreach.push({...tk,overdueH,slaTgt,severity:overdueH>16?"high":overdueH>8?"high":"med"});
+      if(overdueH>=8)slaBreach.push({...tk,overdueH,slaTgt,severity:overdueH>=48?"high":overdueH>=24?"med":"low"});
     }
   });
 
@@ -1880,7 +1879,7 @@ function renderRisk(){
     if(breachedIds.has(tk.id))return; // already in resolution breach, skip
     if(now>tk.nextResponse){
       const overdueBizH=bizH(tk.nextResponse,now);
-      if(overdueBizH>=4)overdueResp.push({...tk,overdueBizH,severity:overdueBizH>8?"high":overdueBizH>4?"med":"low"});
+      if(overdueBizH>=4)overdueResp.push({...tk,overdueBizH,severity:overdueBizH>=12?"high":overdueBizH>=8?"med":"low"});
     }
   });
 
