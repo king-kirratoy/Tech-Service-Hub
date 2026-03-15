@@ -1977,7 +1977,7 @@ function renderRisk(){
   let html="";
 
   if(priority.length){
-    html+=buildRiskSection("Priority Risks — Time Overrun + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
+    html+=buildRiskSection("Priority Risks — Time Overrun + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
       return`<span style="color:#ff5c5c">${tk.timeWorked.toFixed(1)}h worked</span> · <span style="color:#fcdc00">${tk.overdueH.toFixed(1)}h overdue</span>`;
     });
   }
