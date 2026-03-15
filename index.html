@@ -192,8 +192,9 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .risk-client{font-size:11px;color:var(--text-muted);width:140px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .risk-user{font-size:11px;color:var(--text-dim);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .risk-title{flex:1;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.risk-agent{font-size:11px;color:var(--text-muted);width:110px;flex-shrink:0;text-align:right}
-.risk-detail{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;width:100px;flex-shrink:0;text-align:right}
+.risk-agent{font-size:11px;color:var(--text-muted);width:110px;flex-shrink:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.risk-date{font-size:10px;color:var(--text-dim);width:80px;flex-shrink:0;text-align:left;white-space:nowrap}
+.risk-detail{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;width:120px;flex-shrink:0;text-align:right}
 /* Agent comparison table */
 .agent-table{width:100%;border-collapse:collapse;font-size:12px}
 .agent-table thead{position:sticky;top:0;z-index:2}
@@ -1924,9 +1925,9 @@ function renderRisk(){
   const totalFlags=priority.length+slaBreach2.length+overdueResp2.length+timeOver.length;
   document.getElementById("riskSummary").innerHTML=[
     {l:"Priority Risks",v:priority.length,c:priority.length?"var(--danger)":"var(--green)"},
+    {l:"Time Overruns (>4h)",v:timeOver.length,c:timeOver.length?"var(--warning)":"var(--green)"},
     {l:"Resolution SLA Breached",v:slaBreach2.length,c:slaBreach2.length?"var(--danger)":"var(--green)"},
     {l:"Response SLA Breached",v:overdueResp2.length,c:overdueResp2.length?"var(--warning)":"var(--green)"},
-    {l:"Time Overruns (>4h)",v:timeOver.length,c:timeOver.length?"var(--warning)":"var(--green)"},
   ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${i*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c}">${c.v}</span></div></div>`).join("");
 
   // Badge on tab
@@ -2016,7 +2017,8 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
   let h=`<div class="glass risk-section"><div class="risk-header open"><h3><svg style="width:14px;height:14px;stroke:${color}"><use href="#iw"/></svg> ${title} <span class="risk-badge" style="background:${color}">${tickets.length}</span>${subtitle?`<span style="font-size:9px;font-weight:400;color:var(--text-dim);margin-left:10px;letter-spacing:0;text-transform:none">${subtitle}</span>`:""}</h3><span class="risk-arrow">▶</span></div><div class="risk-body" style="display:block">`;
   tickets.forEach(tk=>{
     const sev=tk.severity==="high"?"sev-high":tk.severity==="med"?"sev-med":"sev-low";
-    h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-client" title="${tk.client||""}">${tk.client||"—"}</span><span class="risk-user" title="${tk.user||""}">${tk.user||"—"}</span><span class="risk-title" title="${tk.title}">${tk.title}</span><span class="risk-agent">${tk.agent||"Unassigned"}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
+    const dateCreated=tk.dateCreated?tk.dateCreated.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—";
+    h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-client" title="${tk.client||""}">${tk.client||"—"}</span><span class="risk-user" title="${tk.user||""}">${tk.user||"—"}</span><span class="risk-title" title="${tk.title}">${tk.title}</span><span class="risk-agent">${tk.agent||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
   });
   h+=`</div></div>`;
   return h;
