@@ -1923,11 +1923,10 @@ function renderRisk(){
   // Summary cards
   const totalFlags=priority.length+slaBreach2.length+overdueResp2.length+timeOver.length;
   document.getElementById("riskSummary").innerHTML=[
-    {l:"Priority",v:priority.length,c:priority.length?"var(--danger)":"var(--green)"},
+    {l:"Priority Risks",v:priority.length,c:priority.length?"var(--danger)":"var(--green)"},
     {l:"Resolution SLA Breached",v:slaBreach2.length,c:slaBreach2.length?"var(--danger)":"var(--green)"},
     {l:"Response SLA Breached",v:overdueResp2.length,c:overdueResp2.length?"var(--warning)":"var(--green)"},
     {l:"Time Overruns (>4h)",v:timeOver.length,c:timeOver.length?"var(--warning)":"var(--green)"},
-    {l:"Total Flagged",v:totalFlags,c:totalFlags?"var(--danger)":"var(--green)"},
   ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${i*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c}">${c.v}</span></div></div>`).join("");
 
   // Badge on tab
@@ -1978,8 +1977,8 @@ function renderRisk(){
   let html="";
 
   if(priority.length){
-    html+=buildRiskSection("Priority — Time Overrun + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
-      return`<span style="color:#ff5c5c">${tk.timeWorked.toFixed(1)}h worked</span> · <span style="color:#fcdc00">${tk.overdueH.toFixed(1)}h overdue (${tk.breachType})</span>`;
+    html+=buildRiskSection("Priority Risks — Time Overrun + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
+      return`<span style="color:#ff5c5c">${tk.timeWorked.toFixed(1)}h worked</span> · <span style="color:#fcdc00">${tk.overdueH.toFixed(1)}h overdue</span>`;
     });
   }
 
