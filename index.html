@@ -193,7 +193,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .risk-user{font-size:11px;color:var(--text-dim);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .risk-title{flex:1;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .risk-agent{font-size:11px;color:var(--text-muted);width:110px;flex-shrink:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.risk-date{font-size:10px;color:var(--text-dim);width:80px;flex-shrink:0;text-align:left;white-space:nowrap}
+.risk-date{font-size:10px;color:var(--text-dim);width:120px;flex-shrink:0;text-align:left;white-space:nowrap}
 .risk-detail{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;width:120px;flex-shrink:0;text-align:right}
 /* Agent comparison table */
 .agent-table{width:100%;border-collapse:collapse;font-size:12px}
@@ -2017,7 +2017,7 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
   let h=`<div class="glass risk-section"><div class="risk-header open"><h3><svg style="width:14px;height:14px;stroke:${color}"><use href="#iw"/></svg> ${title} <span class="risk-badge" style="background:${color}">${tickets.length}</span>${subtitle?`<span style="font-size:9px;font-weight:400;color:var(--text-dim);margin-left:10px;letter-spacing:0;text-transform:none">${subtitle}</span>`:""}</h3><span class="risk-arrow">▶</span></div><div class="risk-body" style="display:block">`;
   tickets.forEach(tk=>{
     const sev=tk.severity==="high"?"sev-high":tk.severity==="med"?"sev-med":"sev-low";
-    const dateCreated=tk.dateCreated?tk.dateCreated.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—";
+    const dateCreated=tk.dateCreated?tk.dateCreated.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+tk.dateCreated.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"—";
     h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-client" title="${tk.client||""}">${tk.client||"—"}</span><span class="risk-user" title="${tk.user||""}">${tk.user||"—"}</span><span class="risk-title" title="${tk.title}">${tk.title}</span><span class="risk-agent">${tk.agent||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
   });
   h+=`</div></div>`;
