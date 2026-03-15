@@ -1962,15 +1962,17 @@ function renderRisk(){
 
   // Most Active Client: active + closed this week
   const clientTicketCount={};
-  actTix.forEach(tk=>{if(tk.client)clientTicketCount[tk.client]=(clientTicketCount[tk.client]||0)+1});
+  const clientActiveCount={};
+  actTix.forEach(tk=>{if(tk.client){clientTicketCount[tk.client]=(clientTicketCount[tk.client]||0)+1;clientActiveCount[tk.client]=(clientActiveCount[tk.client]||0)+1}});
   closedTix.forEach(tk=>{if(tk.client)clientTicketCount[tk.client]=(clientTicketCount[tk.client]||0)+1});
   const topClient=Object.entries(clientTicketCount).sort((a,b)=>b[1]-a[1])[0];
+  const topClientActive=topClient?clientActiveCount[topClient[0]]||0:0;
 
   document.getElementById("riskInsights").innerHTML=[
     {l:"At-Risk Agent",v:topRiskAgent?topRiskAgent[0]:"—",sub:topRiskAgent?`${topRiskAgent[1]} flagged ticket${topRiskAgent[1]>1?"s":""}`:"No risks detected",c:topRiskAgent?"var(--danger)":"var(--green)"},
     {l:"Heaviest Workload",v:topWorkload?topWorkload[0]:"—",sub:topWorkload?`${topWorkload[1].tix} active · ${topWorkload[1].hrs.toFixed(1)}h est`:"No data",c:topWorkload?"var(--warning)":"var(--text-dim)"},
     {l:"At-Risk Client",v:topRiskClient?topRiskClient[0]:"—",sub:topRiskClient?`${topRiskClient[1].count} flagged · ${topRiskClient[1].overdueH.toFixed(1)}h overdue`:"No risks detected",c:topRiskClient?"var(--danger)":"var(--green)"},
-    {l:"Most Active Client",v:topClient?topClient[0]:"—",sub:topClient?`${topClient[1]} total ticket${topClient[1]>1?"s":""}`:"No data",c:topClient?"var(--blue)":"var(--text-dim)"},
+    {l:"Most Active Client",v:topClient?topClient[0]:"—",sub:topClient?`${topClient[1]} total ticket${topClient[1]>1?"s":""} · ${topClientActive} active`:"No data",c:topClient?"var(--blue)":"var(--text-dim)"},
   ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${(i+4)*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c};font-size:18px">${c.v}</span></div><div class="stat-trend" style="color:var(--text-dim)">${c.sub}</div></div>`).join("");
 
   // Build sections
@@ -1979,6 +1981,12 @@ function renderRisk(){
   if(priority.length){
     html+=buildRiskSection("Priority Risks — Time Overrun + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
       return`<span style="color:#ff5c5c">${tk.overdueH.toFixed(1)}h overdue</span> · <span style="color:#fb9e00">${tk.timeWorked.toFixed(1)}h worked</span>`;
+    });
+  }
+
+  if(timeOver.length){
+    html+=buildRiskSection("Time Overruns (>4h worked)","#a29bfe",timeOver.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
+      return`<span style="color:#a29bfe">${tk.timeWorked.toFixed(1)}h worked</span>`;
     });
   }
 
@@ -1992,12 +2000,6 @@ function renderRisk(){
     html+=buildRiskSection("Response SLA Breached","#fd79a8",overdueResp2.sort((a,b)=>b.overdueBizH-a.overdueBizH),tk=>{
       return`<span style="color:#fd79a8">${tk.overdueBizH.toFixed(1)}h overdue</span>`;
     },"Showing ≥ 4h overdue");
-  }
-
-  if(timeOver.length){
-    html+=buildRiskSection("Time Overruns (>4h worked)","#a29bfe",timeOver.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
-      return`<span style="color:#a29bfe">${tk.timeWorked.toFixed(1)}h worked</span>`;
-    });
   }
 
   if(!html)html='<div class="glass" style="padding:30px;text-align:center;color:var(--green);font-weight:600">✓ No risks detected — all tickets look healthy</div>';
