@@ -244,7 +244,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 <div class="header">
   <div class="header-left"><div class="header-icon"><svg style="width:20px;height:20px;stroke:var(--navy-darker);fill:none"><use href="#ic"/></svg></div><div><h1>Lutz Tech Service Hub</h1><div class="header-sub"><span class="status-dot"></span>AI-Powered Service Desk Intelligence</div></div></div>
   <div style="display:flex;gap:6px;align-items:center">
-    <button class="btn" id="importBtn"><svg style="width:14px;height:14px"><use href="#iup"/></svg> Import Data</button>
     <button class="btn" id="apiKeyBtn"><svg style="width:14px;height:14px"><use href="#is"/></svg> API Key</button>
   </div>
 </div>
@@ -256,17 +255,8 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   </div>
 </div>
 <div class="container">
-  <div class="glass upload-panel hidden" id="uploadPanel">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px"><svg style="width:16px;height:16px;stroke:var(--green)"><use href="#iz"/></svg> HaloPSA Live Data</h3>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-      <button class="btn" id="fetchActive" style="white-space:nowrap"><svg style="width:14px;height:14px"><use href="#iz"/></svg> Fetch Active</button>
-      <button class="btn" id="autoRefreshBtn" style="white-space:nowrap;opacity:0.4">Auto-Refresh: Off</button>
-      <span style="font-size:10px;color:var(--text-dim)" id="fetchStatus">Requires Service Hub Launcher</span>
-    </div>
-    <div style="font-size:10px;color:var(--text-dim)">Pulls data directly from HaloPSA reports via local proxy. Run <span style="font-family:'IBM Plex Mono',monospace;color:var(--blue)">service-hub-launcher.py</span> first.</div>
-  </div>
   <div class="glass api-key-bar hidden" id="apiKeyPanel"><label>API Key</label><input type="password" id="apiK" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"><span class="ks missing" id="ksT">Not set</span></div>
-  <div class="glass data-banner hidden" id="db"></div>
+  <div class="glass data-banner" id="db"><span id="syncStatus" style="font-size:10px;color:var(--blue);font-family:'IBM Plex Mono',monospace">Connecting to launcher...</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Team Workload</button>
     <button class="tab" data-tab="kpi"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Team Stats</button>
@@ -2002,15 +1992,10 @@ async function callAI(prompt){
 // ═══════════ RESOLUTION ASSIST ═══════════
 
 // ═══════════ BANNER ═══════════
-function updateBanner(){const b=document.getElementById("db"),parts=[];if(actTix.length||closedTix.length){parts.push(`<b>${actTix.length}</b> active`);parts.push(`<b>${closedTix.length}</b> closed this week`);parts.push(`<b>${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b>${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b>${Object.keys(catStats).length}</b> categories`)}if(parts.length){b.innerHTML=`<svg style="width:16px;height:16px;stroke:var(--green);flex-shrink:0"><use href="#ick"/></svg>`+parts.map(p=>`<span style="margin:0 8px">${p}</span>`).join("")+`<span style="margin-left:auto;font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace" id="lastSync"></span>`;b.classList.remove("hidden")}else b.classList.add("hidden")}
+function updateBanner(){const b=document.getElementById("db"),parts=[];if(actTix.length||closedTix.length){parts.push(`<b>${actTix.length}</b> active`);parts.push(`<b>${closedTix.length}</b> closed this week`);parts.push(`<b>${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b>${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b>${Object.keys(catStats).length}</b> categories`)}if(parts.length){b.innerHTML=`<svg style="width:16px;height:16px;stroke:var(--green);flex-shrink:0"><use href="#ick"/></svg>`+parts.map(p=>`<span style="margin:0 8px">${p}</span>`).join("")+`<span style="margin-left:auto;display:flex;align-items:center;gap:10px"><span id="syncStatus" style="font-size:9px;font-family:'IBM Plex Mono',monospace"></span><span style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace" id="lastSync"></span></span>`;b.classList.remove("hidden")}else b.classList.add("hidden")}
 
 // ═══════════ EVENTS ═══════════
 // Toggle buttons with label switching
-document.getElementById("importBtn").addEventListener("click",()=>{
-  const panel=document.getElementById("uploadPanel");const btn=document.getElementById("importBtn");
-  panel.classList.toggle("hidden");
-  btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#iup"/></svg> Import Data':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide Import';
-});
 document.getElementById("apiKeyBtn").addEventListener("click",()=>{
   const panel=document.getElementById("apiKeyPanel");const btn=document.getElementById("apiKeyBtn");
   panel.classList.toggle("hidden");
@@ -2039,33 +2024,30 @@ document.getElementById("agentTimePeriod").addEventListener("change",function(){
 
 // ═══════════ HALOPSA LIVE FETCH ═══════════
 async function fetchHaloReport(reportName,onSuccess){
-  const st=document.getElementById("fetchStatus");
-  st.textContent=`Fetching ${reportName}...`;st.style.color="var(--blue)";
+  const ss=document.getElementById("syncStatus");
+  if(ss){ss.textContent="Fetching data...";ss.style.color="var(--blue)"}
   try{
     const r=await fetch(`http://localhost:8090/api/${reportName}`);
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
     const rows=Array.isArray(data)?data:data.report_data||data.results||data.data||[];
     if(!rows.length)throw new Error("No data returned");
-    const now=new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
-    st.textContent=`✓ ${rows.length} total tickets loaded at ${now}`;st.style.color="var(--green)";
+    if(ss){ss.innerHTML='<span style="color:var(--green)">✓ Sync Active</span>'}
     onSuccess(rows);
   }catch(e){
-    // If fetch fails with network error, proxy probably isn't running
-    if(e.message==="Failed to fetch"){
-      st.textContent="✗ Can't connect — is service-hub-launcher.py running?";
-    }else{
-      st.textContent=`✗ ${e.message}`;
+    if(ss){
+      if(e.message==="Failed to fetch"){
+        ss.innerHTML='<span style="color:var(--danger)">✗ Can\'t connect to launcher</span>';
+      }else{
+        ss.innerHTML=`<span style="color:var(--danger)">✗ ${e.message}</span>`;
+      }
     }
-    st.style.color="var(--danger)";
   }
 }
 
-document.getElementById("fetchActive").addEventListener("click",fetchActiveNow);
 function fetchActiveNow(){
   fetchHaloReport("active",rows=>{
     actRaw=rows.filter(r=>r.Ticket_ID);
-    const fab=document.getElementById("fetchActive");fab.style.borderColor="var(--green)";fab.style.color="var(--green)";fab.style.opacity="1";
     procAct();
     updateLastSync();
   });
@@ -2076,33 +2058,21 @@ function fetchActiveNow(){
 // Auto-refresh for active tickets (every 5 minutes)
 let autoRefreshTimer=null;
 let autoRefreshOn=false;
-document.getElementById("autoRefreshBtn").addEventListener("click",()=>{
-  const btn=document.getElementById("autoRefreshBtn");
-  const st=document.getElementById("fetchStatus");
-  if(autoRefreshOn){
-    clearInterval(autoRefreshTimer);autoRefreshTimer=null;
-    autoRefreshOn=false;
-    btn.textContent="Auto-Refresh: Off";btn.style.opacity="0.4";btn.style.borderColor="";btn.style.color="";
-    st.textContent="Auto-refresh stopped";st.style.color="var(--text-dim)";
-  }else{
-    autoRefreshOn=true;
-    btn.textContent="Auto-Refresh: On (1m)";btn.style.opacity="1";btn.style.borderColor="var(--green)";btn.style.color="var(--green)";
-    fetchActiveNow();
-    autoRefreshTimer=setInterval(fetchActiveNow,60*1000);
-    st.textContent="Auto-refresh active — next update in 1 min";st.style.color="var(--green)";
-  }
-});
-
-// Auto-detect if running from launcher (localhost:8090) and enable buttons
-if(window.location.hostname==="localhost"&&window.location.port==="8090"){
-  fetch("/api").then(r=>r.json()).then(d=>{
-    document.getElementById("fetchStatus").textContent="✓ Connected to launcher";
-    document.getElementById("fetchStatus").style.color="var(--green)";
-    document.getElementById("fetchActive").style.opacity="1";
-    document.getElementById("autoRefreshBtn").style.opacity="0.6";
-
-  }).catch(()=>{});
+function startAutoRefresh(){
+  if(autoRefreshOn)return;
+  autoRefreshOn=true;
+  fetchActiveNow();
+  autoRefreshTimer=setInterval(fetchActiveNow,60*1000);
 }
+function stopAutoRefresh(){
+  if(!autoRefreshOn)return;
+  clearInterval(autoRefreshTimer);autoRefreshTimer=null;
+  autoRefreshOn=false;
+}
+
+// Auto-start on page load
+setTimeout(startAutoRefresh,500);
+
 
 // ═══════════ BATTLEFIELD ENGINE ═══════════
 const BF={
