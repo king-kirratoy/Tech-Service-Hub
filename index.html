@@ -243,7 +243,10 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 
 <div class="header">
   <div class="header-left"><div class="header-icon"><svg style="width:20px;height:20px;stroke:var(--navy-darker);fill:none"><use href="#ic"/></svg></div><div><h1>Lutz Tech Service Hub</h1><div class="header-sub"><span class="status-dot"></span>AI-Powered Service Desk Intelligence</div></div></div>
-  <div style="display:flex;gap:6px;align-items:center">
+  <div id="headerStats" style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace"></div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace">Connecting...</span>
+    <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
     <button class="btn" id="apiKeyBtn"><svg style="width:14px;height:14px"><use href="#is"/></svg> API Key</button>
   </div>
 </div>
@@ -256,7 +259,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 </div>
 <div class="container">
   <div class="glass api-key-bar hidden" id="apiKeyPanel"><label>API Key</label><input type="password" id="apiK" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"><span class="ks missing" id="ksT">Not set</span></div>
-  <div class="glass data-banner" id="db"><span id="syncStatus" style="font-size:10px;color:var(--blue);font-family:'IBM Plex Mono',monospace">Connecting to launcher...</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Team Workload</button>
     <button class="tab" data-tab="kpi"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Team Stats</button>
@@ -1992,7 +1994,7 @@ async function callAI(prompt){
 // ═══════════ RESOLUTION ASSIST ═══════════
 
 // ═══════════ BANNER ═══════════
-function updateBanner(){const b=document.getElementById("db"),parts=[];if(actTix.length||closedTix.length){parts.push(`<b>${actTix.length}</b> active`);parts.push(`<b>${closedTix.length}</b> closed this week`);parts.push(`<b>${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b>${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b>${Object.keys(catStats).length}</b> categories`)}if(parts.length){b.innerHTML=`<svg style="width:16px;height:16px;stroke:var(--green);flex-shrink:0"><use href="#ick"/></svg>`+parts.map(p=>`<span style="margin:0 8px">${p}</span>`).join("")+`<span style="margin-left:auto;display:flex;align-items:center;gap:10px"><span id="syncStatus" style="font-size:9px;font-family:'IBM Plex Mono',monospace"></span><span style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace" id="lastSync"></span></span>`;b.classList.remove("hidden")}else b.classList.add("hidden")}
+function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
 
 // ═══════════ EVENTS ═══════════
 // Toggle buttons with label switching
