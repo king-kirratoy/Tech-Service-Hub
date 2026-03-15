@@ -1985,13 +1985,13 @@ function renderRisk(){
   if(slaBreach2.length){
     html+=buildRiskSection("Resolution SLA Breached","var(--danger)",slaBreach2.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
       return`<span style="color:var(--danger)">${tk.overdueH.toFixed(1)}h overdue</span>`;
-    });
+    },"Showing ≥ 8h overdue");
   }
 
   if(overdueResp2.length){
     html+=buildRiskSection("Response SLA Breached","#fd79a8",overdueResp2.sort((a,b)=>b.overdueBizH-a.overdueBizH),tk=>{
       return`<span style="color:#fd79a8">${tk.overdueBizH.toFixed(1)}h overdue</span>`;
-    });
+    },"Showing ≥ 4h overdue");
   }
 
   if(timeOver.length){
@@ -2010,8 +2010,8 @@ function renderRisk(){
   });
 }
 
-function buildRiskSection(title,color,tickets,detailFn){
-  let h=`<div class="glass risk-section"><div class="risk-header open"><h3><svg style="width:14px;height:14px;stroke:${color}"><use href="#iw"/></svg> ${title} <span class="risk-badge" style="background:${color}">${tickets.length}</span></h3><span class="risk-arrow">▶</span></div><div class="risk-body" style="display:block">`;
+function buildRiskSection(title,color,tickets,detailFn,subtitle){
+  let h=`<div class="glass risk-section"><div class="risk-header open"><h3><svg style="width:14px;height:14px;stroke:${color}"><use href="#iw"/></svg> ${title} <span class="risk-badge" style="background:${color}">${tickets.length}</span>${subtitle?`<span style="font-size:9px;font-weight:400;color:var(--text-dim);margin-left:10px;letter-spacing:0;text-transform:none">${subtitle}</span>`:""}</h3><span class="risk-arrow">▶</span></div><div class="risk-body" style="display:block">`;
   tickets.forEach(tk=>{
     const sev=tk.severity==="high"?"sev-high":tk.severity==="med"?"sev-med":"sev-low";
     h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-client" title="${tk.client||""}">${tk.client||"—"}</span><span class="risk-user" title="${tk.user||""}">${tk.user||"—"}</span><span class="risk-title" title="${tk.title}">${tk.title}</span><span class="risk-agent">${tk.agent||"Unassigned"}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
@@ -2349,7 +2349,7 @@ const BF={
       this.enemies.push({
         id:tk.id,ticketRef:tk,cat,color:eColor,size:sz,tier,
         x:battleRight+Math.random()*100*s,
-        y:this.groundY-Math.random()*30*s,
+        y:this.groundY-Math.random()*10*s,
         frame:Math.floor(Math.random()*200),bobPhase:Math.random()*Math.PI*2
       });
     });
@@ -2357,14 +2357,14 @@ const BF={
     this.enemies.forEach(e=>{const tk=actTix.find(t=>t.id===e.id);if(tk)e.ticketRef=tk});
 
     // Position enemies
-    const eSpacing=26*s;
+    const eSpacing=32*s;
     const eRows=6;
     const eSorted=[...this.enemies];
     eSorted.forEach((e,i)=>{
       const col=Math.floor(i/eRows);
       const row=i%eRows;
       const targetX=fxAbs+30*s+col*eSpacing+Math.sin(this.frame*0.025+i*0.7)*5*s;
-      const targetY=this.groundY-row*4*s;
+      const targetY=this.groundY-row*2*s;
       e.x+=(targetX-e.x)*0.03;
       e.y+=(targetY-e.y)*0.03;
       e.frame++;
