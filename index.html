@@ -1980,7 +1980,7 @@ function renderRisk(){
 
   if(priority.length){
     html+=buildRiskSection("Priority Risks — Time Overrun + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
-      return`<span style="color:#ff5c5c">${tk.overdueH.toFixed(1)}h overdue</span> · <span style="color:#fb9e00">${tk.timeWorked.toFixed(1)}h worked</span>`;
+      return`<span style="color:#ff5c5c">${tk.overdueH.toFixed(1)}h overdue</span><br><span style="color:#fb9e00">${tk.timeWorked.toFixed(1)}h worked</span>`;
     });
   }
 
