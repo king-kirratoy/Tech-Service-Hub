@@ -2032,14 +2032,17 @@ async function fetchHaloReport(reportName,onSuccess){
     const data=await r.json();
     const rows=Array.isArray(data)?data:data.report_data||data.results||data.data||[];
     if(!rows.length)throw new Error("No data returned");
-    if(ss){ss.innerHTML='<span style="color:var(--green)">✓ Sync Active</span>'}
     onSuccess(rows);
+    // Set sync status after banner rebuild
+    const ss2=document.getElementById("syncStatus");
+    if(ss2){ss2.innerHTML='<span style="color:var(--green)">✓ Sync Active</span>'}
   }catch(e){
-    if(ss){
+    const ss2=document.getElementById("syncStatus");
+    if(ss2){
       if(e.message==="Failed to fetch"){
-        ss.innerHTML='<span style="color:var(--danger)">✗ Can\'t connect to launcher</span>';
+        ss2.innerHTML='<span style="color:var(--danger)">✗ Can\'t connect to launcher</span>';
       }else{
-        ss.innerHTML=`<span style="color:var(--danger)">✗ ${e.message}</span>`;
+        ss2.innerHTML=`<span style="color:var(--danger)">✗ ${e.message}</span>`;
       }
     }
   }
