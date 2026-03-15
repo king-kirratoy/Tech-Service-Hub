@@ -384,7 +384,7 @@ function apiH(){const h={"Content-Type":"application/json","anthropic-version":"
 function hasK(){return apiKey.length>10}
 
 // ═══════════ UTILS ═══════════
-function wkD(b){const d=new Date(b),w=d.getDay(),m=new Date(d);m.setDate(d.getDate()-((w+6)%7));return Array.from({length:5},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x})}
+function wkD(b){const d=new Date(b),w=d.getDay(),m=new Date(d);if(w===0)m.setDate(d.getDate()+1);else m.setDate(d.getDate()-((w+6)%7));return Array.from({length:5},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x})}
 function isSD(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
 function isT(d){return isSD(d,new Date())}
 function fDS(d){return d.toLocaleDateString("en-US",{weekday:"short"})}
