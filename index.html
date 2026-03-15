@@ -1862,35 +1862,70 @@ function renderRisk(){
     }
   });
 
-  // 2. Response SLA Breached (Next Response Date overdue, excluding tickets already in resolution breach)
-  const breachedIds=new Set(slaBreach.map(t=>t.id));
+  // 2. Response SLA Breached (Next Response Date overdue, only if resolution target NOT breached)
+  const resBreachedIds=new Set();
+  actTix.forEach(tk=>{
+    if(tk.sla&&tk.sla.toLowerCase().includes("excluded"))return;
+    const raw=actRaw.find(r=>r.Ticket_ID===tk.id);
+    const slaTgt=raw?pD(raw.SLA_Resolution_Target):null;
+    if(slaTgt&&now>slaTgt)resBreachedIds.add(tk.id);
+  });
   const overdueResp=[];
   actTix.forEach(tk=>{
     if(tk.sla&&tk.sla.toLowerCase().includes("excluded"))return;
     if(!tk.nextResponse)return;
-    if(breachedIds.has(tk.id))return; // already in resolution breach, skip
+    if(resBreachedIds.has(tk.id))return; // resolution target breached, skip
     if(now>tk.nextResponse){
       const overdueBizH=bizH(tk.nextResponse,now);
       if(overdueBizH>=4)overdueResp.push({...tk,overdueBizH,severity:overdueBizH>=12?"high":overdueBizH>=8?"med":"low"});
     }
   });
 
-  // 3. Time Overruns (>4h total time worked)
-  const timeOver=[];
+  // 3. Time Overruns (>=4h total time worked)
+  const timeOverAll=[];
   actTix.forEach(tk=>{
     const raw=actRaw.find(r=>r.Ticket_ID===tk.id);
     if(!raw)return;
     const tw=parseFloat(raw.Time_Taken||raw.time_taken||"0");
     if(!isNaN(tw)&&tw>=4){
-      timeOver.push({...tk,timeWorked:tw,severity:tw>=8?"high":tw>=6?"med":"low"});
+      timeOverAll.push({...tk,timeWorked:tw,severity:tw>=8?"high":tw>=6?"med":"low"});
     }
   });
 
+  // 4. Priority Tickets: time overrun AND (resolution breached OR response breached)
+  const slaBreachIds=new Set(slaBreach.map(t=>t.id));
+  const respBreachIds=new Set(overdueResp.map(t=>t.id));
+  const timeOverIds=new Set(timeOverAll.map(t=>t.id));
+  const priority=[];
+  timeOverAll.forEach(tk=>{
+    const inRes=slaBreachIds.has(tk.id);
+    const inResp=respBreachIds.has(tk.id);
+    if(inRes||inResp){
+      const resTk=inRes?slaBreach.find(t=>t.id===tk.id):null;
+      const respTk=inResp?overdueResp.find(t=>t.id===tk.id):null;
+      const overdueH=resTk?resTk.overdueH:respTk?respTk.overdueBizH:0;
+      const breachType=inRes?"Resolution":inResp?"Response":"";
+      // Use worst severity across all criteria
+      const sevOrder={high:3,med:2,low:1};
+      let worstSev=tk.severity;
+      if(resTk&&sevOrder[resTk.severity]>sevOrder[worstSev])worstSev=resTk.severity;
+      if(respTk&&sevOrder[respTk.severity]>sevOrder[worstSev])worstSev=respTk.severity;
+      priority.push({...tk,overdueH,breachType,severity:worstSev});
+    }
+  });
+  const priorityIds=new Set(priority.map(t=>t.id));
+
+  // Remove priority tickets from individual sections
+  const slaBreach2=slaBreach.filter(t=>!priorityIds.has(t.id));
+  const overdueResp2=overdueResp.filter(t=>!priorityIds.has(t.id));
+  const timeOver=timeOverAll.filter(t=>!priorityIds.has(t.id));
+
   // Summary cards
-  const totalFlags=slaBreach.length+overdueResp.length+timeOver.length;
+  const totalFlags=priority.length+slaBreach2.length+overdueResp2.length+timeOver.length;
   document.getElementById("riskSummary").innerHTML=[
-    {l:"Resolution SLA Breached",v:slaBreach.length,c:slaBreach.length?"var(--danger)":"var(--green)"},
-    {l:"Response SLA Breached",v:overdueResp.length,c:overdueResp.length?"var(--warning)":"var(--green)"},
+    {l:"Priority",v:priority.length,c:priority.length?"var(--danger)":"var(--green)"},
+    {l:"Resolution SLA Breached",v:slaBreach2.length,c:slaBreach2.length?"var(--danger)":"var(--green)"},
+    {l:"Response SLA Breached",v:overdueResp2.length,c:overdueResp2.length?"var(--warning)":"var(--green)"},
     {l:"Time Overruns (>4h)",v:timeOver.length,c:timeOver.length?"var(--warning)":"var(--green)"},
     {l:"Total Flagged",v:totalFlags,c:totalFlags?"var(--danger)":"var(--green)"},
   ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${i*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c}">${c.v}</span></div></div>`).join("");
@@ -1900,7 +1935,7 @@ function renderRisk(){
   if(totalFlags>0){badge.style.display="inline";badge.textContent=totalFlags}else{badge.style.display="none"}
 
   // Insight cards row 2
-  const allRisky=[...slaBreach,...overdueResp,...timeOver];
+  const allRisky=[...priority,...slaBreach2,...overdueResp2,...timeOver];
 
   // At-Risk Agent: most flagged tickets
   const agentRiskCount={};
@@ -1942,14 +1977,20 @@ function renderRisk(){
   // Build sections
   let html="";
 
-  if(slaBreach.length){
-    html+=buildRiskSection("Resolution SLA Breached","var(--danger)",slaBreach.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
+  if(priority.length){
+    html+=buildRiskSection("Priority — Time Overrun + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
+      return`<span style="color:#ff5c5c">${tk.timeWorked.toFixed(1)}h worked</span> · <span style="color:#fcdc00">${tk.overdueH.toFixed(1)}h overdue (${tk.breachType})</span>`;
+    });
+  }
+
+  if(slaBreach2.length){
+    html+=buildRiskSection("Resolution SLA Breached","var(--danger)",slaBreach2.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
       return`<span style="color:var(--danger)">${tk.overdueH.toFixed(1)}h overdue</span>`;
     });
   }
 
-  if(overdueResp.length){
-    html+=buildRiskSection("Response SLA Breached","#fd79a8",overdueResp.sort((a,b)=>b.overdueBizH-a.overdueBizH),tk=>{
+  if(overdueResp2.length){
+    html+=buildRiskSection("Response SLA Breached","#fd79a8",overdueResp2.sort((a,b)=>b.overdueBizH-a.overdueBizH),tk=>{
       return`<span style="color:#fd79a8">${tk.overdueBizH.toFixed(1)}h overdue</span>`;
     });
   }
