@@ -1973,7 +1973,7 @@ function renderRisk(){
     {l:"Heaviest Workload",v:topWorkload?topWorkload[0]:"—",sub:topWorkload?`${topWorkload[1].tix} active · ${topWorkload[1].hrs.toFixed(1)}h est`:"No data",c:topWorkload?"var(--warning)":"var(--text-dim)"},
     {l:"At-Risk Client",v:topRiskClient?topRiskClient[0]:"—",sub:topRiskClient?`${topRiskClient[1].count} flagged · ${topRiskClient[1].overdueH.toFixed(1)}h overdue`:"No risks detected",c:topRiskClient?"var(--danger)":"var(--green)"},
     {l:"Most Active Client",v:topClient?topClient[0]:"—",sub:topClient?`${topClient[1]} total ticket${topClient[1]>1?"s":""} · ${topClientActive} active`:"No data",c:topClient?"var(--blue)":"var(--text-dim)"},
-  ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${(i+4)*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c};font-size:18px">${c.v}</span></div><div class="stat-trend" style="color:var(--text-dim)">${c.sub}</div></div>`).join("");
+  ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${(i+4)*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c};font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block" title="${c.v}">${c.v}</span></div><div class="stat-trend" style="color:var(--text-dim)">${c.sub}</div></div>`).join("");
 
   // Build sections
   let html="";
