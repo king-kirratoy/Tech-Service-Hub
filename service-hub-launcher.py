@@ -3,14 +3,9 @@
 Service Hub Launcher
 ====================
 Double-click this file to:
-  1. Start a local server
+  1. Open Service Hub in your browser
   2. Fetch live data from HaloPSA
-  3. Open Service Hub in your browser
 
-SETUP:
-  1. Put this file in the same folder as service-manager-hub.html
-  2. Edit the report URL below if needed
-  3. Double-click to run (or: python service-hub-launcher.py)
 
 Press Ctrl+C in the terminal to stop.
 """
@@ -38,9 +33,6 @@ BEARER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYklkIjoiNzg3QkM1RkMtM0I
 
 # Port for the local server
 PORT = 8090
-
-# Name of the HTML file (should be in the same folder)
-HTML_FILE = "service-manager-hub.html"
 
 # ═══════════════════════════════════════════════════════════
 # SERVER — No need to edit below
