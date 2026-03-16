@@ -2268,7 +2268,10 @@ const BF={
           y:cached?cached.y:existing?existing.y:this.groundY,
           vx:0,frame:Math.floor(Math.random()*200),
           atkTimer:30+Math.floor(Math.random()*60),attacking:false,atkFrame:0,
-          walkOff:0,bobPhase:Math.random()*Math.PI*2
+          walkOff:0,bobPhase:Math.random()*Math.PI*2,
+          weapon:cached?cached.weapon:existing?existing.weapon:null,
+          weaponLevel:cached?cached.weaponLevel:existing?existing.weaponLevel:undefined,
+          prevLevel:cached?cached.prevLevel:existing?existing.prevLevel:undefined
         };
       });
     }
@@ -2320,23 +2323,16 @@ const BF={
       w.atkTimer--;
       if(w.atkTimer<=0&&!w.attacking){
         w.attacking=true;w.atkFrame=0;
-        // Assign weapon type on first attack (random per warrior, pool based on level)
-        if(!w.weapon){
-          // Weapon types: pistol (all), rifle (4+), plasma (11+), laser (18+), railgun (25+)
-          const pool=["pistol"];
-          if(w.level>=4)pool.push("rifle","rifle");
-          if(w.level>=11)pool.push("plasma","plasma");
-          if(w.level>=18)pool.push("laser","laser");
-          if(w.level>=25)pool.push("railgun","railgun");
-          w.weapon=pool[Math.floor(Math.random()*pool.length)];
-        }
-        // Re-roll weapon on level-up for variety
-        if(w.weaponLevel!==undefined&&w.weaponLevel!==w.level){
-          const pool=["pistol"];
-          if(w.level>=4)pool.push("rifle","rifle");
-          if(w.level>=11)pool.push("plasma","plasma");
-          if(w.level>=18)pool.push("laser","laser");
-          if(w.level>=25)pool.push("railgun","railgun");
+        // Assign weapon type on first attack or re-roll on level-up
+        // Pool excludes weaker weapons as level increases
+        const needsWeapon=!w.weapon||(w.weaponLevel!==undefined&&w.weaponLevel!==w.level);
+        if(needsWeapon){
+          let pool;
+          if(w.level>=25)pool=["railgun","railgun","laser","plasma"];
+          else if(w.level>=18)pool=["laser","laser","plasma","railgun"];
+          else if(w.level>=11)pool=["plasma","plasma","laser","rifle"];
+          else if(w.level>=4)pool=["rifle","rifle","plasma","pistol"];
+          else pool=["pistol","pistol","rifle"];
           w.weapon=pool[Math.floor(Math.random()*pool.length)];
         }
         w.weaponLevel=w.level;
@@ -2369,8 +2365,8 @@ const BF={
         }
       }
       if(w.attacking){w.atkFrame++;if(w.atkFrame>16)w.attacking=false}
-      // Cache position
-      this.prevWarriorState[w.name]={x:w.x,y:w.y};
+      // Cache position and weapon
+      this.prevWarriorState[w.name]={x:w.x,y:w.y,weapon:w.weapon,weaponLevel:w.weaponLevel,prevLevel:w.prevLevel};
     });
 
     // Build enemies from active tickets
