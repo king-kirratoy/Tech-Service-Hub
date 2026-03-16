@@ -2434,10 +2434,16 @@ const BF={
     // Update enemy ticket refs
     this.enemies.forEach(e=>{const tk=actTix.find(t=>t.id===e.id);if(tk)e.ticketRef=tk});
 
-    // Position enemies (skip dying ones — they stay where they fell)
+    // Position enemies sorted by next response date (soonest = front, nearest warriors)
     const eSpacing=32*s;
     const eRows=6;
+    const FAR_FUTURE=9e15;
     const eSorted=this.enemies.filter(e=>!e.dying&&!e.dead);
+    eSorted.sort((a,b)=>{
+      const aNrd=a.ticketRef&&a.ticketRef.nextResponse?a.ticketRef.nextResponse.getTime():FAR_FUTURE;
+      const bNrd=b.ticketRef&&b.ticketRef.nextResponse?b.ticketRef.nextResponse.getTime():FAR_FUTURE;
+      return aNrd-bNrd;
+    });
     eSorted.forEach((e,i)=>{
       const col=Math.floor(i/eRows);
       const row=i%eRows;
