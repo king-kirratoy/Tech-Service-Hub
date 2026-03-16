@@ -2126,8 +2126,9 @@ setTimeout(startAutoRefresh,500);
 
 // ═══════════ BATTLEFIELD ENGINE ═══════════
 const BF={
-  canvas:null,ctx:null,W:0,H:160,scale:2,warriors:[],enemies:[],projectiles:[],grenades:[],frontLine:0.5,
+  canvas:null,ctx:null,W:0,H:160,scale:2,warriors:[],enemies:[],projectiles:[],grenades:[],floatingTexts:[],airStrikes:[],frontLine:0.5,
   targetFront:0.5,frame:0,running:false,muted:true,hoveredEntity:null,
+  lastHourClosedCount:0,lastHourCheckTime:0,
   prevWarriorState:{}, // Cache warrior positions across refreshes
   spriteSheet:null,spriteLoaded:false,tintedSprites:{},
   spriteFrameW:169,spriteFrameH:369,spriteFrames:4,
@@ -2319,21 +2320,52 @@ const BF={
       w.atkTimer--;
       if(w.atkTimer<=0&&!w.attacking){
         w.attacking=true;w.atkFrame=0;
-        // Fire rate and projectile count based on level
-        const fireRate=w.level>=25?20:w.level>=18?25:w.level>=11?30:w.level>=4?35:45;
-        w.atkTimer=fireRate+Math.floor(Math.random()*20);
-        // Spawn projectile with random life so it stops at different points in enemy horde
-        const pColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fcdc00":w.level>=4?"#74b9ff":"#ccc";
-        const pSize=w.level>=25?5:w.level>=18?4:w.level>=11?3.5:w.level>=4?3:2;
-        const pSpeed=w.level>=25?8:w.level>=18?7:w.level>=11?6:w.level>=4?5:4;
-        const hasTrail=w.level>=11;
+        // Assign weapon type on first attack (random per warrior, pool based on level)
+        if(!w.weapon){
+          // Weapon types: pistol (all), rifle (4+), plasma (11+), laser (18+), railgun (25+)
+          const pool=["pistol"];
+          if(w.level>=4)pool.push("rifle","rifle");
+          if(w.level>=11)pool.push("plasma","plasma");
+          if(w.level>=18)pool.push("laser","laser");
+          if(w.level>=25)pool.push("railgun","railgun");
+          w.weapon=pool[Math.floor(Math.random()*pool.length)];
+        }
+        // Re-roll weapon on level-up for variety
+        if(w.weaponLevel!==undefined&&w.weaponLevel!==w.level){
+          const pool=["pistol"];
+          if(w.level>=4)pool.push("rifle","rifle");
+          if(w.level>=11)pool.push("plasma","plasma");
+          if(w.level>=18)pool.push("laser","laser");
+          if(w.level>=25)pool.push("railgun","railgun");
+          w.weapon=pool[Math.floor(Math.random()*pool.length)];
+        }
+        w.weaponLevel=w.level;
+        // Weapon stats
+        const wpn=w.weapon;
+        const fireRate=wpn==="railgun"?25:wpn==="laser"?22:wpn==="plasma"?28:wpn==="rifle"?32:42;
+        w.atkTimer=fireRate+Math.floor(Math.random()*15);
         const dh=this.spriteDH;
         const dw=dh*(this.spriteFrameW/this.spriteFrameH);
         const randLife=15+Math.floor(Math.random()*60);
-        this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.15,vx:pSpeed*s,color:pColor,size:pSize*s,trail:hasTrail,life:randLife,age:0});
-        if(w.level>=18){// Dual shot
-          const randLife2=15+Math.floor(Math.random()*60);
-          this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.10,vx:pSpeed*s,color:pColor,size:pSize*s*0.8,trail:hasTrail,life:randLife2,age:0});
+        if(wpn==="railgun"){
+          // Railgun: fast, bright cyan beam, large
+          this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.15,vx:10*s,color:"#00E5FF",size:5*s,trail:true,life:randLife,age:0,shape:"beam"});
+        }else if(wpn==="laser"){
+          // Laser: twin green beams, medium speed
+          this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.17,vx:7*s,color:"#84BD00",size:3.5*s,trail:true,life:randLife,age:0,shape:"beam"});
+          this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.12,vx:7*s,color:"#84BD00",size:2.5*s,trail:true,life:randLife+5,age:0,shape:"beam"});
+        }else if(wpn==="plasma"){
+          // Plasma: glowing orb, medium
+          this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.15,vx:6*s,color:"#fcdc00",size:4*s,trail:true,life:randLife,age:0,shape:"orb"});
+        }else if(wpn==="rifle"){
+          // Rifle: fast small rounds, occasional double tap
+          this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.15,vx:8*s,color:"#74b9ff",size:2.5*s,trail:false,life:randLife,age:0,shape:"bolt"});
+          if(Math.random()<0.4){
+            this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.14,vx:8*s,color:"#74b9ff",size:2*s,trail:false,life:randLife+3,age:0,shape:"bolt"});
+          }
+        }else{
+          // Pistol: slow, small
+          this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.15,vx:4*s,color:"#ccc",size:2*s,trail:false,life:randLife,age:0,shape:"bolt"});
         }
       }
       if(w.attacking){w.atkFrame++;if(w.atkFrame>16)w.attacking=false}
@@ -2345,15 +2377,47 @@ const BF={
     const activeIds=new Set(actTix.map(t=>t.id));
     // Mark enemies as dying when their ticket is closed (instead of instant removal)
     this.enemies.forEach(e=>{
-      if(!activeIds.has(e.id)&&!e.dying){
+      if(!activeIds.has(e.id)&&!e.dying&&!e.dead){
         e.dying=true;e.deathTimer=0;e.deathDuration=90; // ~1.5s at 60fps
+        // Spawn XP popup at the assigned warrior's position
+        const closedTk=closedTix.find(t=>t.id===e.id);
+        if(closedTk&&closedTk.assignedTo){
+          const warrior=this.warriors.find(w=>w.id===closedTk.assignedTo);
+          if(warrior){
+            let xp=25;
+            const hist=histRaw.find(r=>r.Ticket_ID===e.id);
+            if(hist){
+              const frt=parseFloat(hist.First_Response_Time);
+              if(!isNaN(frt)&&frt>=0){if(frt<=2)xp+=10;else if(frt<=4)xp+=5}
+              const frd=pD(hist.First_Response_Date),dc=pD(hist.Date_Closed);
+              if(frd&&dc&&isSD(frd,dc))xp+=10;
+              const cr=pD(hist.Date_Created);
+              if(cr&&dc&&(dc-cr)/(1000*60*60*24)<=5)xp+=5;
+            }
+            const dh=this.spriteDH;
+            this.floatingTexts.push({
+              x:warrior.x,y:warrior.y-dh*0.45,
+              text:"+"+xp+" XP",color:warrior.color,
+              age:0,duration:90
+            });
+          }
+        }
       }
     });
-    // Update dying enemies and remove fully dead ones
+    // Update dying enemies — transition to "dead" (corpse on ground) after animation
+    const now=Date.now();
+    this.enemies.forEach(e=>{
+      if(e.dying){
+        e.deathTimer++;
+        if(e.deathTimer>=e.deathDuration){
+          e.dying=false;e.dead=true;e.deadSince=now;
+        }
+      }
+    });
+    // Remove corpses after 30 minutes
     this.enemies=this.enemies.filter(e=>{
-      if(!e.dying)return true;
-      e.deathTimer++;
-      return e.deathTimer<e.deathDuration;
+      if(e.dead)return(now-e.deadSince)<1800000;
+      return true;
     });
     // Add new enemies
     const existingIds=new Set(this.enemies.map(e=>e.id));
@@ -2377,7 +2441,7 @@ const BF={
     // Position enemies (skip dying ones — they stay where they fell)
     const eSpacing=32*s;
     const eRows=6;
-    const eSorted=this.enemies.filter(e=>!e.dying);
+    const eSorted=this.enemies.filter(e=>!e.dying&&!e.dead);
     eSorted.forEach((e,i)=>{
       const col=Math.floor(i/eRows);
       const row=i%eRows;
@@ -2389,31 +2453,36 @@ const BF={
       e.bobPhase+=0.03;
     });
 
-    // Grenade system — high-level warriors lob arcing grenades
+    // Grenade system — warriors throw a grenade when they level up
     this.warriors.forEach(w=>{
-      if(w.level<11)return;
-      if(!w.grenadeTimer)w.grenadeTimer=120+Math.floor(Math.random()*300);
-      w.grenadeTimer--;
-      if(w.grenadeTimer<=0){
-        // Longer cooldown for lower levels
-        const cd=w.level>=25?180:w.level>=18?260:380;
-        w.grenadeTimer=cd+Math.floor(Math.random()*200);
-        // Pick a random live enemy as target
-        const liveEnemies=this.enemies.filter(e=>!e.dying);
+      if(w.prevLevel===undefined)w.prevLevel=w.level; // Init tracking
+      if(w.level>w.prevLevel){
+        // Level up! Throw a grenade to celebrate
+        const liveEnemies=this.enemies.filter(e=>!e.dying&&!e.dead);
         if(liveEnemies.length){
           const target=liveEnemies[Math.floor(Math.random()*Math.min(liveEnemies.length,20))];
           const dh=this.spriteDH;
           const dw=dh*(this.spriteFrameW/this.spriteFrameH);
-          const grenColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":"#fcdc00";
+          const grenColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fcdc00":w.level>=4?"#74b9ff":"#aaa";
+          const grenSize=(w.level>=25?6:w.level>=18?5:w.level>=11?4:3)*s;
           this.grenades.push({
             x:w.x+dw*0.3,y:w.y-dh*0.35,
             startX:w.x+dw*0.3,startY:w.y-dh*0.35,
             targetX:target.x,targetY:target.y-20*s,
             age:0,duration:40+Math.floor(Math.random()*20),
-            color:grenColor,size:(w.level>=25?5:w.level>=18?4:3)*s,
+            color:grenColor,size:grenSize,
             exploded:false,explodeTimer:0
           });
+          // Level-up floating text
+          this.floatingTexts.push({
+            x:w.x-20*s,y:w.y-this.spriteDH*0.55,
+            text:"LEVEL "+w.level+"!",color:"#FFD700",
+            age:0,duration:120
+          });
         }
+        w.prevLevel=w.level;
+      }else{
+        w.prevLevel=w.level;
       }
     });
     // Update grenades (parabolic arc)
@@ -2430,6 +2499,36 @@ const BF={
       }
     });
     this.grenades=this.grenades.filter(g=>!g.exploded||g.explodeTimer<30);
+
+    // Update floating texts
+    this.floatingTexts.forEach(ft=>{ft.age++;ft.y-=0.8*s});
+    this.floatingTexts=this.floatingTexts.filter(ft=>ft.age<ft.duration);
+
+    // Air strike detection — 20+ tickets closed in the last hour
+    const nowMs=Date.now();
+    if(!this.lastHourCheckTime||nowMs-this.lastHourCheckTime>30000){ // Check every 30s
+      this.lastHourCheckTime=nowMs;
+      const oneHourAgo=new Date(nowMs-3600000);
+      const recentClosed=closedTix.filter(t=>t.dateClosed&&t.dateClosed>oneHourAgo).length;
+      if(recentClosed>=20&&recentClosed!==this.lastHourClosedCount&&this.lastHourClosedCount<20){
+        // Trigger air strike across enemy positions
+        const liveEnemies=this.enemies.filter(e=>!e.dying&&!e.dead);
+        if(liveEnemies.length){
+          const strikeCount=Math.min(8,Math.max(4,Math.floor(liveEnemies.length/5)));
+          const strikeXs=[];
+          for(let i=0;i<strikeCount;i++){
+            const target=liveEnemies[Math.floor(Math.random()*liveEnemies.length)];
+            strikeXs.push(target.x+(Math.random()-0.5)*30*s);
+          }
+          strikeXs.sort((a,b)=>a-b);
+          this.airStrikes.push({age:0,duration:180,strikeCount,strikeXs});
+        }
+      }
+      this.lastHourClosedCount=recentClosed;
+    }
+    // Update air strikes
+    this.airStrikes.forEach(as=>{as.age++});
+    this.airStrikes=this.airStrikes.filter(as=>as.age<as.duration);
 
     // Update projectiles
     this.projectiles.forEach(p=>{p.x+=p.vx;p.age++});
@@ -2463,10 +2562,11 @@ const BF={
 
     // Hover detected via hitbox only, no visual indicator
 
-    // Muzzle flash when attacking
+    // Muzzle flash when attacking — color matches weapon type
     if(w.attacking&&w.atkFrame<6){
-      const gunColor=w.level>=25?"#00E5FF":w.level>=18?"#84BD00":w.level>=11?"#fcdc00":w.level>=4?"#C0C0C0":"#888";
-      const flashSize=(6-w.atkFrame)*s*1.5;
+      const wpn=w.weapon||"pistol";
+      const gunColor=wpn==="railgun"?"#00E5FF":wpn==="laser"?"#84BD00":wpn==="plasma"?"#fcdc00":wpn==="rifle"?"#74b9ff":"#888";
+      const flashSize=(6-w.atkFrame)*s*(wpn==="railgun"?2:wpn==="plasma"?1.8:1.5);
       c.fillStyle=gunColor;
       c.globalAlpha=0.7;
       c.beginPath();c.arc(x+dw*0.45,yy-dh*0.15,flashSize,0,Math.PI*2);c.fill();
@@ -2479,7 +2579,7 @@ const BF={
   drawEnemy(x,y,e){
     const c=this.ctx,s=this.scale;
     const hovered=this.hoveredEntity&&this.hoveredEntity.type==="enemy"&&this.hoveredEntity.id===e.id;
-    const bob=e.dying?0:Math.sin(e.bobPhase)*2*s;
+    const bob=(e.dying||e.dead)?0:Math.sin(e.bobPhase)*2*s;
     const yy=y+bob;
     const tier=e.tier||"small";
     const dh=this.enemySizes[tier].dh;
@@ -2529,6 +2629,30 @@ const BF={
         }
       }
       return; // Skip normal drawing
+    }
+
+    // Dead corpse — fully tilted, faded, lying on ground
+    if(e.dead){
+      const sinkY=12*s;
+      // Faint shadow
+      c.fillStyle="rgba(0,0,0,0.06)";
+      c.beginPath();c.ellipse(x,y+4*s,dw*0.2,2*s,0,0,Math.PI*2);c.fill();
+      // Draw fully tilted, very faded sprite
+      c.save();
+      c.globalAlpha=0.15;
+      c.translate(x,yy+groundOffset+sinkY);
+      c.rotate(Math.PI*0.45);
+      c.translate(-x,-(yy+groundOffset+sinkY));
+      const sheet=this.enemySheets[tier];
+      if(sheet){
+        c.drawImage(sheet,0,0,169,369,x-dw/2,yy-dh+groundOffset+sinkY,dw,dh);
+      }else{
+        const sz=e.size*s*0.85;
+        c.fillStyle=e.color;
+        c.fillRect(x-sz,yy-sz*2+sinkY,sz*2,sz*2);
+      }
+      c.restore();
+      return;
     }
 
     // Overdue NRD glow — pulsing red aura for overdue tickets
@@ -2640,7 +2764,7 @@ const BF={
     }
     if(!found){
       for(const e of this.enemies){
-        if(e.dying)continue; // Skip dying enemies for hover
+        if(e.dying||e.dead)continue; // Skip dying/dead enemies for hover
         const tier=e.tier||"small";
         const edh=this.enemySizes[tier].dh;
         const edw=edh*(169/369);
@@ -2701,28 +2825,57 @@ const BF={
     });
     // Draw projectiles on top
     this.projectiles.forEach(p=>{
-      // Trail
-      if(p.trail){
-        c.globalAlpha=0.3;
+      const shape=p.shape||"bolt";
+      if(shape==="orb"){
+        // Plasma orb — glowing circle with halo
         c.fillStyle=p.color;
-        c.fillRect(p.x-p.size*3,p.y-p.size*0.3,p.size*3,p.size*0.6);
-        c.globalAlpha=0.15;
-        c.fillRect(p.x-p.size*6,p.y-p.size*0.2,p.size*3,p.size*0.4);
+        c.globalAlpha=0.2;
+        c.beginPath();c.arc(p.x,p.y,p.size*2.5,0,Math.PI*2);c.fill();
+        c.globalAlpha=0.5;
+        c.beginPath();c.arc(p.x,p.y,p.size*1.2,0,Math.PI*2);c.fill();
+        c.globalAlpha=1;
+        c.beginPath();c.arc(p.x,p.y,p.size*0.7,0,Math.PI*2);c.fill();
+        c.fillStyle="#fff";c.globalAlpha=0.7;
+        c.beginPath();c.arc(p.x,p.y,p.size*0.3,0,Math.PI*2);c.fill();
+        c.globalAlpha=1;
+      }else if(shape==="beam"){
+        // Beam — elongated glowing bar
+        if(p.trail){
+          c.globalAlpha=0.25;
+          c.fillStyle=p.color;
+          c.fillRect(p.x-p.size*5,p.y-p.size*0.2,p.size*5,p.size*0.4);
+          c.globalAlpha=0.1;
+          c.fillRect(p.x-p.size*9,p.y-p.size*0.1,p.size*4,p.size*0.2);
+          c.globalAlpha=1;
+        }
+        c.fillStyle=p.color;
+        c.fillRect(p.x-p.size*1.5,p.y-p.size*0.35,p.size*3,p.size*0.7);
+        c.fillStyle="#fff";c.globalAlpha=0.7;
+        c.fillRect(p.x-p.size*0.8,p.y-p.size*0.15,p.size*1.6,p.size*0.3);
+        c.globalAlpha=1;
+        // End glow
+        c.fillStyle=p.color;c.globalAlpha=0.2;
+        c.beginPath();c.arc(p.x+p.size*1.5,p.y,p.size,0,Math.PI*2);c.fill();
+        c.globalAlpha=1;
+      }else{
+        // Bolt (pistol/rifle) — original style
+        if(p.trail){
+          c.globalAlpha=0.3;
+          c.fillStyle=p.color;
+          c.fillRect(p.x-p.size*3,p.y-p.size*0.3,p.size*3,p.size*0.6);
+          c.globalAlpha=0.15;
+          c.fillRect(p.x-p.size*6,p.y-p.size*0.2,p.size*3,p.size*0.4);
+          c.globalAlpha=1;
+        }
+        c.fillStyle=p.color;
+        c.fillRect(p.x-p.size,p.y-p.size*0.4,p.size*2,p.size*0.8);
+        c.fillStyle="#fff";c.globalAlpha=0.6;
+        c.fillRect(p.x-p.size*0.5,p.y-p.size*0.2,p.size,p.size*0.4);
+        c.globalAlpha=1;
+        c.fillStyle=p.color;c.globalAlpha=0.15;
+        c.beginPath();c.arc(p.x,p.y,p.size*2,0,Math.PI*2);c.fill();
         c.globalAlpha=1;
       }
-      // Bolt body
-      c.fillStyle=p.color;
-      c.fillRect(p.x-p.size,p.y-p.size*0.4,p.size*2,p.size*0.8);
-      // Bright core
-      c.fillStyle="#fff";
-      c.globalAlpha=0.6;
-      c.fillRect(p.x-p.size*0.5,p.y-p.size*0.2,p.size,p.size*0.4);
-      c.globalAlpha=1;
-      // Glow
-      c.fillStyle=p.color;
-      c.globalAlpha=0.15;
-      c.beginPath();c.arc(p.x,p.y,p.size*2,0,Math.PI*2);c.fill();
-      c.globalAlpha=1;
     });
     // Draw grenades
     this.grenades.forEach(g=>{
@@ -2765,6 +2918,65 @@ const BF={
             const dist=radius*(0.5+ep);
             c.fillRect(g.targetX+Math.cos(ang)*dist,g.targetY+Math.sin(ang)*dist,3*s,3*s);
           }
+        }
+        c.globalAlpha=1;
+      }
+    });
+    // Draw floating XP texts
+    this.floatingTexts.forEach(ft=>{
+      const prog=ft.age/ft.duration;
+      const fade=prog<0.2?1:1-(prog-0.2)/0.8; // Full opacity first 20%, then fade
+      const fontSize=Math.round(11*s);
+      c.font="bold "+fontSize+"px monospace";
+      c.globalAlpha=fade;
+      c.fillStyle="#000";
+      c.fillText(ft.text,ft.x+1*s,ft.y+1*s); // Shadow
+      c.fillStyle=ft.color;
+      c.fillText(ft.text,ft.x,ft.y);
+      c.globalAlpha=1;
+    });
+    // Draw air strikes
+    this.airStrikes.forEach(as=>{
+      const prog=as.age/as.duration;
+      if(prog<0.15){
+        // Incoming warning lines from top
+        const warnAlpha=0.4*Math.sin(as.age*0.5);
+        c.strokeStyle="rgba(255,80,80,"+Math.abs(warnAlpha)+")";
+        c.lineWidth=2*s;
+        for(let i=0;i<as.strikeCount;i++){
+          const sx=as.strikeXs[i];
+          c.beginPath();c.moveTo(sx,0);c.lineTo(sx,this.canvas.height);c.stroke();
+        }
+      }else if(prog<0.4){
+        // Explosions cascade across enemy line
+        const bombProg=(prog-0.15)/0.25;
+        for(let i=0;i<as.strikeCount;i++){
+          const delay=i/as.strikeCount;
+          const localProg=Math.max(0,Math.min(1,(bombProg-delay*0.5)/0.5));
+          if(localProg<=0)continue;
+          const sx=as.strikeXs[i];
+          const radius=(20+localProg*40)*s;
+          // Flash
+          c.globalAlpha=0.7*(1-localProg);
+          c.fillStyle="#FFF";
+          c.beginPath();c.arc(sx,this.groundY-20*s,radius*0.4,0,Math.PI*2);c.fill();
+          // Fireball
+          c.fillStyle="#FF6600";
+          c.beginPath();c.arc(sx,this.groundY-20*s,radius,0,Math.PI*2);c.fill();
+          // Outer ring
+          c.fillStyle="#FF4444";
+          c.globalAlpha=0.3*(1-localProg);
+          c.beginPath();c.arc(sx,this.groundY-20*s,radius*1.5,0,Math.PI*2);c.fill();
+          c.globalAlpha=1;
+        }
+      }else{
+        // Smoke/debris fading out
+        const smokeProg=(prog-0.4)/0.6;
+        for(let i=0;i<as.strikeCount;i++){
+          const sx=as.strikeXs[i];
+          c.globalAlpha=0.2*(1-smokeProg);
+          c.fillStyle="#555";
+          c.beginPath();c.arc(sx,this.groundY-(30+smokeProg*50)*s,15*s,0,Math.PI*2);c.fill();
         }
         c.globalAlpha=1;
       }
