@@ -1878,7 +1878,7 @@ function renderRisk(){
     if(resBreachedIds.has(tk.id))return; // resolution target breached, skip
     if(now>tk.nextResponse){
       const overdueBizH=bizH(tk.nextResponse,now);
-      if(overdueBizH>=4)overdueResp.push({...tk,overdueBizH,severity:overdueBizH>=12?"high":overdueBizH>=8?"med":"low"});
+      if(overdueBizH>=8)overdueResp.push({...tk,overdueBizH,severity:overdueBizH>=12?"high":overdueBizH>=8?"med":"low"});
     }
   });
 
@@ -2000,7 +2000,7 @@ function renderRisk(){
   if(overdueResp2.length){
     html+=buildRiskSection("Response SLA Breached","#fd79a8",overdueResp2.sort((a,b)=>b.overdueBizH-a.overdueBizH),tk=>{
       return`<span style="color:#fd79a8">${tk.overdueBizH.toFixed(1)}h overdue</span>`;
-    },"Showing ≥ 4h overdue");
+    },"Showing ≥ 8h overdue");
   }
 
   if(!html)html='<div class="glass" style="padding:30px;text-align:center;color:var(--green);font-weight:600">✓ No risks detected — all tickets look healthy</div>';
