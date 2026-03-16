@@ -1854,6 +1854,7 @@ function renderRisk(){
   const slaBreach=[];
   actTix.forEach(tk=>{
     if(tk.sla&&tk.sla.toLowerCase().includes("excluded"))return;
+    if(tk.type&&tk.type.toLowerCase().includes("user termination"))return;
     const raw=actRaw.find(r=>r.Ticket_ID===tk.id);
     const slaTgt=raw?pD(raw.SLA_Resolution_Target):null;
     if(!slaTgt)return;
