@@ -1924,8 +1924,8 @@ function renderRisk(){
   // Summary cards
   const totalFlags=priority.length+slaBreach2.length+overdueResp2.length+timeOver.length;
   document.getElementById("riskSummary").innerHTML=[
-    {l:"Priority Risks",v:priority.length,c:priority.length?"var(--danger)":"var(--green)"},
-    {l:"Time Overruns (>4h)",v:timeOver.length,c:timeOver.length?"var(--warning)":"var(--green)"},
+    {l:"High Priority",v:priority.length,c:priority.length?"var(--danger)":"var(--green)"},
+    {l:"Zombies",v:timeOver.length,c:timeOver.length?"var(--warning)":"var(--green)"},
     {l:"Resolution SLA Breached",v:slaBreach2.length,c:slaBreach2.length?"var(--danger)":"var(--green)"},
     {l:"Response SLA Breached",v:overdueResp2.length,c:overdueResp2.length?"var(--warning)":"var(--green)"},
   ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${i*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c}">${c.v}</span></div></div>`).join("");
@@ -1980,15 +1980,15 @@ function renderRisk(){
   let html="";
 
   if(priority.length){
-    html+=buildRiskSection("Priority Risks — Time Overrun + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
+    html+=buildRiskSection("High Priority — Zombie + SLA Breach","#ff5c5c",priority.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
       return`<span style="color:#ff5c5c">${tk.overdueH.toFixed(1)}h overdue</span><br><span style="color:#fb9e00">${tk.timeWorked.toFixed(1)}h worked</span>`;
     });
   }
 
   if(timeOver.length){
-    html+=buildRiskSection("Time Overruns (>4h worked)","#a29bfe",timeOver.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
+    html+=buildRiskSection("Zombies","#a29bfe",timeOver.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
       return`<span style="color:#a29bfe">${tk.timeWorked.toFixed(1)}h worked</span>`;
-    });
+    },"Showing > 4h worked");
   }
 
   if(slaBreach2.length){
