@@ -2804,16 +2804,17 @@ const BF={
     const sortedWarriors=[...this.warriors].sort((a,b)=>b.closedCount-a.closedCount);
     const wIdxMap={};sortedWarriors.forEach((w,i)=>{wIdxMap[w.id]=i});
 
-    // Position warriors along ground near front line
-    const wSpacing=95*s;
+    // Position warriors in diagonal "/" grid pattern
+    // Each warrior gets own column, row cycles 0→1→2 creating repeating "/" diagonals
+    const wDiagRows=3;
+    const wSpacing=40*s;
     const wRows=5;
     this.warriors.forEach(w=>{
       const i=wIdxMap[w.id];
-      const col=Math.floor(i/wRows);
-      const row=i%wRows;
-      const stagger=(row%2)*34*s;
-      const targetX=fxAbs-50*s-col*wSpacing-stagger+Math.sin(this.frame*0.02+w.id)*4*s;
-      const targetY=this.groundY-row*5*s;
+      const col=i;
+      const diagRow=wDiagRows-1-(i%wDiagRows); // 2,1,0,2,1,0... = "/" from top-right
+      const targetX=fxAbs-50*s-col*wSpacing+Math.sin(this.frame*0.02+w.id)*4*s;
+      const targetY=this.groundY-diagRow*5*s;
       w.x+=(targetX-w.x)*0.04;
       w.y+=(targetY-w.y)*0.04;
       w.frame++;
@@ -2892,7 +2893,7 @@ const BF={
       });
     }
     // Position commanders directly behind the last column of warriors
-    const wCols=Math.ceil(this.warriors.length/wRows);
+    const wCols=this.warriors.length; // Each warrior has own column in diagonal grid
     const behindWarriorsX=fxAbs-50*s-wCols*wSpacing;
     const cRows=Math.min(wRows,Math.max(2,this.commanders.length));
     const cSpacing=75*s;
