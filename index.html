@@ -2741,7 +2741,7 @@ const BF={
         w.atkTimer=fireRate+Math.floor(Math.random()*15);
         const dh=this.spriteDH;
         const dw=dh*(this.spriteFrameW/this.spriteFrameH);
-        const randLife=15+Math.floor(Math.random()*60);
+        const randLife=40+Math.floor(Math.random()*120);
         if(wpn==="railgun"){
           // Railgun: fast, bright cyan beam, large
           this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.15,vx:10*s,color:"#00E5FF",size:5*s,trail:true,life:randLife,age:0,shape:"beam"});
@@ -2782,7 +2782,13 @@ const BF={
           x:existing?existing.x:battleLeft+40*s,
           y:existing?existing.y:this.groundY,
           frame:existing?existing.frame:Math.floor(Math.random()*200),
-          bobPhase:existing?existing.bobPhase:Math.random()*Math.PI*2
+          bobPhase:existing?existing.bobPhase:Math.random()*Math.PI*2,
+          atkTimer:existing?existing.atkTimer:40+Math.floor(Math.random()*60),
+          attacking:existing?existing.attacking:false,
+          atkFrame:existing?existing.atkFrame:0,
+          weapon:existing?existing.weapon:null,
+          weaponLevel:existing?existing.weaponLevel:undefined,
+          level:existing?existing.level:30
         };
       });
     }
@@ -2796,6 +2802,30 @@ const BF={
       cmd.y+=(targetY-cmd.y)*0.04;
       cmd.frame++;
       cmd.bobPhase+=0.03;
+      // Commander shooting logic (same as warriors)
+      cmd.atkTimer--;
+      if(cmd.atkTimer<=0&&!cmd.attacking){
+        cmd.attacking=true;cmd.atkFrame=0;
+        if(!cmd.weapon){
+          const pool=["railgun","railgun","laser","plasma"];
+          cmd.weapon=pool[Math.floor(Math.random()*pool.length)];
+        }
+        const wpn=cmd.weapon;
+        const fireRate=wpn==="railgun"?25:wpn==="laser"?22:wpn==="plasma"?28:25;
+        cmd.atkTimer=fireRate+Math.floor(Math.random()*15);
+        const dh=this.spriteDH;
+        const dw=dh*(this.spriteFrameW/this.spriteFrameH);
+        const randLife=40+Math.floor(Math.random()*120);
+        if(wpn==="railgun"){
+          this.projectiles.push({x:cmd.x+dw*0.45,y:cmd.y-dh*0.15,vx:10*s,color:"#00E5FF",size:5*s,trail:true,life:randLife,age:0,shape:"beam"});
+        }else if(wpn==="laser"){
+          this.projectiles.push({x:cmd.x+dw*0.45,y:cmd.y-dh*0.17,vx:7*s,color:"#84BD00",size:3.5*s,trail:true,life:randLife,age:0,shape:"beam"});
+          this.projectiles.push({x:cmd.x+dw*0.45,y:cmd.y-dh*0.12,vx:7*s,color:"#84BD00",size:2.5*s,trail:true,life:randLife+5,age:0,shape:"beam"});
+        }else if(wpn==="plasma"){
+          this.projectiles.push({x:cmd.x+dw*0.45,y:cmd.y-dh*0.15,vx:6*s,color:"#fcdc00",size:4*s,trail:true,life:randLife,age:0,shape:"orb"});
+        }
+      }
+      if(cmd.attacking){cmd.atkFrame++;if(cmd.atkFrame>16)cmd.attacking=false}
     });
 
     // Build enemies from active tickets
@@ -3040,6 +3070,17 @@ const BF={
     }else{
       c.fillStyle=tintColor;
       c.fillRect(x-15*s,yy-38*s,30*s,38*s);
+    }
+
+    // Muzzle flash when attacking
+    if(cmd.attacking&&cmd.atkFrame<6){
+      const wpn=cmd.weapon||"railgun";
+      const gunColor=wpn==="railgun"?"#00E5FF":wpn==="laser"?"#84BD00":wpn==="plasma"?"#fcdc00":"#888";
+      const flashSize=(6-cmd.atkFrame)*s*(wpn==="railgun"?2:wpn==="plasma"?1.8:1.5);
+      c.fillStyle=gunColor;
+      c.globalAlpha=0.7;
+      c.beginPath();c.arc(x+dw*0.45,yy-dh*0.15,flashSize,0,Math.PI*2);c.fill();
+      c.globalAlpha=1;
     }
   },
 
