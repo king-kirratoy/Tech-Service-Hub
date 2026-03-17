@@ -106,7 +106,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .dch .ds{font-size:9px;color:var(--text-dim);margin-top:3px;font-family:'IBM Plex Mono',monospace}
 .dch.today .dd{color:var(--green)}
 .dch.today{border-bottom:2px solid var(--green)}
-.tcb{display:flex;position:relative;padding-top:8px}
+.tcb{display:flex;position:relative}
 .tgut{width:70px;flex-shrink:0;position:relative}
 .tl{position:absolute;left:0;width:70px;text-align:right;padding-right:8px;font-size:9px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--text-dim);transform:translateY(-5px)}
 .tl.half{opacity:.4;font-size:8px}
@@ -114,7 +114,8 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .dc{flex:1;min-width:160px;position:relative;border-left:1px solid rgba(0,149,200,0.08)}
 .hl{position:absolute;left:0;right:0;border-top:1px solid rgba(0,149,200,0.1);pointer-events:none}
 .hhl{position:absolute;left:0;right:0;border-top:1px dashed rgba(0,149,200,0.05);pointer-events:none}
-.lunch-block{position:absolute;left:0;right:0;background:repeating-linear-gradient(45deg,rgba(108,108,108,0.06),rgba(108,108,108,0.06) 4px,transparent 4px,transparent 8px);border-top:1px dashed rgba(108,108,108,0.3);border-bottom:1px dashed rgba(108,108,108,0.3);z-index:1;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.lunch-block,.shift-off{position:absolute;left:0;right:0;background:repeating-linear-gradient(45deg,rgba(108,108,108,0.06),rgba(108,108,108,0.06) 4px,transparent 4px,transparent 8px);border-top:1px dashed rgba(108,108,108,0.3);border-bottom:1px dashed rgba(108,108,108,0.3);z-index:1;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.shift-off[style*="top:0"]{border-top:none}
 .lunch-label{font-size:9px;color:var(--gray);font-weight:600;letter-spacing:1px;text-transform:uppercase;opacity:.7}
 /* Ticket card - minimal */
 .tt{position:absolute;left:3px;right:3px;z-index:5;border-radius:5px;border-left:4px solid;cursor:default;font-size:10px;background:rgba(0,40,85,0.88);backdrop-filter:blur(6px);display:flex;flex-direction:column;transition:all .15s;overflow:hidden}
@@ -1168,13 +1169,17 @@ function renderCal(){
   let h=`<div class="tcw"><div class="tch"><div class="tg"></div>`;
   days.forEach((day,di)=>{const tks=dtm[di],th=tks.reduce((s,t)=>s+t.est,0),td=isT(day);h+=`<div class="dch ${td?"today":""}"><div class="dn">${fDS(day)}</div><div class="dd">${fD(day)}</div><div class="ds">${tks.length} tix · ${th.toFixed(1)}h</div></div>`});
   h+=`</div><div class="tcb"><div class="tgut" style="height:${gh}px">`;
-  for(let hr=SH;hr<EH;hr+=.5)h+=`<div class="tl${hr===Math.floor(hr)?"":" half"}" style="top:${hY(hr)}px">${hT(hr)}</div>`;
+  for(let hr=SH+.5;hr<EH;hr+=.5)h+=`<div class="tl${hr===Math.floor(hr)?"":" half"}" style="top:${hY(hr)}px">${hT(hr)}</div>`;
   h+=`</div><div class="dcw">`;
   for(let hr=SH;hr<=EH;hr++){h+=`<div class="hl" style="top:${hY(hr)}px"></div>`;if(hr<EH){h+=`<div class="hhl" style="top:${hY(hr+.25)}px"></div>`;h+=`<div class="hhl" style="top:${hY(hr+.5)}px"></div>`;h+=`<div class="hhl" style="top:${hY(hr+.75)}px"></div>`}}
   days.forEach((day,di)=>{
     const tks=dtm[di];
     h+=`<div class="dc" data-d="${di}" style="height:${gh}px">`;
-    h+=`<div class="lunch-block" style="top:${hY(sc.ls)}px;height:${(sc.le-sc.ls)*HH}px"><span class="lunch-label">Lunch</span></div>`;
+    if(selTech!==0){
+      if(sc.ss>SH)h+=`<div class="shift-off" style="top:0;height:${hY(sc.ss)}px"></div>`;
+      h+=`<div class="lunch-block" style="top:${hY(sc.ls)}px;height:${(sc.le-sc.ls)*HH}px"><span class="lunch-label">Lunch</span></div>`;
+      if(sc.se<EH)h+=`<div class="shift-off" style="top:${hY(sc.se)}px;height:${(EH-sc.se)*HH}px"></div>`;
+    }
     if(isT(day)){const n=new Date(),nh=n.getHours()+n.getMinutes()/60;if(nh>=SH&&nh<=EH)h+=`<div class="now-line" style="top:${hY(nh)}px"></div>`}
     tks.forEach(tk=>{
       const top=hY(tk.startHour),ht=tk.est*HH;
