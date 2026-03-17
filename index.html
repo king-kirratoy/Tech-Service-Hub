@@ -2813,7 +2813,7 @@ const BF={
       const row=i%wRows;
       const stagger=(row%2)*34*s;
       const targetX=fxAbs-50*s-col*wSpacing-stagger+Math.sin(this.frame*0.02+w.id)*4*s;
-      const targetY=this.groundY-row*22*s;
+      const targetY=this.groundY-row*5*s;
       w.x+=(targetX-w.x)*0.04;
       w.y+=(targetY-w.y)*0.04;
       w.frame++;
@@ -2901,7 +2901,7 @@ const BF={
       const row=i%cRows;
       const stagger=(row%2)*28*s;
       const targetX=behindWarriorsX-col*cSpacing-stagger+Math.sin(this.frame*0.02+cmd.id)*4*s;
-      const targetY=this.groundY-row*22*s;
+      const targetY=this.groundY-row*5*s;
       cmd.x+=(targetX-cmd.x)*0.04;
       cmd.y+=(targetY-cmd.y)*0.04;
       cmd.frame++;
