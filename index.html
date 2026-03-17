@@ -396,28 +396,28 @@ let loggedInAgent=null;
 // ═══════════ SUPABASE ═══════════
 const SUPA_URL="https://sqkqczkxjeutxcirbsgv.supabase.co";
 const SUPA_KEY="sb_publishable_OKjtHa6csB206hHGBaNa1g_LZrYXtvo";
-const supabase=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
 async function supaLogin(password){
-  const{data,error}=await supabase.from("agent_logins").select("agent_name,role").eq("password",password).maybeSingle();
+  const{data,error}=await sb.from("agent_logins").select("agent_name,role").eq("password",password).maybeSingle();
   if(error){console.error("Supabase login error:",error);return null}
   return data; // {agent_name, role} or null
 }
 
 async function loadRobotConfig(agentName){
-  const{data,error}=await supabase.from("agent_robots").select("*").eq("agent_name",agentName).maybeSingle();
+  const{data,error}=await sb.from("agent_robots").select("*").eq("agent_name",agentName).maybeSingle();
   if(error){console.error("Supabase robot load error:",error);return null}
   return data;
 }
 
 async function saveRobotConfig(agentName,config){
-  const{error}=await supabase.from("agent_robots").upsert({agent_name:agentName,...config},{onConflict:"agent_name"});
+  const{error}=await sb.from("agent_robots").upsert({agent_name:agentName,...config},{onConflict:"agent_name"});
   if(error){console.error("Supabase robot save error:",error);return false}
   return true;
 }
 
 async function loadAllRobots(){
-  const{data,error}=await supabase.from("agent_robots").select("*");
+  const{data,error}=await sb.from("agent_robots").select("*");
   if(error){console.error("Supabase robots load error:",error);return[]}
   return data||[];
 }
