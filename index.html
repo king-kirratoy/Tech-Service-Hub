@@ -2804,15 +2804,14 @@ const BF={
     const sortedWarriors=[...this.warriors].sort((a,b)=>b.closedCount-a.closedCount);
     const wIdxMap={};sortedWarriors.forEach((w,i)=>{wIdxMap[w.id]=i});
 
-    // Position warriors in diagonal "/" grid pattern
-    // Each warrior gets own column, row cycles 0→1→2 creating repeating "/" diagonals
-    const wDiagRows=3;
+    // Position warriors in zigzag pattern: col0=[row0,row2], col1=[row1], col2=[row0,row2], ...
     const wSpacing=40*s;
     const wRows=5;
     this.warriors.forEach(w=>{
       const i=wIdxMap[w.id];
-      const col=i;
-      const diagRow=wDiagRows-1-(i%wDiagRows); // 2,1,0,2,1,0... = "/" from top-right
+      const grp=Math.floor(i/3);const pos=i%3;
+      const col=pos<2?grp*2:grp*2+1; // pos 0,1 share a column; pos 2 gets next column
+      const diagRow=pos===0?2:pos===1?0:1; // top, bottom, middle
       const targetX=fxAbs-50*s-col*wSpacing+Math.sin(this.frame*0.02+w.id)*4*s;
       const targetY=this.groundY-diagRow*5*s;
       w.x+=(targetX-w.x)*0.04;
@@ -2893,13 +2892,13 @@ const BF={
       });
     }
     // Position commanders directly behind the last column of warriors
-    const wCols=this.warriors.length; // Each warrior has own column in diagonal grid
+    const wCols=Math.ceil(this.warriors.length/3)*2; // zigzag: 3 warriors per 2 columns
     const behindWarriorsX=fxAbs-50*s-wCols*wSpacing;
-    const cDiagRows=3;
     const cSpacing=40*s;
     this.commanders.forEach((cmd,i)=>{
-      const col=i;
-      const diagRow=cDiagRows-1-(i%cDiagRows); // 2,1,0,2,1,0... = "/" diagonal
+      const grp=Math.floor(i/3);const pos=i%3;
+      const col=pos<2?grp*2:grp*2+1;
+      const diagRow=pos===0?2:pos===1?0:1;
       const targetX=behindWarriorsX-col*cSpacing+Math.sin(this.frame*0.02+cmd.id)*4*s;
       const targetY=this.groundY-diagRow*5*s;
       cmd.x+=(targetX-cmd.x)*0.04;
@@ -3009,8 +3008,9 @@ const BF={
       return aNrd-bNrd;
     });
     eSorted.forEach((e,i)=>{
-      const col=i;
-      const diagRow=i%eDiagRows; // 0,1,2,0,1,2... = "\" from top-left
+      const grp=Math.floor(i/3);const pos=i%3;
+      const col=pos<2?grp*2:grp*2+1;
+      const diagRow=pos===0?0:pos===1?2:1; // bottom, top, middle = "\" zigzag
       const targetX=fxAbs+30*s+col*eSpacing+Math.sin(this.frame*0.025+i*0.7)*5*s;
       const targetY=this.groundY-diagRow*2*s;
       e.x+=(targetX-e.x)*0.03;
