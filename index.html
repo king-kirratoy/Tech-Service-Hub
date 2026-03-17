@@ -320,34 +320,39 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     </div>
     <!-- Robot Customizer (visible when agent is logged in) -->
     <div id="robotCustomizer" class="hidden" style="margin-bottom:22px">
-      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Your Tech Robot</h3>
-      <div class="glass" style="display:flex;gap:24px;padding:20px;flex-wrap:wrap;align-items:flex-start">
-        <div style="flex-shrink:0">
-          <canvas id="robotPreview" width="160" height="200" style="image-rendering:pixelated;border:1px solid var(--border);border-radius:8px;background:rgba(0,15,35,0.8)"></canvas>
-        </div>
-        <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:12px">
-          <div>
-            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Robot Name</label>
-            <input type="text" id="robotName" placeholder="Name your robot..." maxlength="20" style="background:rgba(0,20,40,0.8);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;width:100%;font-family:var(--font-body)">
+      <button id="robotCustomizeToggle" class="btn" style="margin-bottom:12px;gap:8px"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg> Customize Your Robot</button>
+      <div id="robotCustomizerPanel" class="hidden" style="margin-bottom:14px">
+        <div class="glass" style="display:flex;gap:24px;padding:20px;flex-wrap:wrap;align-items:flex-start">
+          <div style="flex-shrink:0">
+            <canvas id="robotPreview" width="160" height="200" style="image-rendering:pixelated;border:1px solid var(--border);border-radius:8px;background:rgba(0,15,35,0.8)"></canvas>
           </div>
-          <div>
-            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Body Color</label>
-            <div id="robotColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Robot Name</label>
+              <input type="text" id="robotName" placeholder="Name your robot..." maxlength="20" style="background:rgba(0,20,40,0.8);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;width:100%;font-family:var(--font-body)">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Body Color</label>
+              <div id="robotColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Eye Style</label>
+              <div id="robotEyePicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Antenna</label>
+              <div id="robotAntennaPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Accessory</label>
+              <div id="robotAccessoryPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+              <button class="btn-accent" id="robotSaveBtn" style="padding:8px 16px;font-size:11px;width:fit-content">Save Robot</button>
+              <button class="btn" id="robotCloseBtn" style="padding:8px 16px;font-size:11px">Close</button>
+            </div>
+            <span id="robotSaveStatus" style="font-size:10px;color:var(--text-muted)"></span>
           </div>
-          <div>
-            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Eye Style</label>
-            <div id="robotEyePicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Antenna</label>
-            <div id="robotAntennaPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Accessory</label>
-            <div id="robotAccessoryPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          </div>
-          <button class="btn-accent" id="robotSaveBtn" style="padding:8px 16px;font-size:11px;margin-top:4px;width:fit-content">Save Robot</button>
-          <span id="robotSaveStatus" style="font-size:10px;color:var(--text-muted)"></span>
         </div>
       </div>
     </div>
@@ -420,6 +425,12 @@ async function loadAllRobots(){
   const{data,error}=await sb.from("agent_robots").select("*");
   if(error){console.error("Supabase robots load error:",error);return[]}
   return data||[];
+}
+
+async function loadAdminAgents(){
+  const{data,error}=await sb.from("agent_logins").select("agent_name").eq("role","admin");
+  if(error){console.error("Supabase admin load error:",error);return[]}
+  return(data||[]).map(r=>r.agent_name).filter(Boolean);
 }
 
 // ═══════════ OVERRIDE PERSISTENCE ═══════════
@@ -1329,7 +1340,11 @@ function renderPlayerCards(){
   // Sort by HP ascending (most overwhelmed first)
   cards.sort((a,b)=>a.hp-b.hp);
 
-  grid.innerHTML=cards.map(c=>`
+  grid.innerHTML=cards.map(c=>{
+    const canvasId="pcardRobot_"+c.tech.name.replace(/\s+/g,"_");
+    const rCfg=getRobotConfigForAgent(c.tech.name);
+    const rName=rCfg.robot_name||"Default Bot";
+    return`
     <div class="pcard">
       <div class="pcard-header">
         <div>
@@ -1346,8 +1361,24 @@ function renderPlayerCards(){
       <div class="pcard-bar-wrap">
         <div class="pcard-bar" style="width:${c.xpInLevel}%;background:linear-gradient(90deg,rgba(0,149,200,0.6),#0095C8)"></div>
       </div>
-    </div>
-  `).join("");
+      <div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <canvas id="${canvasId}" width="80" height="100" style="image-rendering:pixelated"></canvas>
+        <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:2px">${rName}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Render robot previews on player cards
+  requestAnimationFrame(()=>{
+    cards.forEach(c=>{
+      const canvasId="pcardRobot_"+c.tech.name.replace(/\s+/g,"_");
+      const cvs=document.getElementById(canvasId);
+      if(!cvs)return;
+      const ctx=cvs.getContext("2d");
+      const rCfg=getRobotConfigForAgent(c.tech.name);
+      drawRobot(ctx,cvs.width,cvs.height,rCfg,2.5);
+    });
+  });
 }
 
 // ═══════════ UNASSIGNED TICKET RECOMMENDATIONS ═══════════
@@ -2340,6 +2371,17 @@ const ROBOT_ACCESSORIES=[
 
 let currentRobot={color:"blue",eyes:"visor",antenna:"spike",accessory:"none",robot_name:""};
 
+// Global cache of all robot configs (loaded from Supabase)
+let allRobotConfigs=[];
+let adminAgentNames=[];
+const DEFAULT_ROBOT={color:"blue",eyes:"visor",antenna:"none",accessory:"none",robot_name:""};
+
+function getRobotConfigForAgent(agentName){
+  const r=allRobotConfigs.find(x=>x.agent_name===agentName);
+  if(r)return{color:r.body_color||"blue",eyes:r.eye_style||"visor",antenna:r.antenna||"none",accessory:r.accessory||"none",robot_name:r.robot_name||""};
+  return{...DEFAULT_ROBOT};
+}
+
 function drawRobot(ctx,w,h,config,scale){
   const s=scale||4;
   ctx.clearRect(0,0,w,h);
@@ -2489,9 +2531,27 @@ function initRobotCustomizer(){
       antenna:currentRobot.antenna,
       accessory:currentRobot.accessory
     });
-    if(ok){st.textContent="Saved!";st.style.color="var(--green)";loadRobotGallery()}
+    if(ok){
+      st.textContent="Saved!";st.style.color="var(--green)";
+      loadRobotGallery();
+      // Refresh cached robot configs for battlefield and player cards
+      allRobotConfigs=await loadAllRobots();
+      renderPlayerCards();
+    }
     else{st.textContent="Save failed";st.style.color="var(--danger)"}
     setTimeout(()=>{st.textContent=""},3000);
+  });
+
+  // Toggle customizer panel
+  document.getElementById("robotCustomizeToggle").addEventListener("click",()=>{
+    const panel=document.getElementById("robotCustomizerPanel");
+    const btn=document.getElementById("robotCustomizeToggle");
+    panel.classList.toggle("hidden");
+    btn.textContent=panel.classList.contains("hidden")?"Customize Your Robot":"Hide Customizer";
+  });
+  document.getElementById("robotCloseBtn").addEventListener("click",()=>{
+    document.getElementById("robotCustomizerPanel").classList.add("hidden");
+    document.getElementById("robotCustomizeToggle").textContent="Customize Your Robot";
   });
 
   updateRobotPreview();
@@ -2553,13 +2613,17 @@ async function loadRobotGallery(){
   });
 }
 
-// Load gallery on page load
-setTimeout(loadRobotGallery,1000);
+// Load gallery, robot configs, and admin list on page load
+setTimeout(async()=>{
+  allRobotConfigs=await loadAllRobots();
+  adminAgentNames=await loadAdminAgents();
+  loadRobotGallery();
+},1000);
 
 
 // ═══════════ BATTLEFIELD ENGINE ═══════════
 const BF={
-  canvas:null,ctx:null,W:0,H:160,scale:2,warriors:[],enemies:[],projectiles:[],grenades:[],floatingTexts:[],airStrikes:[],frontLine:0.5,
+  canvas:null,ctx:null,W:0,H:160,scale:2,warriors:[],commanders:[],enemies:[],projectiles:[],grenades:[],floatingTexts:[],airStrikes:[],frontLine:0.5,
   targetFront:0.5,frame:0,running:false,muted:true,hoveredEntity:null,
   lastHourClosedCount:0,lastHourCheckTime:0,
   prevWarriorState:{}, // Cache warrior positions across refreshes
@@ -2694,8 +2758,11 @@ const BF={
       this.warriors=roster.map((t,i)=>{
         const cached=this.prevWarriorState[t.name];
         const existing=oldWarriors.find(w=>w.name===t.name);
+        const rCfg=getRobotConfigForAgent(t.name);
+        const rColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
+        const wColor=rColorObj?rColorObj.hex:this.WCOLORS[i%this.WCOLORS.length];
         return{
-          id:t.id,name:t.name,color:this.WCOLORS[i%this.WCOLORS.length],
+          id:t.id,name:t.name,color:wColor,
           level:0,hp:100,
           x:cached?cached.x:existing?existing.x:fxAbs-80*s,
           y:cached?cached.y:existing?existing.y:this.groundY,
@@ -2800,6 +2867,34 @@ const BF={
       if(w.attacking){w.atkFrame++;if(w.atkFrame>16)w.attacking=false}
       // Cache position and weapon
       this.prevWarriorState[w.name]={x:w.x,y:w.y,weapon:w.weapon,weaponLevel:w.weaponLevel,prevLevel:w.prevLevel};
+    });
+
+    // Build/update commanders (admin agents — positioned far left, behind warriors)
+    const adminNames=adminAgentNames.filter(n=>!roster.some(r=>r.name===n));
+    if(this.commanders.length!==adminNames.length){
+      const oldCmds=this.commanders;
+      this.commanders=adminNames.map((name,i)=>{
+        const existing=oldCmds.find(c2=>c2.name===name);
+        const rCfg=getRobotConfigForAgent(name);
+        const rColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
+        const cmdColor=rColorObj?rColorObj.hex:"#FFD700";
+        return{
+          id:-100-i,name,color:cmdColor,isCommander:true,
+          x:existing?existing.x:battleLeft+40*s,
+          y:existing?existing.y:this.groundY,
+          frame:existing?existing.frame:Math.floor(Math.random()*200),
+          bobPhase:existing?existing.bobPhase:Math.random()*Math.PI*2
+        };
+      });
+    }
+    // Position commanders at far left, staggered
+    this.commanders.forEach((cmd,i)=>{
+      const targetX=battleLeft+60*s+i*50*s;
+      const targetY=this.groundY-i*4*s;
+      cmd.x+=(targetX-cmd.x)*0.04;
+      cmd.y+=(targetY-cmd.y)*0.04;
+      cmd.frame++;
+      cmd.bobPhase+=0.03;
     });
 
     // Build enemies from active tickets
@@ -2982,18 +3077,26 @@ const BF={
     const frameIdx=Math.floor(w.frame/18)%this.spriteFrames;
     const sx=frameIdx*this.spriteFrameW;
 
+    // Get robot config for this agent — use body color for tinting
+    const rCfg=getRobotConfigForAgent(w.name);
+    const robotColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
+    const tintColor=robotColorObj?robotColorObj.hex:w.color;
+
     // Shadow on ground
     c.fillStyle="rgba(0,0,0,0.25)";
     c.beginPath();c.ellipse(x,y+10*s,dw*0.35,4*s,0,0,Math.PI*2);c.fill();
     // Character occupies roughly y 111-258 of 369px frame, so bottom 30% is empty
     const groundOffset=dh*0.38;
-    const tinted=this.spriteLoaded?this.getTintedSprite(w.color):null;
+    const tinted=this.spriteLoaded?this.getTintedSprite(tintColor):null;
     if(tinted){
       c.drawImage(tinted,sx,0,this.spriteFrameW,this.spriteFrameH,x-dw/2,yy-dh+groundOffset,dw,dh);
     }else{
-      c.fillStyle=w.color;
+      c.fillStyle=tintColor;
       c.fillRect(x-12*s,yy-30*s,24*s,30*s);
     }
+
+    // Overlay pixel art accessories from robot config
+    this.drawWarriorAccessories(c,x,yy,dw,dh,groundOffset,s,rCfg);
 
     // Hover detected via hitbox only, no visual indicator
 
@@ -3009,6 +3112,136 @@ const BF={
     }
 
     // HP bar removed - shown on player cards instead
+  },
+
+  // Draw pixel art overlays (eyes, antenna, accessory) on top of base warrior sprite
+  drawWarriorAccessories(c,x,yy,dw,dh,groundOffset,s,rCfg){
+    // Anchor points relative to sprite center and ground
+    // Head center is approximately at 30% from top of character art area
+    const headY=yy-dh*0.62+groundOffset; // vertical center of head
+    const bodyY=yy-dh*0.42+groundOffset; // vertical center of torso
+    const ps=s*1.2; // pixel scale for accessories
+
+    function px(px2,py,color){c.fillStyle=color;c.fillRect(px2,py,ps,ps)}
+    function rect(rx,ry,rw,rh,color){c.fillStyle=color;c.fillRect(rx,ry,rw*ps,rh*ps)}
+
+    // Get body color for shading
+    const robotColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
+    const hex=robotColorObj?robotColorObj.hex:"#0095C8";
+    const light=shadeColor(hex,40);
+
+    // --- Antenna (above head) ---
+    if(rCfg.antenna==="spike"){
+      rect(x-ps*0.5,headY-7*ps,1,3,light);
+      px(x-ps*0.5,headY-8*ps,"#fff");
+    }else if(rCfg.antenna==="dish"){
+      rect(x-ps*0.5,headY-6*ps,1,2,light);
+      rect(x-2.5*ps,headY-7*ps,5,1,hex);
+      rect(x-1.5*ps,headY-8*ps,3,1,light);
+    }else if(rCfg.antenna==="dual"){
+      rect(x-3*ps,headY-6*ps,1,2,light);
+      px(x-3*ps,headY-7*ps,"#fff");
+      rect(x+2*ps,headY-6*ps,1,2,light);
+      px(x+2*ps,headY-7*ps,"#fff");
+    }
+
+    // --- Eye overlays (on face area) ---
+    const eyeY=headY+ps*0.5;
+    if(rCfg.eyes==="visor"){
+      rect(x-3*ps,eyeY-ps,6,2,"rgba(0,229,255,0.5)");
+      rect(x-2*ps,eyeY-ps,1,1,"#00E5FF");
+      rect(x+1*ps,eyeY-ps,1,1,"#00E5FF");
+      // Visor glow
+      c.globalAlpha=0.3;
+      rect(x-2*ps,eyeY+ps,4,1,"#00E5FF");
+      c.globalAlpha=1;
+    }else if(rCfg.eyes==="round"){
+      c.globalAlpha=0.9;
+      rect(x-2.5*ps,eyeY-ps,2,2,"#fff");
+      rect(x+0.5*ps,eyeY-ps,2,2,"#fff");
+      c.globalAlpha=1;
+    }else if(rCfg.eyes==="angry"){
+      rect(x-2.5*ps,eyeY-ps,2,1,"#ff5c5c");
+      rect(x+0.5*ps,eyeY-ps,2,1,"#ff5c5c");
+      // Angry brow lines
+      c.globalAlpha=0.7;
+      rect(x-3*ps,eyeY-2*ps,2,1,light);
+      rect(x+1*ps,eyeY-2*ps,2,1,light);
+      c.globalAlpha=1;
+    }else if(rCfg.eyes==="cyclops"){
+      rect(x-1.5*ps,eyeY-1.5*ps,3,3,"rgba(0,0,0,0.5)");
+      rect(x-0.5*ps,eyeY-0.5*ps,1,1,"#ff5c5c");
+      c.globalAlpha=0.4;
+      px(x-0.5*ps,eyeY-1.5*ps,"#ff5c5c");
+      c.globalAlpha=1;
+    }
+
+    // --- Accessory (shield/sword/wrench on sides) ---
+    const accY=bodyY;
+    if(rCfg.accessory==="shield"){
+      rect(x-dw*0.38,accY-3*ps,2,5,"#fcdc00");
+      rect(x-dw*0.38-ps,accY-2*ps,1,3,"#fb9e00");
+      px(x-dw*0.38+ps,accY-ps,"#fff");
+    }else if(rCfg.accessory==="sword"){
+      rect(x+dw*0.32,accY-5*ps,1,6,"#ccc");
+      px(x+dw*0.32,accY-6*ps,"#fff");
+      rect(x+dw*0.32-ps,accY+ps,3,1,"#fb9e00");
+    }else if(rCfg.accessory==="wrench"){
+      rect(x+dw*0.32,accY-4*ps,1,5,"#8aa4c4");
+      rect(x+dw*0.32-ps,accY-5*ps,3,1,"#8aa4c4");
+      px(x+dw*0.32-ps,accY-4*ps,"#8aa4c4");
+      px(x+dw*0.32+ps,accY-4*ps,"#8aa4c4");
+    }
+  },
+
+  drawCommander(x,y,cmd){
+    const c=this.ctx,s=this.scale;
+    const bob=Math.sin(cmd.bobPhase)*2*s;
+    const yy=y+bob;
+
+    // Commander sprite is 25% larger than regular warriors
+    const scale=1.25;
+    const dh=this.spriteDH*scale;
+    const dw=dh*(this.spriteFrameW/this.spriteFrameH);
+    const frameIdx=Math.floor(cmd.frame/18)%this.spriteFrames;
+    const sx=frameIdx*this.spriteFrameW;
+
+    const rCfg=getRobotConfigForAgent(cmd.name);
+    const robotColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
+    const tintColor=robotColorObj?robotColorObj.hex:cmd.color;
+
+    // Shadow
+    c.fillStyle="rgba(0,0,0,0.3)";
+    c.beginPath();c.ellipse(x,y+10*s,dw*0.35,5*s,0,0,Math.PI*2);c.fill();
+
+    const groundOffset=dh*0.38;
+    const tinted=this.spriteLoaded?this.getTintedSprite(tintColor):null;
+    if(tinted){
+      c.drawImage(tinted,sx,0,this.spriteFrameW,this.spriteFrameH,x-dw/2,yy-dh+groundOffset,dw,dh);
+    }else{
+      c.fillStyle=tintColor;
+      c.fillRect(x-15*s,yy-38*s,30*s,38*s);
+    }
+
+    // Draw accessories (slightly larger pixel scale for commander)
+    this.drawWarriorAccessories(c,x,yy,dw,dh,groundOffset,s*scale,rCfg);
+
+    // Commander star badge above head
+    const starY=yy-dh*0.68+groundOffset;
+    c.fillStyle="#FFD700";
+    c.globalAlpha=0.7+Math.sin(cmd.bobPhase*2)*0.3;
+    c.beginPath();
+    const starX=x;const starR=4*s;
+    for(let i=0;i<5;i++){
+      const ang=i*Math.PI*2/5-Math.PI/2;
+      const ox=starX+Math.cos(ang)*starR;
+      const oy=starY+Math.sin(ang)*starR;
+      if(i===0)c.moveTo(ox,oy);else c.lineTo(ox,oy);
+      const innerAng=ang+Math.PI/5;
+      c.lineTo(starX+Math.cos(innerAng)*starR*0.4,starY+Math.sin(innerAng)*starR*0.4);
+    }
+    c.closePath();c.fill();
+    c.globalAlpha=1;
   },
 
   drawEnemy(x,y,e){
@@ -3182,11 +3415,21 @@ const BF={
     const tooltip=document.getElementById("battleTooltip");
     let found=null;
     const s=this.scale;
-    for(const w of this.warriors){
-      const dh=this.spriteDH;
-      const dw=dh*(this.spriteFrameW/this.spriteFrameH);
-      if(mx>=w.x-dw/2&&mx<=w.x+dw/2&&my>=w.y-dh*0.42&&my<=w.y+4*s){
-        found={type:"warrior",id:w.id,entity:w};break;
+    // Check commanders first (larger hitbox)
+    for(const cmd of this.commanders){
+      const cdh=this.spriteDH*1.25;
+      const cdw=cdh*(this.spriteFrameW/this.spriteFrameH);
+      if(mx>=cmd.x-cdw/2&&mx<=cmd.x+cdw/2&&my>=cmd.y-cdh*0.42&&my<=cmd.y+4*s){
+        found={type:"commander",id:cmd.id,entity:cmd};break;
+      }
+    }
+    if(!found){
+      for(const w of this.warriors){
+        const dh=this.spriteDH;
+        const dw=dh*(this.spriteFrameW/this.spriteFrameH);
+        if(mx>=w.x-dw/2&&mx<=w.x+dw/2&&my>=w.y-dh*0.42&&my<=w.y+4*s){
+          found={type:"warrior",id:w.id,entity:w};break;
+        }
       }
     }
     if(!found){
@@ -3209,7 +3452,11 @@ const BF={
     this.hoveredEntity=found;
     if(found){
       let html="";
-      if(found.type==="warrior"){
+      if(found.type==="commander"){
+        const cmd=found.entity;
+        html=`<div style="font-weight:700;font-size:12px;margin-bottom:4px;color:${cmd.color}">${cmd.name}</div>`;
+        html+=`<div style="font-size:10px;color:#FFD700;font-weight:700;letter-spacing:1px;text-transform:uppercase">Commander</div>`;
+      }else if(found.type==="warrior"){
         const w=found.entity;
         const tt=actTix.filter(x=>x.assignedTo===w.id);
         let rank;
@@ -3243,11 +3490,16 @@ const BF={
     if(!this.ctx)return;
     const c=this.ctx,s=this.scale;
     this.drawBackground();
-    // Draw entities sorted by y for depth
-    const all=[...this.enemies.map(e=>({type:"e",e,y:e.y})),...this.warriors.map(w=>({type:"w",w,y:w.y}))];
+    // Draw entities sorted by y for depth (commanders, warriors, enemies)
+    const all=[
+      ...this.enemies.map(e=>({type:"e",e,y:e.y})),
+      ...this.warriors.map(w=>({type:"w",w,y:w.y})),
+      ...this.commanders.map(cmd=>({type:"cmd",cmd,y:cmd.y}))
+    ];
     all.sort((a,b)=>a.y-b.y);
     all.forEach(item=>{
       if(item.type==="w")this.drawWarrior(item.w.x,item.w.y,item.w);
+      else if(item.type==="cmd")this.drawCommander(item.cmd.x,item.cmd.y,item.cmd);
       else this.drawEnemy(item.e.x,item.e.y,item.e);
     });
     // Draw projectiles on top
@@ -3423,7 +3675,7 @@ const BF={
     if(roster.length&&actTix.length){
       section.classList.remove("hidden");
       if(!this.canvas)this.init();
-      else{this.resize();this.warriors=[]}// Rebuild warriors but positions cached
+      else{this.resize();this.warriors=[];this.commanders=[]}// Rebuild warriors/commanders but positions cached
     }else{section.classList.add("hidden")}
   }
 };
