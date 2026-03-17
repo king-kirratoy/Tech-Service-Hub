@@ -1852,16 +1852,18 @@ function renderTeamAll(){
     visibleAgents=agents.filter(a=>a.name===loggedInAgent);
   }
   const visCols=new Set(hd.map(c=>c.key));
-  // Weekly color thresholds only apply on Friday; other days use daily thresholds even for "This Week"
+  // Weekly color thresholds only apply on Friday; Mon-Thu "This Week" shows neutral color
   const isFriday=today.getDay()===5;
   const useWeeklyColors=agentTimeFilter==="week"&&isFriday;
+  const weekNeutral=agentTimeFilter==="week"&&!isFriday;
   visibleAgents.forEach(a=>{
     h+=`<tr>`;
     if(visCols.has("name"))h+=`<td>${a.name}</td>`;
     // Tickets Closed with color logic based on toggle
     if(visCols.has("total")){
-      let closedColor="";
-      if(!useWeeklyColors){
+      let closedColor="color:#8aa4c4";
+      if(weekNeutral){/* neutral for all values Mon-Thu */}
+      else if(agentTimeFilter==="today"){
         if(a.total===0)closedColor="color:#8aa4c4";
         else if(a.total>=11)closedColor="color:#00E5FF";
         else if(a.total>=8)closedColor="color:#84BD00";
@@ -1878,8 +1880,9 @@ function renderTeamAll(){
     }
     // Tickets Assigned with color logic based on toggle
     if(visCols.has("assigned")){
-      let assignedColor="";
-      if(!useWeeklyColors){
+      let assignedColor="color:#8aa4c4";
+      if(weekNeutral){/* neutral */}
+      else if(agentTimeFilter==="today"){
         if(a.assigned===0)assignedColor="color:#8aa4c4";
         else if(a.assigned>=16)assignedColor="color:#fb9e00";
         else if(a.assigned>=8)assignedColor="color:#fcdc00";
@@ -1894,8 +1897,9 @@ function renderTeamAll(){
     }
     // Email/Web color logic
     if(visCols.has("emailWeb")){
-      let ewColor="";
-      if(!useWeeklyColors){
+      let ewColor="color:#8aa4c4";
+      if(weekNeutral){/* neutral */}
+      else if(agentTimeFilter==="today"){
         if(a.emailWeb===0)ewColor="color:#8aa4c4";
         else if(a.emailWeb>=16)ewColor="color:#fb9e00";
         else if(a.emailWeb>=8)ewColor="color:#fcdc00";
@@ -1910,8 +1914,9 @@ function renderTeamAll(){
     }
     // Phone/Manual color logic
     if(visCols.has("phoneManual")){
-      let pmColor="";
-      if(!useWeeklyColors){
+      let pmColor="color:#8aa4c4";
+      if(weekNeutral){/* neutral */}
+      else if(agentTimeFilter==="today"){
         if(a.phoneManual===0)pmColor="color:#8aa4c4";
         else if(a.phoneManual>=16)pmColor="color:#fb9e00";
         else if(a.phoneManual>=8)pmColor="color:#fcdc00";
@@ -2732,12 +2737,12 @@ const BF={
     const closedWeek=closedTix.length;
     const assignedWeek=actTix.filter(t=>t.dateCreated&&weekDays.some(wd=>isSD(wd,t.dateCreated))).length+closedWeek;
     const diff=closedWeek-assignedWeek;
-    // 0.5 pixels per ticket difference from center, clamped to prevent runoff
+    // 1 pixel per ticket difference from center, clamped to prevent runoff
     const battleLeft=this.contentLeft;
     const battleRight=this.contentRight;
     const battleW=battleRight-battleLeft;
     const centerX=battleLeft+battleW*0.5;
-    const rawOffset=diff*0.5*s;
+    const rawOffset=diff*1*s;
     const maxOffset=battleW*0.2;
     const clampedOffset=Math.max(-maxOffset,Math.min(maxOffset,rawOffset));
     const targetFxAbs=centerX+clampedOffset;
@@ -2808,7 +2813,7 @@ const BF={
       const row=i%wRows;
       const stagger=(row%2)*34*s;
       const targetX=fxAbs-50*s-col*wSpacing-stagger+Math.sin(this.frame*0.02+w.id)*4*s;
-      const targetY=this.groundY-row*5*s;
+      const targetY=this.groundY-row*22*s;
       w.x+=(targetX-w.x)*0.04;
       w.y+=(targetY-w.y)*0.04;
       w.frame++;
@@ -2896,7 +2901,7 @@ const BF={
       const row=i%cRows;
       const stagger=(row%2)*28*s;
       const targetX=behindWarriorsX-col*cSpacing-stagger+Math.sin(this.frame*0.02+cmd.id)*4*s;
-      const targetY=this.groundY-row*5*s;
+      const targetY=this.groundY-row*22*s;
       cmd.x+=(targetX-cmd.x)*0.04;
       cmd.y+=(targetY-cmd.y)*0.04;
       cmd.frame++;
