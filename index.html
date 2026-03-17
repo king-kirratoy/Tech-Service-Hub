@@ -249,7 +249,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div style="display:flex;align-items:center;gap:14px">
     <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace">Connecting...</span>
     <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
-    <button class="btn" id="adminBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> Admin</button>
+    <button class="btn" id="adminBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> Login</button>
     <button class="btn" id="apiKeyBtn"><svg style="width:14px;height:14px"><use href="#is"/></svg> API Key</button>
   </div>
 </div>
@@ -262,7 +262,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 </div>
 <div class="container">
   <div class="glass api-key-bar hidden" id="apiKeyPanel"><label>API Key</label><input type="password" id="apiK" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"><span class="ks missing" id="ksT">Not set</span></div>
-  <div class="glass api-key-bar hidden" id="adminPanel"><label>Admin Password</label><input type="password" id="adminPwd" placeholder="Enter admin password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Agent View</span></div>
+  <div class="glass api-key-bar hidden" id="adminPanel"><label>Password</label><input type="password" id="adminPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Not logged in</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Team Workload</button>
     <button class="tab" data-tab="kpi"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Team Stats</button>
@@ -336,7 +336,35 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 let histRaw=[],actRaw=[],kpiM=[],catStats={},clientCatStats={},clientKPI={},actTix=[],closedTix=[],roster=[];
 let selTech=null,calV="week",calD=new Date(),charts={};
 let isAdmin=false;
-const ADMIN_PWD="LutzAdmin2025";
+let loggedInAgent=null;
+const ADMIN_PWD="TicketSlayer9000";
+const AGENT_CREDENTIALS={
+  "Agent 1":"phoenix-blaze-01",
+  "Agent 2":"thunder-byte-02",
+  "Agent 3":"pixel-storm-03",
+  "Agent 4":"cyber-wolf-04",
+  "Agent 5":"neon-hawk-05",
+  "Agent 6":"iron-pulse-06",
+  "Agent 7":"turbo-spark-07",
+  "Agent 8":"frost-byte-08",
+  "Agent 9":"shadow-ping-09",
+  "Agent 10":"mega-flux-10",
+  "Agent 11":"solar-glitch-11",
+  "Agent 12":"data-knight-12",
+  "Agent 13":"echo-surge-13",
+  "Agent 14":"blazer-root-14",
+  "Agent 15":"hyper-node-15",
+  "Agent 16":"volt-crash-16",
+  "Agent 17":"omega-stack-17",
+  "Agent 18":"rapid-cache-18",
+  "Agent 19":"ghost-wire-19",
+  "Agent 20":"nitro-link-20",
+  "Agent 21":"quantum-bug-21",
+  "Agent 22":"stealth-ram-22",
+  "Agent 23":"cosmic-ping-23",
+  "Agent 24":"rocket-bit-24",
+  "Agent 25":"ultra-hash-25",
+};
 
 // ═══════════ OVERRIDE PERSISTENCE ═══════════
 const OVR_KEY="servicehub_overrides";
@@ -1677,11 +1705,15 @@ function renderTeamAll(){
     h+=`<th data-col="${col.key}" class="${sorted?"sorted":""}">${col.label}<span class="sort-arrow">${arrow}</span></th>`;
   });
   h+=`</tr></thead><tbody>`;
-  // In agent view, only show the selected agent's row
-  const selAgentFilter=document.getElementById("kpiAgent").value;
-  const visibleAgents=(!isAdmin&&selAgentFilter)?agents.filter(a=>a.name===selAgentFilter):agents;
-  if(!isAdmin&&!selAgentFilter){
-    h+=`<tr><td colspan="${hd.length}" style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px">Select your name from the Agent filter above to view your stats</td></tr>`;
+  // In agent view, only show logged-in agent's row; admin sees all (with optional filter)
+  let visibleAgents=agents;
+  if(!isAdmin){
+    if(loggedInAgent){
+      visibleAgents=agents.filter(a=>a.name===loggedInAgent);
+    }else{
+      visibleAgents=[];
+      h+=`<tr><td colspan="${hd.length}" style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px">Login to view your stats</td></tr>`;
+    }
   }
   visibleAgents.forEach(a=>{
     h+=`<tr>`;
@@ -2059,48 +2091,69 @@ document.getElementById("apiKeyBtn").addEventListener("click",()=>{
   panel.classList.toggle("hidden");
   btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#is"/></svg> API Key':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide API Key';
 });
-// Admin button toggle
+// Login button toggle
 document.getElementById("adminBtn").addEventListener("click",()=>{
   const panel=document.getElementById("adminPanel");const btn=document.getElementById("adminBtn");
   panel.classList.toggle("hidden");
-  btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#iad"/></svg> Admin':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide Admin';
+  btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#iad"/></svg> Login':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide Login';
 });
-function applyAdminMode(){
+function applyLoginState(){
   const riskTab=document.querySelector('.tab[data-tab="risk"]');
   const st=document.getElementById("adminStatus");
   const loginBtn=document.getElementById("adminLoginBtn");
   const logoutBtn=document.getElementById("adminLogoutBtn");
   const pwdInput=document.getElementById("adminPwd");
+  const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#kpiTab .qbr-select label:nth-of-type(2)');
+  const agentSelect=document.getElementById("kpiAgent");
+  // Find the agent filter label+select wrapper elements
+  const agentFilterEls=document.querySelectorAll('#kpiTab .qbr-select > *');
+  let agentLabelEl=null,agentSelectEl=null;
+  agentFilterEls.forEach(el=>{
+    if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")agentLabelEl=el;
+    if(el.id==="kpiAgent")agentSelectEl=el;
+  });
   if(isAdmin){
     riskTab.style.display="";
     st.textContent="Admin View";st.classList.remove("missing");st.classList.add("set");
     loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
     pwdInput.style.display="none";
+    if(agentLabelEl)agentLabelEl.style.display="";
+    if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
   }else{
     riskTab.style.display="none";
-    // If risk tab is currently active, switch to Team Workload
     if(riskTab.classList.contains("active")){
       riskTab.classList.remove("active");
       document.getElementById("riskTab").classList.add("hidden");
       document.querySelector('.tab[data-tab="capacity"]').classList.add("active");
       document.getElementById("capTab").classList.remove("hidden");
     }
-    st.textContent="Agent View";st.classList.add("missing");st.classList.remove("set");
-    loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
-    pwdInput.style.display="";pwdInput.value="";
+    if(agentLabelEl)agentLabelEl.style.display="none";
+    if(agentSelectEl)agentSelectEl.style.display="none";
+    if(loggedInAgent){
+      st.textContent="Logged in as "+loggedInAgent;st.classList.remove("missing");st.classList.add("set");
+      loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
+      pwdInput.style.display="none";
+    }else{
+      st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
+      loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
+      pwdInput.style.display="";pwdInput.value="";
+    }
   }
   renderTeamAll();
 }
 document.getElementById("adminLoginBtn").addEventListener("click",()=>{
-  const pwd=document.getElementById("adminPwd").value;
-  if(pwd===ADMIN_PWD){isAdmin=true;applyAdminMode()}
-  else{document.getElementById("adminStatus").textContent="Wrong password";document.getElementById("adminStatus").classList.add("missing")}
+  const pwd=document.getElementById("adminPwd").value.trim();
+  if(!pwd)return;
+  if(pwd===ADMIN_PWD){isAdmin=true;loggedInAgent=null;applyLoginState();return}
+  const match=Object.entries(AGENT_CREDENTIALS).find(([name,pw])=>pw===pwd);
+  if(match){loggedInAgent=match[0];isAdmin=false;applyLoginState()}
+  else{document.getElementById("adminStatus").textContent="Invalid password";document.getElementById("adminStatus").classList.add("missing")}
 });
 document.getElementById("adminPwd").addEventListener("keydown",(e)=>{
   if(e.key==="Enter")document.getElementById("adminLoginBtn").click();
 });
 document.getElementById("adminLogoutBtn").addEventListener("click",()=>{
-  isAdmin=false;applyAdminMode();
+  isAdmin=false;loggedInAgent=null;applyLoginState();
 });
 // Last sync timestamp
 function updateLastSync(){
@@ -2176,8 +2229,8 @@ function stopAutoRefresh(){
 
 // Auto-start on page load
 setTimeout(startAutoRefresh,500);
-// Apply default agent view (hide Risk Monitor tab)
-applyAdminMode();
+// Apply default agent view (hide Risk Monitor tab, hide agent filter)
+applyLoginState();
 
 
 // ═══════════ BATTLEFIELD ENGINE ═══════════
