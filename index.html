@@ -278,6 +278,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>
+    <button class="tab" data-tab="campaign"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Campaign</button>
     <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Risk Monitor <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
 
@@ -367,6 +368,18 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     </div>
     <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
     <div class="stat-grid" id="sg"></div>
+  </div>
+  <div id="campaignTab" class="hidden">
+    <div style="margin-bottom:20px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Campaign</h2>
+      <p style="font-size:12px;color:var(--text-muted)">Ticket volume and SLA performance metrics.</p>
+    </div>
+    <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
+      <label>Client:</label>
+      <select id="campaignClient"><option value="">— All Clients —</option></select>
+      <label style="margin-left:16px">Agent:</label>
+      <select id="campaignAgent"><option value="">— All Agents —</option></select>
+    </div>
     <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
   </div>
@@ -551,7 +564,7 @@ function procHist(){
   // Convert clientCatStats to summaries
   Object.keys(clientCatStats).forEach(ck=>{const a=clientCatStats[ck];clientCatStats[ck]={n:a.length,med:med(a),mean:a.reduce((x,y)=>x+y,0)/a.length}});
 
-  buildAgentStats();populateKPIClients();renderKPI();teamAiCache={};updateBanner();
+  buildAgentStats();populateKPIClients();populateCampaignFilters();renderKPI();teamAiCache={};updateBanner();
 }
 
 // ═══════════ ACTIVE PROCESSING ═══════════
@@ -915,21 +928,29 @@ function renderKPI(){
 }
 function killC(){Object.values(charts).forEach(c=>c.destroy());charts={}}
 function renderCharts(){
-  const{data:dm,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther,typeCounts,topCats,topClients}=getKPIData();
-  if(!dm.length)return;killC();const lb=dm.map(d=>d.m);
+  // Charts moved to Campaign tab - renderCampaignCharts() handles them now
+}
+
+let campaignCharts={};
+function killCampaignCharts(){Object.values(campaignCharts).forEach(c=>c.destroy());campaignCharts={}}
+function renderCampaignCharts(){
+  const cl=document.getElementById("campaignClient").value;
+  const ag=document.getElementById("campaignAgent").value;
+  const{data:dm,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther}=getKPIData(cl,ag);
+  if(!dm.length)return;killCampaignCharts();const lb=dm.map(d=>d.m);
   Chart.defaults.color="#506a8a";Chart.defaults.borderColor="rgba(0,149,200,0.08)";Chart.defaults.font.family="'Calibri','Arial',sans-serif";
   const co={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"}},y:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"}}}};
 
   // Row 1: Tickets Closed (stacked by source) + Tickets Assigned (stacked by source)
   const totalClosed=closedEmailWeb.reduce((s,v)=>s+v,0)+closedPhoneManual.reduce((s,v)=>s+v,0)+closedOther.reduce((s,v)=>s+v,0);
-  charts.v=new Chart(document.getElementById("cVol"),{type:"bar",data:{labels:lb,datasets:[
+  campaignCharts.v=new Chart(document.getElementById("cVol"),{type:"bar",data:{labels:lb,datasets:[
     {label:"Email/Web",data:closedEmailWeb,backgroundColor:"rgba(0,149,200,0.5)",borderColor:"#0095C8",borderWidth:1,borderRadius:2},
     {label:"Phone/Manual",data:closedPhoneManual,backgroundColor:"rgba(132,189,0,0.5)",borderColor:"#84BD00",borderWidth:1,borderRadius:2},
     {label:"Other",data:closedOther,backgroundColor:"rgba(162,155,254,0.5)",borderColor:"#a29bfe",borderWidth:1,borderRadius:2}
   ]},options:{...co,plugins:{legend:{display:false},title:{display:true,text:`${totalClosed.toLocaleString()} total`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{...co.scales,x:{...co.scales.x,stacked:true},y:{...co.scales.y,beginAtZero:true,stacked:true}}}});
 
   const totalAssigned=assignedEmailWeb.reduce((s,v)=>s+v,0)+assignedPhoneManual.reduce((s,v)=>s+v,0)+assignedOther.reduce((s,v)=>s+v,0);
-  charts.assigned=new Chart(document.getElementById("cAssigned"),{type:"bar",data:{labels:lb,datasets:[
+  campaignCharts.assigned=new Chart(document.getElementById("cAssigned"),{type:"bar",data:{labels:lb,datasets:[
     {label:"Email/Web",data:assignedEmailWeb,backgroundColor:"rgba(0,149,200,0.5)",borderColor:"#0095C8",borderWidth:1,borderRadius:2},
     {label:"Phone/Manual",data:assignedPhoneManual,backgroundColor:"rgba(132,189,0,0.5)",borderColor:"#84BD00",borderWidth:1,borderRadius:2},
     {label:"Other",data:assignedOther,backgroundColor:"rgba(162,155,254,0.5)",borderColor:"#a29bfe",borderWidth:1,borderRadius:2}
@@ -941,14 +962,23 @@ function renderCharts(){
   const weekRespSla=validRespSla.length?validRespSla.reduce((a,b)=>a+b,0)/validRespSla.length:100;
   const rSlaColor=weekRespSla>=90?"#84BD00":weekRespSla>=80?"#fcdc00":"#fb9e00";
   const rSlaBg=weekRespSla>=90?"rgba(132,189,0,0.08)":weekRespSla>=80?"rgba(251,158,0,0.08)":"rgba(255,92,92,0.08)";
-  charts.rSla=new Chart(document.getElementById("cRespSla"),{type:"line",data:{labels:lb,datasets:[{data:respSlaData,borderColor:rSlaColor,backgroundColor:rSlaBg,tension:.4,pointRadius:4,pointBackgroundColor:rSlaColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true,spanGaps:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true,max:105}}}});
+  campaignCharts.rSla=new Chart(document.getElementById("cRespSla"),{type:"line",data:{labels:lb,datasets:[{data:respSlaData,borderColor:rSlaColor,backgroundColor:rSlaBg,tension:.4,pointRadius:4,pointBackgroundColor:rSlaColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true,spanGaps:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true,max:105}}}});
 
   const resSlaData=dm.map(d=>d.resSlaPct);
   const validResSla=resSlaData.filter(v=>v!==null);
   const weekResSla=validResSla.length?validResSla.reduce((a,b)=>a+b,0)/validResSla.length:100;
   const dSlaColor=weekResSla>=90?"#84BD00":weekResSla>=80?"#fcdc00":"#fb9e00";
   const dSlaBg=weekResSla>=90?"rgba(132,189,0,0.08)":weekResSla>=80?"rgba(251,158,0,0.08)":"rgba(255,92,92,0.08)";
-  charts.dSla=new Chart(document.getElementById("cResSla"),{type:"line",data:{labels:lb,datasets:[{data:resSlaData,borderColor:dSlaColor,backgroundColor:dSlaBg,tension:.4,pointRadius:4,pointBackgroundColor:dSlaColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true,spanGaps:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true,max:105}}}});
+  campaignCharts.dSla=new Chart(document.getElementById("cResSla"),{type:"line",data:{labels:lb,datasets:[{data:resSlaData,borderColor:dSlaColor,backgroundColor:dSlaBg,tension:.4,pointRadius:4,pointBackgroundColor:dSlaColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true,spanGaps:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true,max:105}}}});
+}
+
+function populateCampaignFilters(){
+  const sel=document.getElementById("campaignClient");
+  const clients=[...new Set(histRaw.map(r=>r.Client).filter(Boolean))].sort();
+  sel.innerHTML=`<option value="">— All Clients (${clients.length}) —</option>`+clients.map(c=>`<option value="${c}">${c}</option>`).join("");
+  const aSel=document.getElementById("campaignAgent");
+  const agents=[...new Set(histRaw.map(r=>r.Agent_Resolved||r.Agent_Assigned).filter(a=>a&&a!=="Unassigned"&&!a.includes("Bot")))].sort();
+  aSel.innerHTML=`<option value="">— All Agents (${agents.length}) —</option>`+agents.map(a=>`<option value="${a}">${a}</option>`).join("");
 }
 
 // ═══════════ KPI CLIENT SELECTOR ═══════════
@@ -967,9 +997,9 @@ function populateKPIClients(){
 
 
 
-function getKPIData(){
-  const cl=document.getElementById("kpiClient").value;
-  const ag=document.getElementById("kpiAgent").value;
+function getKPIData(overrideCl,overrideAg){
+  const cl=overrideCl!==undefined?overrideCl:document.getElementById("kpiClient").value;
+  const ag=overrideAg!==undefined?overrideAg:document.getElementById("kpiAgent").value;
   const csatMap2={excellent:4,good:3,okay:2,poor:1,bad:1};
 
   // Build daily data Mon-Fri for charts
@@ -2127,12 +2157,14 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden");if(tg==="campaign"){renderCampaignCharts()}})});
 document.getElementById("estBtn").addEventListener("click",runEst);
 document.getElementById("aiX").addEventListener("click",()=>document.getElementById("aiP").classList.add("hidden"));
 document.getElementById("apiK").addEventListener("input",e=>{apiKey=e.target.value.trim();const s=document.getElementById("ksT");const inp=document.getElementById("apiK");const lbl=document.getElementById("apiKeyPanel").querySelector("label");if(hasK()){s.textContent="✓ Enabled";s.className="ks valid";inp.style.borderColor="var(--green)";inp.style.color="var(--green)";lbl.style.color="var(--green)"}else{s.textContent="Not set";s.className="ks missing";inp.style.borderColor="";inp.style.color="";lbl.style.color=""}});
 document.getElementById("kpiClient").addEventListener("change",()=>{renderKPI();document.getElementById("aiP").classList.add("hidden")});
 document.getElementById("kpiAgent").addEventListener("change",()=>{renderKPI();document.getElementById("aiP").classList.add("hidden")});
+document.getElementById("campaignClient").addEventListener("change",()=>{renderCampaignCharts()});
+document.getElementById("campaignAgent").addEventListener("change",()=>{renderCampaignCharts()});
 
 // Agent comparison Today/This Week toggle
 document.getElementById("agentTimePeriod").addEventListener("change",function(){
