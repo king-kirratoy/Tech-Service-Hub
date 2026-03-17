@@ -352,8 +352,12 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       </div>
     </div>
     <div id="playerCards" class="hidden">
-      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Tech Player Cards</h3>
+      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Soldiers</h3>
       <div id="playerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
+    </div>
+    <div id="commanderCards" class="hidden" style="margin-top:24px">
+      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Commanders</h3>
+      <div id="commanderGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
     </div>
   </div>
   <div id="capTab" class="hidden">
@@ -1372,6 +1376,56 @@ function renderPlayerCards(){
       if(!cvs)return;
       const ctx=cvs.getContext("2d");
       const rCfg=getRobotConfigForAgent(c.tech.name);
+      drawRobot(ctx,cvs.width,cvs.height,rCfg,4);
+    });
+  });
+
+  // ── Commander Cards ──
+  const cmdSection=document.getElementById("commanderCards");
+  const cmdGrid=document.getElementById("commanderGrid");
+  const cmdNames=adminAgentNames.filter(n=>!roster.some(r=>r.name===n));
+  if(!cmdNames.length){cmdSection.classList.add("hidden");return}
+  cmdSection.classList.remove("hidden");
+
+  const cmdRankColor="#FFD700";
+  const cmdRankBg="rgba(255,215,0,0.15)";
+
+  cmdGrid.innerHTML=cmdNames.map(name=>{
+    const canvasId="pcardCmdRobot_"+name.replace(/\s+/g,"_");
+    const rCfg=getRobotConfigForAgent(name);
+    const rName=rCfg.robot_name||"Commander";
+    return`
+    <div class="pcard">
+      <div class="pcard-header">
+        <div>
+          <div class="pcard-name">${name}</div>
+          <div class="pcard-level">Lvl MAX</div>
+        </div>
+        <span class="pcard-rank" style="color:${cmdRankColor};background:${cmdRankBg};border:1px solid ${cmdRankColor}30;text-shadow:0 0 8px ${cmdRankColor};box-shadow:0 0 12px ${cmdRankColor}40">COMMANDER</span>
+      </div>
+      <div class="pcard-bar-label"><span style="color:#FFD700">HP</span><span style="color:#FFD700">&infin;/&infin;</span></div>
+      <div class="pcard-bar-wrap">
+        <div class="pcard-bar" style="width:100%;background:linear-gradient(90deg,rgba(255,215,0,0.6),#FFD700)"></div>
+      </div>
+      <div class="pcard-bar-label"><span style="color:#FFD700">XP</span><span style="color:#FFD700">&infin;/&infin;</span></div>
+      <div class="pcard-bar-wrap">
+        <div class="pcard-bar" style="width:100%;background:linear-gradient(90deg,rgba(255,215,0,0.4),#FFD700)"></div>
+      </div>
+      <div style="text-align:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+        <canvas id="${canvasId}" width="160" height="120" style="image-rendering:pixelated"></canvas>
+        <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:0">${rName}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Render commander robot previews
+  requestAnimationFrame(()=>{
+    cmdNames.forEach(name=>{
+      const canvasId="pcardCmdRobot_"+name.replace(/\s+/g,"_");
+      const cvs=document.getElementById(canvasId);
+      if(!cvs)return;
+      const ctx=cvs.getContext("2d");
+      const rCfg=getRobotConfigForAgent(name);
       drawRobot(ctx,cvs.width,cvs.height,rCfg,4);
     });
   });
