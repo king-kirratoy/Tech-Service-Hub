@@ -2728,24 +2728,16 @@ const BF={
     const s=this.scale;
     const today=new Date();
     // Weekly closed vs assigned ticket counts drive battlefield position
+    // More closed than assigned = push right, more assigned than closed = push left
     const closedWeek=closedTix.length;
     const assignedWeek=actTix.filter(t=>t.dateCreated&&weekDays.some(wd=>isSD(wd,t.dateCreated))).length+closedWeek;
     const diff=closedWeek-assignedWeek;
-    // Overdue response SLA tickets add a small leftward nudge (response SLA only)
-    const overdueNRD=actTix.filter(t=>t.nextResponse&&t.nextResponse<today&&!t.isWaiting).length;
-    const overduePx=overdueNRD*1;
-    // SLA-met bonus: closed tickets this week where targets were met push right
-    let slaBonusPx=0;
-    closedTix.forEach(t=>{
-      if(t.frt!==null&&t.frt<=FRT_SLA)slaBonusPx+=1;
-      if(t.dateClosed&&t.slaTgt&&t.dateClosed<=t.slaTgt)slaBonusPx+=1;
-    });
-    // 2 pixels per ticket difference from center, clamped to prevent runoff
+    // 0.5 pixels per ticket difference from center, clamped to prevent runoff
     const battleLeft=this.contentLeft;
     const battleRight=this.contentRight;
     const battleW=battleRight-battleLeft;
     const centerX=battleLeft+battleW*0.5;
-    const rawOffset=(diff*1+slaBonusPx-overduePx)*s;
+    const rawOffset=diff*0.5*s;
     const maxOffset=battleW*0.2;
     const clampedOffset=Math.max(-maxOffset,Math.min(maxOffset,rawOffset));
     const targetFxAbs=centerX+clampedOffset;
