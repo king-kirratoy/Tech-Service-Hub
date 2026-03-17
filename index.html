@@ -310,12 +310,12 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Ticket Types</h3><canvas id="cTypes" style="min-height:180px"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#fdcb6e"></span>CSAT Score Breakdown</h3><canvas id="cCsat" style="min-height:180px"></canvas></div></div>
   </div>
   <div id="barracksTab">
-    <div style="margin-bottom:20px">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
-        <h2 style="font-size:16px;font-weight:700;margin:0">Barracks</h2>
-        <div id="robotCustomizer" class="hidden"><button id="robotCustomizeToggle" class="btn" style="font-size:11px;padding:4px 10px;gap:6px"><svg style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg> Customize Robot</button></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Barracks</h2>
+        <p style="font-size:12px;color:var(--text-muted);margin:0">Your squad's player cards, ranks, and battle readiness.</p>
       </div>
-      <p style="font-size:12px;color:var(--text-muted)">Your squad's player cards, ranks, and battle readiness.</p>
+      <div id="robotCustomizer" class="hidden"><button id="robotCustomizeToggle" class="btn" style="gap:8px"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg> Customize Robot</button></div>
     </div>
     <!-- Robot Customizer Panel -->
     <div style="margin-bottom:22px">
@@ -1347,7 +1347,7 @@ function renderPlayerCards(){
         <div class="pcard-bar" style="width:${c.xpInLevel}%;background:linear-gradient(90deg,rgba(0,149,200,0.6),#0095C8)"></div>
       </div>
       <div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-        <canvas id="${canvasId}" width="120" height="150" style="image-rendering:pixelated"></canvas>
+        <canvas id="${canvasId}" width="160" height="200" style="image-rendering:pixelated"></canvas>
         <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:2px">${rName}</div>
       </div>
     </div>`;
@@ -1361,7 +1361,7 @@ function renderPlayerCards(){
       if(!cvs)return;
       const ctx=cvs.getContext("2d");
       const rCfg=getRobotConfigForAgent(c.tech.name);
-      drawRobot(ctx,cvs.width,cvs.height,rCfg,3.5);
+      drawRobot(ctx,cvs.width,cvs.height,rCfg,4);
     });
   });
 }
@@ -2366,7 +2366,7 @@ let adminAgentNames=[];
 const DEFAULT_ROBOT={color:"blue",eyes:"visor",antenna:"none",accessory:"none",robot_name:""};
 
 // Sprite system for previews and battlefield — one sheet per hat
-const SPRITE_FRAME_W=169,SPRITE_FRAME_H=369,SPRITE_FRAMES=4;
+const SPRITE_FRAME_W=169,SPRITE_FRAME_H=369,SPRITE_FRAMES=4,SPRITE_INSET=2;
 const SPRITE_BASE_URL="https://king-kirratoy.github.io/Tech-Service-Hub/assets/";
 const hatSpriteSheets={};  // hatId → Image
 const hatTintCache={};     // "hatId:color" → canvas
@@ -2442,7 +2442,7 @@ function drawRobot(ctx,w,h,config,scale){
   const baseY=h*0.92;
 
   if(tinted){
-    ctx.drawImage(tinted,1,0,SPRITE_FRAME_W,SPRITE_FRAME_H,cx-dw/2,baseY-dh,dw,dh);
+    ctx.drawImage(tinted,SPRITE_INSET,0,SPRITE_FRAME_W-SPRITE_INSET*2,SPRITE_FRAME_H,cx-dw/2,baseY-dh,dw,dh);
   }else{
     // Fallback: simple colored rectangle
     ctx.fillStyle=hex;
@@ -2976,7 +2976,7 @@ const BF={
     const dh=this.spriteDH;
     const dw=dh*(this.spriteFrameW/this.spriteFrameH);
     const frameIdx=Math.floor(w.frame/18)%this.spriteFrames;
-    const sx=frameIdx*this.spriteFrameW+1;
+    const sx=frameIdx*this.spriteFrameW+SPRITE_INSET;
 
     // Get robot config for this agent — use body color for tinting
     const rCfg=getRobotConfigForAgent(w.name);
@@ -2991,7 +2991,7 @@ const BF={
     const hatId=rCfg.accessory||"none";
     const tinted=hatSpritesReady?this.getTintedSprite(hatId,tintColor):null;
     if(tinted){
-      c.drawImage(tinted,sx,0,this.spriteFrameW,this.spriteFrameH,x-dw/2,yy-dh+groundOffset,dw,dh);
+      c.drawImage(tinted,sx,0,this.spriteFrameW-SPRITE_INSET*2,this.spriteFrameH,x-dw/2,yy-dh+groundOffset,dw,dh);
     }else{
       c.fillStyle=tintColor;
       c.fillRect(x-12*s,yy-30*s,24*s,30*s);
@@ -3022,7 +3022,7 @@ const BF={
     const dh=this.spriteDH;
     const dw=dh*(this.spriteFrameW/this.spriteFrameH);
     const frameIdx=Math.floor(cmd.frame/18)%this.spriteFrames;
-    const sx=frameIdx*this.spriteFrameW+1;
+    const sx=frameIdx*this.spriteFrameW+SPRITE_INSET;
 
     const rCfg=getRobotConfigForAgent(cmd.name);
     const robotColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
@@ -3036,7 +3036,7 @@ const BF={
     const hatId=rCfg.accessory||"none";
     const tinted=hatSpritesReady?this.getTintedSprite(hatId,tintColor):null;
     if(tinted){
-      c.drawImage(tinted,sx,0,this.spriteFrameW,this.spriteFrameH,x-dw/2,yy-dh+groundOffset,dw,dh);
+      c.drawImage(tinted,sx,0,this.spriteFrameW-SPRITE_INSET*2,this.spriteFrameH,x-dw/2,yy-dh+groundOffset,dw,dh);
     }else{
       c.fillStyle=tintColor;
       c.fillRect(x-15*s,yy-38*s,30*s,38*s);
