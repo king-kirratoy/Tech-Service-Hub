@@ -2816,12 +2816,17 @@ const BF={
         };
       });
     }
-    // Position commanders at very back (far left), behind all warriors
+    // Position commanders in grid formation behind warriors (same style, tighter spacing for slight overlap)
     const wCols=Math.ceil(this.warriors.length/wRows);
     const behindWarriorsX=fxAbs-50*s-(wCols+1)*wSpacing;
+    const cRows=3;
+    const cSpacing=60*s;
     this.commanders.forEach((cmd,i)=>{
-      const targetX=Math.min(behindWarriorsX-i*50*s,battleLeft+50*s);
-      const targetY=this.groundY;
+      const col=Math.floor(i/cRows);
+      const row=i%cRows;
+      const stagger=(row%2)*22*s;
+      const targetX=Math.min(behindWarriorsX-col*cSpacing-stagger+Math.sin(this.frame*0.02+cmd.id)*4*s,battleLeft+50*s);
+      const targetY=this.groundY-row*5*s;
       cmd.x+=(targetX-cmd.x)*0.04;
       cmd.y+=(targetY-cmd.y)*0.04;
       cmd.frame++;
