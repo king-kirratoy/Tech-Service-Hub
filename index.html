@@ -277,7 +277,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div class="glass api-key-bar hidden" id="adminPanel"><label>Password</label><input type="password" id="adminPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Not logged in</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
-    <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Team Workload</button>
+    <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>
     <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Risk Monitor <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
 
@@ -342,7 +342,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   </div>
   <div id="capTab" class="hidden">
     <div style="margin-bottom:20px">
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Team Workload</h2>
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Workload</h2>
       <p style="font-size:12px;color:var(--text-muted)">This weeks capacity and stats.</p>
     </div>
     <div class="cal-layout">
@@ -2806,10 +2806,11 @@ const BF={
       const col=Math.floor(i/eRows);
       const row=i%eRows;
       const targetX=fxAbs+30*s+col*eSpacing+Math.sin(this.frame*0.025+i*0.7)*5*s;
-      const targetY=this.groundY-row*2*s;
+      const targetY=this.groundY-row*1.5*s;
       e.x+=(targetX-e.x)*0.03;
       e.y+=(targetY-e.y)*0.03;
-      e.frame++;
+      const tier=e.tier||"small";
+      e.frame+=(tier==="large"?1:0.6);
       e.bobPhase+=0.03;
     });
 
