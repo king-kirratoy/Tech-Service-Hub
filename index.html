@@ -2449,10 +2449,11 @@ function drawRobot(ctx,w,h,config,scale){
 
   // Get the tinted sprite for this hat + color combo
   const tinted=getTintedHatSprite(hatId,hex);
-  const dh=h*0.85;
+  const refH=Math.max(h,200);
+  const dh=refH*0.85;
   const dw=dh*(SPRITE_FRAME_W/SPRITE_FRAME_H);
   const cx=w/2;
-  const baseY=h*0.92;
+  const baseY=h/2+dh/2;
 
   if(tinted){
     ctx.drawImage(tinted,SPRITE_INSET,0,SPRITE_FRAME_W-SPRITE_INSET*2,SPRITE_FRAME_H,cx-dw/2,baseY-dh,dw,dh);
