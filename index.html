@@ -684,7 +684,10 @@ function procAct(){
 
   applyOverrides();
   schedTix();
-  if(roster.length&&!selTech)selTech=roster[0].id;
+  if(roster.length&&!selTech){
+    if(!loggedInAgent||isAdmin){selTech=0}
+    else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
+  }
   renderSidebar();renderCal();renderRisk();renderPlayerCards();renderUnassigned();updateBanner();BF.refresh();
   document.getElementById("estBtn").disabled=false;
 }
@@ -2290,6 +2293,11 @@ function applyLoginState(){
       pwdInput.style.display="";pwdInput.value="";
       robotCustomizer.classList.add("hidden");
     }
+  }
+  // Update default workload selection based on login state
+  if(roster.length){
+    if(!loggedInAgent||isAdmin){selTech=0}
+    else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
   renderTeamAll();
 }
