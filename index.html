@@ -3029,10 +3029,11 @@ const BF={
       }
       return smallSlots[smallSlots.length-1].x;
     };
-    // Position small enemies normally; medium/large aligned to small timeline by response date
+    // Small enemies can occupy any row (0,1,2); medium stays row 1, large stays row 2
     eSmall.forEach((e,i)=>{
+      const row=i%3;
       const targetX=fxAbs+30*s+i*eSpacing+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
-      const targetY=this.groundY;
+      const targetY=this.groundY-row*2*s;
       e.x+=(targetX-e.x)*0.02;
       e.y+=(targetY-e.y)*0.02;
       e.frame++;
