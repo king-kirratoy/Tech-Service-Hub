@@ -307,7 +307,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <label style="margin-left:16px">Agent:</label>
       <select id="kpiAgent"><option value="">— All Agents —</option></select>
       <label style="margin-left:16px">Period:</label>
-      <select id="agentTimePeriod"><option value="week">This Week</option><option value="today">Today</option></select>
+      <select id="agentTimePeriod"><option value="today">Today</option><option value="week">This Week</option></select>
     </div>
     <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
     <div class="stat-grid" id="sg"></div>
@@ -1706,7 +1706,7 @@ let teamAiCache={};
 
 // ═══════════ TEAM VIEW (ALL AGENTS) ═══════════
 let teamAllSortCol="name",teamAllSortDir=1;
-let agentTimeFilter="week";
+let agentTimeFilter="today";
 function renderTeamAll(){
   document.getElementById("aiP").classList.add("hidden");
   const container=document.getElementById("teamAllTable");
@@ -1852,13 +1852,16 @@ function renderTeamAll(){
     visibleAgents=agents.filter(a=>a.name===loggedInAgent);
   }
   const visCols=new Set(hd.map(c=>c.key));
+  // Weekly color thresholds only apply on Friday; other days use daily thresholds even for "This Week"
+  const isFriday=today.getDay()===5;
+  const useWeeklyColors=agentTimeFilter==="week"&&isFriday;
   visibleAgents.forEach(a=>{
     h+=`<tr>`;
     if(visCols.has("name"))h+=`<td>${a.name}</td>`;
     // Tickets Closed with color logic based on toggle
     if(visCols.has("total")){
       let closedColor="";
-      if(agentTimeFilter==="today"){
+      if(!useWeeklyColors){
         if(a.total===0)closedColor="color:#8aa4c4";
         else if(a.total>=11)closedColor="color:#00E5FF";
         else if(a.total>=8)closedColor="color:#84BD00";
@@ -1876,7 +1879,7 @@ function renderTeamAll(){
     // Tickets Assigned with color logic based on toggle
     if(visCols.has("assigned")){
       let assignedColor="";
-      if(agentTimeFilter==="today"){
+      if(!useWeeklyColors){
         if(a.assigned===0)assignedColor="color:#8aa4c4";
         else if(a.assigned>=16)assignedColor="color:#fb9e00";
         else if(a.assigned>=8)assignedColor="color:#fcdc00";
@@ -1892,7 +1895,7 @@ function renderTeamAll(){
     // Email/Web color logic
     if(visCols.has("emailWeb")){
       let ewColor="";
-      if(agentTimeFilter==="today"){
+      if(!useWeeklyColors){
         if(a.emailWeb===0)ewColor="color:#8aa4c4";
         else if(a.emailWeb>=16)ewColor="color:#fb9e00";
         else if(a.emailWeb>=8)ewColor="color:#fcdc00";
@@ -1908,7 +1911,7 @@ function renderTeamAll(){
     // Phone/Manual color logic
     if(visCols.has("phoneManual")){
       let pmColor="";
-      if(agentTimeFilter==="today"){
+      if(!useWeeklyColors){
         if(a.phoneManual===0)pmColor="color:#8aa4c4";
         else if(a.phoneManual>=16)pmColor="color:#fb9e00";
         else if(a.phoneManual>=8)pmColor="color:#fcdc00";
