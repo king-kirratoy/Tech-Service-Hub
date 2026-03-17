@@ -2750,26 +2750,31 @@ const BF={
     const weekDays=wkD(new Date());
     const s=this.scale;
     const today=new Date();
-    const closedToday=closedTix.filter(t=>t.dateClosed&&isSD(t.dateClosed,today)).length;
-    const createdToday=actTix.filter(t=>t.dateCreated&&isSD(t.dateCreated,today)).length+closedToday;
-    const diff=closedToday-createdToday;
-    // Overdue response SLA tickets push the enemy further left (response SLA only, not resolution)
+    // Weekly closed vs assigned ticket counts drive battlefield position
+    const closedWeek=closedTix.length;
+    const assignedWeek=actTix.filter(t=>t.dateCreated&&weekDays.some(wd=>isSD(wd,t.dateCreated))).length+closedWeek;
+    const diff=closedWeek-assignedWeek;
+    // Overdue response SLA tickets add a small leftward nudge (response SLA only)
     const overdueNRD=actTix.filter(t=>t.nextResponse&&t.nextResponse<today&&!t.isWaiting).length;
-    const overduePenalty=overdueNRD*0.006;
-    // SLA-met bonus: closed tickets today where response and/or resolution targets were met push right
-    const closedTodayTix=closedTix.filter(t=>t.dateClosed&&isSD(t.dateClosed,today));
-    let slaBonus=0;
-    closedTodayTix.forEach(t=>{
-      if(t.frt!==null&&t.frt<=FRT_SLA)slaBonus+=0.008;
-      if(t.dateClosed&&t.slaTgt&&t.dateClosed<=t.slaTgt)slaBonus+=0.008;
+    const overduePx=overdueNRD*1;
+    // SLA-met bonus: closed tickets this week where targets were met push right
+    let slaBonusPx=0;
+    closedTix.forEach(t=>{
+      if(t.frt!==null&&t.frt<=FRT_SLA)slaBonusPx+=1;
+      if(t.dateClosed&&t.slaTgt&&t.dateClosed<=t.slaTgt)slaBonusPx+=1;
     });
-    this.targetFront=Math.max(0.30,Math.min(0.70,0.5+diff*0.003-overduePenalty+slaBonus));
-    this.frontLine+=(this.targetFront-this.frontLine)*0.015;
-
+    // 2 pixels per ticket difference from center, clamped to prevent runoff
     const battleLeft=this.contentLeft;
     const battleRight=this.contentRight;
     const battleW=battleRight-battleLeft;
-    const fxAbs=battleLeft+this.frontLine*battleW;
+    const centerX=battleLeft+battleW*0.5;
+    const rawOffset=(diff*2+slaBonusPx-overduePx)*s;
+    const maxOffset=battleW*0.2;
+    const clampedOffset=Math.max(-maxOffset,Math.min(maxOffset,rawOffset));
+    const targetFxAbs=centerX+clampedOffset;
+    if(!this._fxAbs)this._fxAbs=targetFxAbs;
+    this._fxAbs+=(targetFxAbs-this._fxAbs)*0.015;
+    const fxAbs=this._fxAbs;
 
     // Build/update warriors
     if(this.warriors.length!==roster.length){
@@ -2912,16 +2917,16 @@ const BF={
         };
       });
     }
-    // Position commanders in grid formation behind warriors
+    // Position commanders directly behind the last column of warriors
     const wCols=Math.ceil(this.warriors.length/wRows);
-    const behindWarriorsX=fxAbs-50*s-(wCols+1)*wSpacing;
-    const cRows=3;
+    const behindWarriorsX=fxAbs-50*s-wCols*wSpacing;
+    const cRows=Math.min(wRows,Math.max(2,this.commanders.length));
     const cSpacing=75*s;
     this.commanders.forEach((cmd,i)=>{
       const col=Math.floor(i/cRows);
       const row=i%cRows;
       const stagger=(row%2)*28*s;
-      const targetX=Math.min(behindWarriorsX-col*cSpacing-stagger+Math.sin(this.frame*0.02+cmd.id)*4*s,battleLeft+50*s);
+      const targetX=behindWarriorsX-col*cSpacing-stagger+Math.sin(this.frame*0.02+cmd.id)*4*s;
       const targetY=this.groundY-row*5*s;
       cmd.x+=(targetX-cmd.x)*0.04;
       cmd.y+=(targetY-cmd.y)*0.04;
@@ -3357,7 +3362,7 @@ const BF={
     }
 
     // Battle dust/particles at front line
-    const fx=this.contentLeft+this.frontLine*(this.contentRight-this.contentLeft);
+    const fx=this._fxAbs||this.contentLeft+0.5*(this.contentRight-this.contentLeft);
     c.fillStyle="rgba(180,160,120,0.05)";
     for(let i=0;i<6;i++){
       const dx=Math.sin(this.frame*0.04+i*1.3)*30*s;
