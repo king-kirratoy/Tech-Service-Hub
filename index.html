@@ -3010,12 +3010,42 @@ const BF={
     const eSmall=eAlive.filter(e=>e.tier==="small").sort(sByNrd);
     const eMedium=eAlive.filter(e=>e.tier==="medium").sort(sByNrd);
     const eLarge=eAlive.filter(e=>e.tier==="large").sort(sByNrd);
-    [[eSmall,0],[eMedium,1],[eLarge,2]].forEach(([tier,row])=>{
-      tier.forEach((e,i)=>{
-        const targetX=fxAbs+30*s+i*eSpacing+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
+    // Build a timeline map from small enemies: response time -> horizontal slot position
+    const smallSlots=eSmall.map((e,i)=>{
+      const nrd=e.ticketRef&&e.ticketRef.nextResponse?e.ticketRef.nextResponse.getTime():FAR_FUTURE;
+      return{nrd,x:fxAbs+30*s+i*eSpacing};
+    });
+    // Find the horizontal position for a given response time by interpolating between small enemy slots
+    const slotXForNrd=(nrd)=>{
+      if(smallSlots.length===0)return fxAbs+30*s;
+      if(nrd<=smallSlots[0].nrd)return smallSlots[0].x;
+      if(nrd>=smallSlots[smallSlots.length-1].nrd)return smallSlots[smallSlots.length-1].x+eSpacing;
+      for(let j=0;j<smallSlots.length-1;j++){
+        if(nrd>=smallSlots[j].nrd&&nrd<=smallSlots[j+1].nrd){
+          const t=(smallSlots[j+1].nrd===smallSlots[j].nrd)?0.5:
+            (nrd-smallSlots[j].nrd)/(smallSlots[j+1].nrd-smallSlots[j].nrd);
+          return smallSlots[j].x+(smallSlots[j+1].x-smallSlots[j].x)*t;
+        }
+      }
+      return smallSlots[smallSlots.length-1].x;
+    };
+    // Position small enemies normally; medium/large aligned to small timeline by response date
+    eSmall.forEach((e,i)=>{
+      const targetX=fxAbs+30*s+i*eSpacing+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
+      const targetY=this.groundY;
+      e.x+=(targetX-e.x)*0.02;
+      e.y+=(targetY-e.y)*0.02;
+      e.frame++;
+      e.bobPhase+=0.03;
+    });
+    [[eMedium,1],[eLarge,2]].forEach(([tier,row])=>{
+      tier.forEach((e)=>{
+        const nrd=e.ticketRef&&e.ticketRef.nextResponse?e.ticketRef.nextResponse.getTime():FAR_FUTURE;
+        const baseX=slotXForNrd(nrd);
+        const targetX=baseX+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
         const targetY=this.groundY-row*2*s;
-        e.x+=(targetX-e.x)*0.03;
-        e.y+=(targetY-e.y)*0.03;
+        e.x+=(targetX-e.x)*0.02;
+        e.y+=(targetY-e.y)*0.02;
         e.frame++;
         e.bobPhase+=0.03;
       });
