@@ -2806,13 +2806,14 @@ const BF={
       return smallSlots[smallSlots.length-1].x;
     };
     // Compute medium/large target positions first so small enemies can avoid occupied rows
+    const rowStep=12*s; // vertical spacing between enemy rows (must be enough for sprites to visually shift)
     const medLargePositions=[];
     [[eMedium,1],[eLarge,2]].forEach(([tier,row])=>{
       tier.forEach((e)=>{
         const nrd=e.ticketRef&&e.ticketRef.nextResponse?e.ticketRef.nextResponse.getTime():FAR_FUTURE;
         const baseX=slotXForNrd(nrd);
         const targetX=baseX+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
-        const targetY=this.groundY-row*2*s;
+        const targetY=this.groundY-row*rowStep;
         e.x+=(targetX-e.x)*0.02;
         e.y+=(targetY-e.y)*0.02;
         e.frame++;
@@ -2831,7 +2832,7 @@ const BF={
       let row=0;
       for(let r=0;r<3;r++){if(!takenRows.has(r)){row=r;break;}}
       const targetX=baseX+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
-      const targetY=this.groundY-row*2*s;
+      const targetY=this.groundY-row*rowStep;
       e.x+=(targetX-e.x)*0.02;
       e.y+=(targetY-e.y)*0.02;
       e.frame++;
