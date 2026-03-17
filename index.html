@@ -2232,7 +2232,7 @@ async function callAI(prompt){
 // ═══════════ RESOLUTION ASSIST ═══════════
 
 // ═══════════ BANNER ═══════════
-function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
+function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateCreated&&wd.some(d=>isSD(d,t.dateCreated))).length+closedTix.length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
 
 // ═══════════ EVENTS ═══════════
 // Toggle buttons with label switching
@@ -2742,7 +2742,7 @@ const BF={
     const battleRight=this.contentRight;
     const battleW=battleRight-battleLeft;
     const centerX=battleLeft+battleW*0.5;
-    const rawOffset=(diff*2+slaBonusPx-overduePx)*s;
+    const rawOffset=(diff*1+slaBonusPx-overduePx)*s;
     const maxOffset=battleW*0.2;
     const clampedOffset=Math.max(-maxOffset,Math.min(maxOffset,rawOffset));
     const targetFxAbs=centerX+clampedOffset;
