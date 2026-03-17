@@ -343,7 +343,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div id="capTab" class="hidden">
     <div style="margin-bottom:20px">
       <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Team Workload</h2>
-      <p style="font-size:12px;color:var(--text-muted)">Ticket scheduling, capacity overview, and assignment recommendations.</p>
+      <p style="font-size:12px;color:var(--text-muted)">This weeks capacity and stats.</p>
     </div>
     <div class="cal-layout">
       <div class="glass tech-sidebar">
@@ -356,10 +356,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
         <div id="ca"></div>
       </div>
     </div>
-    <div style="margin-top:28px;margin-bottom:20px">
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Team Stats</h2>
-      <p style="font-size:12px;color:var(--text-muted)">Weekly performance metrics and agent comparison for the current week.</p>
-    </div>
+    <div style="margin-top:28px;margin-bottom:20px"></div>
     <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
       <label>Client:</label>
       <select id="kpiClient"><option value="">— All Clients —</option></select>
@@ -1546,6 +1543,20 @@ function renderTeamAll(){
     else if(src.includes("PHONE")||src.includes("MANUAL"))agentMap[ag].phoneManual++;
   });
 
+  // Count active (open) tickets per agent
+  const activeMap={};
+  actRaw.filter(r=>!r.Date_Closed||!r.Date_Closed.trim()).forEach(r=>{
+    const ag=r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot")||ag==="HaloAPI")return;
+    if(selClient&&r.Client!==selClient)return;
+    if(selAgent&&ag!==selAgent)return;
+    activeMap[ag]=(activeMap[ag]||0)+1;
+  });
+
+  // Ensure agents with active tickets appear in the table even if they have no closed/assigned tickets in the period
+  Object.keys(activeMap).forEach(ag=>{
+    if(!agentMap[ag])agentMap[ag]={total:0,totalTW:0,respTimes:[],resDays:[],csatArr:[],slaMet:0,slaTotal:0,frtMet:0,frtTotal:0,closed:0,ftf:0,assigned:0,emailWeb:0,phoneManual:0};
+  });
+
   const agents=Object.entries(agentMap).map(([name,s])=>{
     const avgTW=s.total?s.totalTW/s.total:0;
     const avgResp=s.respTimes.length?s.respTimes.reduce((a,b)=>a+b,0)/s.respTimes.length:0;
@@ -1557,6 +1568,7 @@ function renderTeamAll(){
     const csatRate=s.total?(s.csatArr.length/s.total*100):0;
     return{
       name,
+      activeTickets:activeMap[name]||0,
       total:s.total,
       totalHrs:s.totalTW,
       avgRespHrs:avgResp,
@@ -1605,6 +1617,7 @@ function renderTeamAll(){
 
   const allCols=[
     {key:"name",label:"Agent",public:true},
+    {key:"activeTickets",label:"Active Tickets",public:true},
     {key:"total",label:"Tickets Closed",public:false},
     {key:"assigned",label:"Tickets Assigned",public:true},
     {key:"emailWeb",label:"Email/Web",public:true},
@@ -1635,6 +1648,12 @@ function renderTeamAll(){
   visibleAgents.forEach(a=>{
     h+=`<tr>`;
     if(visCols.has("name"))h+=`<td>${a.name}</td>`;
+    // Active Tickets
+    if(visCols.has("activeTickets")){
+      let atColor="color:#8aa4c4";
+      if(a.activeTickets>0)atColor=a.activeTickets>=20?"color:#fb9e00":a.activeTickets>=10?"color:#fcdc00":"color:#84BD00";
+      h+=`<td style="${atColor}">${a.activeTickets.toLocaleString()}</td>`;
+    }
     // Tickets Closed with color logic based on toggle
     if(visCols.has("total")){
       let closedColor="color:#8aa4c4";
