@@ -2997,27 +2997,28 @@ const BF={
     // Update enemy ticket refs
     this.enemies.forEach(e=>{const tk=actTix.find(t=>t.id===e.id);if(tk)e.ticketRef=tk});
 
-    // Position enemies sorted by next response date (soonest = front, nearest warriors)
-    // Position enemies in diagonal "\" grid pattern (opposite of warrior "/")
-    const eDiagRows=3;
+    // Position enemies by size tier: row 0 (bottom)=small, row 1 (middle)=medium, row 2 (top)=large
+    // Each tier sorted by next response date (soonest = front)
     const eSpacing=32*s;
     const FAR_FUTURE=9e15;
-    const eSorted=this.enemies.filter(e=>!e.dying&&!e.dead);
-    eSorted.sort((a,b)=>{
-      const aNrd=a.ticketRef&&a.ticketRef.nextResponse?a.ticketRef.nextResponse.getTime():FAR_FUTURE;
-      const bNrd=b.ticketRef&&b.ticketRef.nextResponse?b.ticketRef.nextResponse.getTime():FAR_FUTURE;
-      return aNrd-bNrd;
-    });
-    eSorted.forEach((e,i)=>{
-      const grp=Math.floor(i/3);const pos=i%3;
-      const col=pos<2?grp*2:grp*2+1;
-      const diagRow=pos===0?0:pos===1?2:1; // bottom, top, middle = "\" zigzag
-      const targetX=fxAbs+30*s+col*eSpacing+Math.sin(this.frame*0.025+i*0.7)*5*s;
-      const targetY=this.groundY-diagRow*2*s;
-      e.x+=(targetX-e.x)*0.03;
-      e.y+=(targetY-e.y)*0.03;
-      e.frame++;
-      e.bobPhase+=0.03;
+    const eAlive=this.enemies.filter(e=>!e.dying&&!e.dead);
+    const sByNrd=(a,b)=>{
+      const aN=a.ticketRef&&a.ticketRef.nextResponse?a.ticketRef.nextResponse.getTime():FAR_FUTURE;
+      const bN=b.ticketRef&&b.ticketRef.nextResponse?b.ticketRef.nextResponse.getTime():FAR_FUTURE;
+      return aN-bN;
+    };
+    const eSmall=eAlive.filter(e=>e.tier==="small").sort(sByNrd);
+    const eMedium=eAlive.filter(e=>e.tier==="medium").sort(sByNrd);
+    const eLarge=eAlive.filter(e=>e.tier==="large").sort(sByNrd);
+    [[eSmall,0],[eMedium,1],[eLarge,2]].forEach(([tier,row])=>{
+      tier.forEach((e,i)=>{
+        const targetX=fxAbs+30*s+i*eSpacing+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
+        const targetY=this.groundY-row*2*s;
+        e.x+=(targetX-e.x)*0.03;
+        e.y+=(targetY-e.y)*0.03;
+        e.frame++;
+        e.bobPhase+=0.03;
+      });
     });
 
     // Grenade system — warriors throw a grenade when they level up
