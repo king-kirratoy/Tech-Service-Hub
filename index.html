@@ -278,7 +278,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Team Workload</button>
-    <button class="tab" data-tab="kpi"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Team Stats</button>
     <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Risk Monitor <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
 
@@ -295,25 +294,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div id="riskSections"></div>
   </div>
 
-  <!-- Team Stats Tab -->
-  <div id="kpiTab" class="hidden">
-    <div style="margin-bottom:20px">
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Team Stats</h2>
-      <p style="font-size:12px;color:var(--text-muted)">Weekly performance metrics and agent comparison for the current week.</p>
-    </div>
-    <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <label>Client:</label>
-      <select id="kpiClient"><option value="">— All Clients —</option></select>
-      <label style="margin-left:16px">Agent:</label>
-      <select id="kpiAgent"><option value="">— All Agents —</option></select>
-      <label style="margin-left:16px">Period:</label>
-      <select id="agentTimePeriod"><option value="today">Today</option><option value="week">This Week</option></select>
-    </div>
-    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
-    <div class="stat-grid" id="sg"></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
-  </div>
   <div id="barracksTab">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div>
@@ -376,10 +356,22 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
         <div id="ca"></div>
       </div>
     </div>
-    <div id="unassignedSection" class="hidden" style="margin-top:18px">
-      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Unassigned Tickets — Assignment Recommendations</h3>
-      <div class="glass" style="padding:0;overflow-x:auto" id="unassignedTable"></div>
+    <div style="margin-top:28px;margin-bottom:20px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Team Stats</h2>
+      <p style="font-size:12px;color:var(--text-muted)">Weekly performance metrics and agent comparison for the current week.</p>
     </div>
+    <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
+      <label>Client:</label>
+      <select id="kpiClient"><option value="">— All Clients —</option></select>
+      <label style="margin-left:16px">Agent:</label>
+      <select id="kpiAgent"><option value="">— All Agents —</option></select>
+      <label style="margin-left:16px">Period:</label>
+      <select id="agentTimePeriod"><option value="today">Today</option><option value="week">This Week</option></select>
+    </div>
+    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
+    <div class="stat-grid" id="sg"></div>
+    <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
+    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
   </div>
 
 <div class="glass ai-panel hidden" id="aiP"><div class="ai-header"><div class="ai-label"><svg style="width:18px;height:18px;stroke:var(--green)"><use href="#iz"/></svg> AI Analysis</div><button class="ai-close" id="aiX"><svg style="width:14px;height:14px"><use href="#ix"/></svg></button></div><div id="aiB"></div></div>
@@ -688,7 +680,7 @@ function procAct(){
     if(!loggedInAgent||isAdmin){selTech=0}
     else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
-  renderSidebar();renderCal();renderRisk();renderPlayerCards();renderUnassigned();updateBanner();BF.refresh();
+  renderSidebar();renderCal();renderRisk();renderPlayerCards();updateBanner();BF.refresh();
   document.getElementById("estBtn").disabled=false;
 }
 
@@ -880,7 +872,7 @@ async function runEst(){
     }catch(e){console.error(e)}
   }
   schedTix();st.textContent=`✓ ${done} estimated`;btn.disabled=false;
-  renderSidebar();renderCal();renderPlayerCards();renderUnassigned();
+  renderSidebar();renderCal();renderPlayerCards();
 }
 
 // ═══════════ KPI DASHBOARD ═══════════
@@ -1433,222 +1425,6 @@ function renderPlayerCards(){
       drawRobot(ctx,cvs.width,cvs.height,rCfg,4);
     });
   });
-}
-
-// ═══════════ UNASSIGNED TICKET RECOMMENDATIONS ═══════════
-function renderUnassigned(){
-  const section=document.getElementById("unassignedSection");
-  const container=document.getElementById("unassignedTable");
-  const unassigned=actTix.filter(t=>t.assignedTo===0);
-  if(!unassigned.length||!roster.length){section.classList.add("hidden");return}
-  section.classList.remove("hidden");
-
-  const now=new Date();
-  const nowHour=now.getHours()+now.getMinutes()/60;
-  const nowSnapped=Math.ceil(nowHour*4)/4;
-  const weekDays=wkD(now);
-  const todayIdx=weekDays.findIndex(d=>isSD(d,now));
-  const startDayIdx=todayIdx>=0?todayIdx:0;
-
-  // Simulate scheduling a set of tickets for a single tech and return breach info
-  function simulateSchedule(techId,tickets){
-    const s=getSched(techId);
-    let startH=Math.max(nowSnapped,s.ss);
-    let startD=startDayIdx;
-    if(nowSnapped>=s.se){startD=Math.min(startDayIdx+1,4);startH=snap(s.ss)}
-    const cursor={d:startD,h:snap(startH)};
-
-    // Sort by NRD priority (same logic as schedTix)
-    const sorted=[...tickets].sort((a,b)=>{
-      const aN=a.nextResponse?a.nextResponse.getTime():9e15;
-      const bN=b.nextResponse?b.nextResponse.getTime():9e15;
-      if(aN!==bN)return aN-bN;
-      const aW=a.isWaiting?1:0;
-      const bW=b.isWaiting?1:0;
-      return aW-bW;
-    });
-
-    const results=[];
-    sorted.forEach(tk=>{
-      const dur=Math.ceil(tk.est*4)/4;
-      // Push waiting tickets toward their deadline
-      if(tk.isWaiting&&tk.nextResponse&&tk.nextResponse>now){
-        const nrdDay=weekDays.findIndex(d=>isSD(d,tk.nextResponse));
-        let targetDay=nrdDay>=0?Math.max(startDayIdx,nrdDay-1):4;
-        if(targetDay>cursor.d){cursor.d=targetDay;cursor.h=snap(s.ss)}
-      }
-      // Skip lunch
-      if(cursor.h>=s.ls&&cursor.h<s.le)cursor.h=snap(s.le);
-      if(cursor.h<s.ls&&cursor.h+dur>s.ls)cursor.h=snap(s.le);
-      // Overflow to next day
-      if(cursor.h+dur>s.se){
-        cursor.d=cursor.d+1;
-        cursor.h=snap(s.ss);
-        if(cursor.h>=s.ls&&cursor.h<s.le)cursor.h=snap(s.le);
-        if(cursor.h<s.ls&&cursor.h+dur>s.ls)cursor.h=snap(s.le);
-      }
-      if(cursor.h>=s.se){cursor.d=cursor.d+1;cursor.h=snap(s.ss)}
-
-      const endHour=cursor.h+dur;
-      const schedDay=weekDays[cursor.d];
-
-      // Check NRD breach
-      let nrdBreached=false;
-      if(tk.nextResponse){
-        if(tk.nextResponse<now)nrdBreached=true;
-        else if(schedDay){
-          const schedEnd=new Date(schedDay);
-          schedEnd.setHours(Math.floor(endHour),Math.round((endHour%1)*60),0,0);
-          if(schedEnd>tk.nextResponse)nrdBreached=true;
-        }else nrdBreached=true;
-      }
-
-      results.push({id:tk.id,dayIdx:cursor.d,startHour:cursor.h,endHour,nrdBreached});
-      cursor.h=endHour;
-      if(cursor.h>s.ls&&cursor.h<=s.le)cursor.h=snap(s.le);
-    });
-    return results;
-  }
-
-  // Get current breach count per tech (baseline without the unassigned ticket)
-  const baselineBreaches={};
-  roster.forEach(t=>{
-    const techTix=actTix.filter(x=>x.assignedTo===t.id);
-    const sim=simulateSchedule(t.id,techTix);
-    baselineBreaches[t.id]=sim.filter(r=>r.nrdBreached).length;
-  });
-
-  // For each unassigned ticket, evaluate each tech
-  function recommendTech(ticket){
-    const candidates=roster.map(t=>{
-      const techTix=actTix.filter(x=>x.assignedTo===t.id);
-      const totalHrs=techTix.reduce((s,x)=>s+x.est,0);
-      const totalTix=techTix.length;
-
-      // Simulate adding this ticket to the tech's queue
-      const combined=[...techTix,ticket];
-      const sim=simulateSchedule(t.id,combined);
-      const newBreaches=sim.filter(r=>r.nrdBreached).length;
-      const addedBreaches=newBreaches-baselineBreaches[t.id];
-
-      // Find where the unassigned ticket landed
-      const placed=sim.find(r=>r.id===ticket.id);
-      if(!placed)return null;
-
-      const ticketBreached=placed.nrdBreached;
-      const dayLabel=weekDays[placed.dayIdx]?weekDays[placed.dayIdx].toLocaleDateString("en-US",{weekday:"short"}):"Overflow";
-
-      // Calculate available hours in shift this week
-      const s=getSched(t.id);
-      let totalShiftHrs=0;
-      for(let d=startDayIdx;d<=4;d++){
-        let dayHrs=s.se-s.ss-(s.le-s.ls);
-        if(d===startDayIdx&&nowSnapped>s.ss)dayHrs=Math.max(0,s.se-Math.max(nowSnapped,s.ss)-(nowSnapped<s.ls?s.le-s.ls:0));
-        totalShiftHrs+=dayHrs;
-      }
-      const availableHrs=Math.max(0,totalShiftHrs-totalHrs);
-
-      // Score: lower is better
-      let score=0;
-      // Critical: does adding this ticket cause the ticket itself to breach?
-      if(ticketBreached)score+=500;
-      // Critical: does adding this ticket cause OTHER tickets to breach?
-      score+=addedBreaches*200;
-      // Prefer techs with more available hours
-      score+=(20-Math.min(20,availableHrs))*3;
-      // Prefer techs with fewer existing tickets
-      score+=totalTix*1;
-      // Prefer techs with fewer existing breaches
-      score+=baselineBreaches[t.id]*15;
-
-      // Build reason
-      let reason="";
-      if(!ticketBreached&&addedBreaches===0){
-        if(availableHrs>6)reason="Light load, meets NRD";
-        else if(availableHrs>3)reason="Good availability, meets NRD";
-        else reason="Meets NRD";
-      }else if(!ticketBreached&&addedBreaches>0){
-        reason=`<span style="color:var(--warning)">Meets NRD but shifts ${addedBreaches} other${addedBreaches>1?"s":""} at risk</span>`;
-      }else if(ticketBreached&&addedBreaches===0){
-        reason=`<span style="color:var(--danger)">Cannot meet NRD</span>`;
-      }else{
-        reason=`<span style="color:var(--danger)">Cannot meet NRD, +${addedBreaches} at risk</span>`;
-      }
-
-      return{
-        tech:roster.find(x=>x.id===t.id),
-        techId:t.id,
-        score,
-        ticketBreached,
-        addedBreaches,
-        placed,
-        dayLabel,
-        availableHrs,
-        totalTix,
-        totalHrs,
-        baseBreaches:baselineBreaches[t.id],
-        reason
-      };
-    }).filter(Boolean);
-
-    candidates.sort((a,b)=>a.score-b.score);
-    return candidates.slice(0,3);
-  }
-
-  // Sort unassigned by NRD urgency
-  const sorted=[...unassigned].sort((a,b)=>{
-    const aN=a.nextResponse?a.nextResponse.getTime():9e15;
-    const bN=b.nextResponse?b.nextResponse.getTime():9e15;
-    return aN-bN;
-  });
-
-  // Build table
-  let h=`<table style="width:100%;border-collapse:collapse;font-size:11px">`;
-  h+=`<thead><tr style="border-bottom:1px solid var(--border-bright);text-align:left">`;
-  h+=`<th style="padding:10px 12px;color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">Ticket</th>`;
-  h+=`<th style="padding:10px 8px;color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">Summary</th>`;
-  h+=`<th style="padding:10px 8px;color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">Category</th>`;
-  h+=`<th style="padding:10px 8px;color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;text-align:center">Est</th>`;
-  h+=`<th style="padding:10px 8px;color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">NRD</th>`;
-  h+=`<th style="padding:10px 8px;color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">Recommended</th>`;
-  h+=`<th style="padding:10px 8px;color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">Window</th>`;
-  h+=`<th style="padding:10px 8px;color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">Impact</th>`;
-  h+=`</tr></thead><tbody>`;
-
-  sorted.forEach(tk=>{
-    const recs=recommendTech(tk);
-    const nrdStr=tk.nextResponse?tk.nextResponse.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"—";
-    const nrdUrgent=tk.nextResponse&&tk.nextResponse<new Date(now.getTime()+4*60*60*1000);
-    const nrdColor=nrdUrgent?"color:var(--danger);font-weight:600":"color:var(--text-muted)";
-
-    if(recs.length){
-      const top=recs[0];
-      const altNames=recs.slice(1).map(r=>r.tech.name.split(" ")[0]).join(", ");
-
-      h+=`<tr style="border-bottom:1px solid var(--border)">`;
-      h+=`<td style="padding:8px 12px"><span style="color:var(--blue);font-weight:600">${haloLink(tk.id)}</span><div style="font-size:10px;color:var(--text-muted);margin-top:2px">${tk.client}</div></td>`;
-      h+=`<td style="padding:8px;color:var(--text);font-size:10px;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tk.title}</td>`;
-      h+=`<td style="padding:8px;color:var(--text-muted);font-size:10px">${tk.category}</td>`;
-      h+=`<td style="padding:8px;text-align:center;color:var(--green);font-weight:600">${tk.est}h</td>`;
-      h+=`<td style="padding:8px;${nrdColor};font-size:10px;white-space:nowrap">${nrdStr}</td>`;
-      h+=`<td style="padding:8px"><span style="color:var(--text);font-weight:600">${top.tech.name}</span>${altNames?`<div style="font-size:9px;color:var(--text-dim);margin-top:2px">Also: ${altNames}</div>`:""}</td>`;
-      h+=`<td style="padding:8px;color:var(--text-muted);font-size:10px;white-space:nowrap">${top.dayLabel} ${hT(top.placed.startHour)}–${hT(top.placed.endHour)}</td>`;
-      h+=`<td style="padding:8px;font-size:10px">${top.reason}</td>`;
-      h+=`</tr>`;
-    }else{
-      h+=`<tr style="border-bottom:1px solid var(--border)">`;
-      h+=`<td style="padding:8px 12px"><span style="color:var(--blue);font-weight:600">${haloLink(tk.id)}</span><div style="font-size:10px;color:var(--text-muted);margin-top:2px">${tk.client}</div></td>`;
-      h+=`<td style="padding:8px;color:var(--text);font-size:10px">${tk.title}</td>`;
-      h+=`<td style="padding:8px;color:var(--text-muted);font-size:10px">${tk.category}</td>`;
-      h+=`<td style="padding:8px;text-align:center;color:var(--green);font-weight:600">${tk.est}h</td>`;
-      h+=`<td style="padding:8px;${nrdColor};font-size:10px;white-space:nowrap">${nrdStr}</td>`;
-      h+=`<td colspan="3" style="padding:8px;color:var(--danger);font-size:10px">No tech has available capacity</td>`;
-      h+=`</tr>`;
-    }
-  });
-
-  h+=`</tbody></table>`;
-  container.innerHTML=h;
 }
 
 // ═══════════ CAPACITY (today only) ═══════════
@@ -2261,10 +2037,10 @@ function applyLoginState(){
   const loginBtn=document.getElementById("adminLoginBtn");
   const logoutBtn=document.getElementById("adminLogoutBtn");
   const pwdInput=document.getElementById("adminPwd");
-  const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#kpiTab .qbr-select label:nth-of-type(2)');
+  const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#capTab .qbr-select label:nth-of-type(2)');
   const agentSelect=document.getElementById("kpiAgent");
   // Find the agent filter label+select wrapper elements
-  const agentFilterEls=document.querySelectorAll('#kpiTab .qbr-select > *');
+  const agentFilterEls=document.querySelectorAll('#capTab .qbr-select > *');
   let agentLabelEl=null,agentSelectEl=null;
   agentFilterEls.forEach(el=>{
     if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")agentLabelEl=el;
@@ -2332,7 +2108,7 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","kpiTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",kpi:"kpiTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
 document.getElementById("estBtn").addEventListener("click",runEst);
 document.getElementById("aiX").addEventListener("click",()=>document.getElementById("aiP").classList.add("hidden"));
 document.getElementById("apiK").addEventListener("input",e=>{apiKey=e.target.value.trim();const s=document.getElementById("ksT");const inp=document.getElementById("apiK");const lbl=document.getElementById("apiKeyPanel").querySelector("label");if(hasK()){s.textContent="✓ Enabled";s.className="ks valid";inp.style.borderColor="var(--green)";inp.style.color="var(--green)";lbl.style.color="var(--green)"}else{s.textContent="Not set";s.className="ks missing";inp.style.borderColor="";inp.style.color="";lbl.style.color=""}});
@@ -3029,16 +2805,8 @@ const BF={
       }
       return smallSlots[smallSlots.length-1].x;
     };
-    // Small enemies can occupy any row (0,1,2); medium stays row 1, large stays row 2
-    eSmall.forEach((e,i)=>{
-      const row=i%3;
-      const targetX=fxAbs+30*s+i*eSpacing+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
-      const targetY=this.groundY-row*2*s;
-      e.x+=(targetX-e.x)*0.02;
-      e.y+=(targetY-e.y)*0.02;
-      e.frame++;
-      e.bobPhase+=0.03;
-    });
+    // Compute medium/large target positions first so small enemies can avoid occupied rows
+    const medLargePositions=[];
     [[eMedium,1],[eLarge,2]].forEach(([tier,row])=>{
       tier.forEach((e)=>{
         const nrd=e.ticketRef&&e.ticketRef.nextResponse?e.ticketRef.nextResponse.getTime():FAR_FUTURE;
@@ -3049,7 +2817,25 @@ const BF={
         e.y+=(targetY-e.y)*0.02;
         e.frame++;
         e.bobPhase+=0.03;
+        medLargePositions.push({x:baseX,row});
       });
+    });
+    // Small enemies fill any empty row; overlap is okay if all rows taken
+    const proxThresh=eSpacing*0.75;
+    eSmall.forEach((e,i)=>{
+      const baseX=fxAbs+30*s+i*eSpacing;
+      const takenRows=new Set();
+      medLargePositions.forEach(ml=>{
+        if(Math.abs(ml.x-baseX)<proxThresh)takenRows.add(ml.row);
+      });
+      let row=0;
+      for(let r=0;r<3;r++){if(!takenRows.has(r)){row=r;break;}}
+      const targetX=baseX+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
+      const targetY=this.groundY-row*2*s;
+      e.x+=(targetX-e.x)*0.02;
+      e.y+=(targetY-e.y)*0.02;
+      e.frame++;
+      e.bobPhase+=0.03;
     });
 
     // Grenade system — warriors throw a grenade when they level up
