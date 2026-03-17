@@ -2754,7 +2754,7 @@ const BF={
         w.atkTimer=fireRate+Math.floor(Math.random()*15);
         const dh=this.spriteDH;
         const dw=dh*(this.spriteFrameW/this.spriteFrameH);
-        const randLife=40+Math.floor(Math.random()*120);
+        const randLife=25+Math.floor(Math.random()*70);
         if(wpn==="railgun"){
           // Railgun: fast, bright cyan beam, large
           this.projectiles.push({x:w.x+dw*0.45,y:w.y-dh*0.15,vx:10*s,color:"#00E5FF",size:5*s,trail:true,life:randLife,age:0,shape:"beam"});
@@ -2828,7 +2828,7 @@ const BF={
         cmd.atkTimer=fireRate+Math.floor(Math.random()*15);
         const dh=this.spriteDH;
         const dw=dh*(this.spriteFrameW/this.spriteFrameH);
-        const randLife=40+Math.floor(Math.random()*120);
+        const randLife=25+Math.floor(Math.random()*70);
         if(wpn==="railgun"){
           this.projectiles.push({x:cmd.x+dw*0.45,y:cmd.y-dh*0.15,vx:10*s,color:"#00E5FF",size:5*s,trail:true,life:randLife,age:0,shape:"beam"});
         }else if(wpn==="laser"){
