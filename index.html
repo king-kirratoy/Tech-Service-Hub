@@ -2998,8 +2998,9 @@ const BF={
     this.enemies.forEach(e=>{const tk=actTix.find(t=>t.id===e.id);if(tk)e.ticketRef=tk});
 
     // Position enemies sorted by next response date (soonest = front, nearest warriors)
+    // Position enemies in diagonal "\" grid pattern (opposite of warrior "/")
+    const eDiagRows=3;
     const eSpacing=32*s;
-    const eRows=6;
     const FAR_FUTURE=9e15;
     const eSorted=this.enemies.filter(e=>!e.dying&&!e.dead);
     eSorted.sort((a,b)=>{
@@ -3008,10 +3009,11 @@ const BF={
       return aNrd-bNrd;
     });
     eSorted.forEach((e,i)=>{
-      const col=Math.floor(i/eRows);
-      const row=i%eRows;
+      const grp=Math.floor(i/3);const pos=i%3;
+      const col=pos<2?grp*2:grp*2+1;
+      const diagRow=pos===0?0:pos===1?2:1; // bottom, top, middle = "\" zigzag
       const targetX=fxAbs+30*s+col*eSpacing+Math.sin(this.frame*0.025+i*0.7)*5*s;
-      const targetY=this.groundY-row*2*s;
+      const targetY=this.groundY-diagRow*2*s;
       e.x+=(targetX-e.x)*0.03;
       e.y+=(targetY-e.y)*0.03;
       e.frame++;
