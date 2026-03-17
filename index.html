@@ -1651,7 +1651,7 @@ function renderTeamAll(){
     // Active Tickets
     if(visCols.has("activeTickets")){
       let atColor="color:#8aa4c4";
-      if(a.activeTickets>0)atColor=a.activeTickets>=20?"color:#fb9e00":a.activeTickets>=10?"color:#fcdc00":"color:#84BD00";
+      if(a.activeTickets>0)atColor=a.activeTickets>=16?"color:#fb9e00":a.activeTickets>=8?"color:#fcdc00":"color:#84BD00";
       h+=`<td style="${atColor}">${a.activeTickets.toLocaleString()}</td>`;
     }
     // Tickets Closed with color logic based on toggle
@@ -2792,68 +2792,23 @@ const BF={
     // Update enemy ticket refs
     this.enemies.forEach(e=>{const tk=actTix.find(t=>t.id===e.id);if(tk)e.ticketRef=tk});
 
-    // Position enemies by size tier: row 0 (bottom)=small, row 1 (middle)=medium, row 2 (top)=large
-    // Each tier sorted by next response date (soonest = front)
+    // Position enemies sorted by next response date (soonest = front, nearest warriors)
     const eSpacing=32*s;
+    const eRows=6;
     const FAR_FUTURE=9e15;
-    const eAlive=this.enemies.filter(e=>!e.dying&&!e.dead);
-    const sByNrd=(a,b)=>{
-      const aN=a.ticketRef&&a.ticketRef.nextResponse?a.ticketRef.nextResponse.getTime():FAR_FUTURE;
-      const bN=b.ticketRef&&b.ticketRef.nextResponse?b.ticketRef.nextResponse.getTime():FAR_FUTURE;
-      return aN-bN;
-    };
-    const eSmall=eAlive.filter(e=>e.tier==="small").sort(sByNrd);
-    const eMedium=eAlive.filter(e=>e.tier==="medium").sort(sByNrd);
-    const eLarge=eAlive.filter(e=>e.tier==="large").sort(sByNrd);
-    // Build a timeline map from small enemies: response time -> horizontal slot position
-    const smallSlots=eSmall.map((e,i)=>{
-      const nrd=e.ticketRef&&e.ticketRef.nextResponse?e.ticketRef.nextResponse.getTime():FAR_FUTURE;
-      return{nrd,x:fxAbs+30*s+i*eSpacing};
+    const eSorted=this.enemies.filter(e=>!e.dying&&!e.dead);
+    eSorted.sort((a,b)=>{
+      const aNrd=a.ticketRef&&a.ticketRef.nextResponse?a.ticketRef.nextResponse.getTime():FAR_FUTURE;
+      const bNrd=b.ticketRef&&b.ticketRef.nextResponse?b.ticketRef.nextResponse.getTime():FAR_FUTURE;
+      return aNrd-bNrd;
     });
-    // Find the horizontal position for a given response time by interpolating between small enemy slots
-    const slotXForNrd=(nrd)=>{
-      if(smallSlots.length===0)return fxAbs+30*s;
-      if(nrd<=smallSlots[0].nrd)return smallSlots[0].x;
-      if(nrd>=smallSlots[smallSlots.length-1].nrd)return smallSlots[smallSlots.length-1].x+eSpacing;
-      for(let j=0;j<smallSlots.length-1;j++){
-        if(nrd>=smallSlots[j].nrd&&nrd<=smallSlots[j+1].nrd){
-          const t=(smallSlots[j+1].nrd===smallSlots[j].nrd)?0.5:
-            (nrd-smallSlots[j].nrd)/(smallSlots[j+1].nrd-smallSlots[j].nrd);
-          return smallSlots[j].x+(smallSlots[j+1].x-smallSlots[j].x)*t;
-        }
-      }
-      return smallSlots[smallSlots.length-1].x;
-    };
-    // Compute medium/large target positions first so small enemies can avoid occupied rows
-    const rowStep=12*s; // vertical spacing between enemy rows (must be enough for sprites to visually shift)
-    const medLargePositions=[];
-    [[eMedium,1],[eLarge,2]].forEach(([tier,row])=>{
-      tier.forEach((e)=>{
-        const nrd=e.ticketRef&&e.ticketRef.nextResponse?e.ticketRef.nextResponse.getTime():FAR_FUTURE;
-        const baseX=slotXForNrd(nrd);
-        const targetX=baseX+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
-        const targetY=this.groundY-row*rowStep;
-        e.x+=(targetX-e.x)*0.02;
-        e.y+=(targetY-e.y)*0.02;
-        e.frame++;
-        e.bobPhase+=0.03;
-        medLargePositions.push({x:baseX,row});
-      });
-    });
-    // Small enemies fill any empty row; overlap is okay if all rows taken
-    const proxThresh=eSpacing*0.75;
-    eSmall.forEach((e,i)=>{
-      const baseX=fxAbs+30*s+i*eSpacing;
-      const takenRows=new Set();
-      medLargePositions.forEach(ml=>{
-        if(Math.abs(ml.x-baseX)<proxThresh)takenRows.add(ml.row);
-      });
-      let row=0;
-      for(let r=0;r<3;r++){if(!takenRows.has(r)){row=r;break;}}
-      const targetX=baseX+Math.sin(this.frame*0.025+e.id*0.7)*5*s;
-      const targetY=this.groundY-row*rowStep;
-      e.x+=(targetX-e.x)*0.02;
-      e.y+=(targetY-e.y)*0.02;
+    eSorted.forEach((e,i)=>{
+      const col=Math.floor(i/eRows);
+      const row=i%eRows;
+      const targetX=fxAbs+30*s+col*eSpacing+Math.sin(this.frame*0.025+i*0.7)*5*s;
+      const targetY=this.groundY-row*2*s;
+      e.x+=(targetX-e.x)*0.03;
+      e.y+=(targetY-e.y)*0.03;
       e.frame++;
       e.bobPhase+=0.03;
     });
