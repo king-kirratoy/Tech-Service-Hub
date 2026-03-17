@@ -2806,10 +2806,11 @@ const BF={
       const col=Math.floor(i/eRows);
       const row=i%eRows;
       const targetX=fxAbs+30*s+col*eSpacing+Math.sin(this.frame*0.025+i*0.7)*5*s;
-      const targetY=this.groundY-row*2*s;
+      const targetY=this.groundY-row*1.5*s;
       e.x+=(targetX-e.x)*0.03;
       e.y+=(targetY-e.y)*0.03;
-      e.frame++;
+      const tier=e.tier||"small";
+      e.frame+=(tier==="large"?1:0.6);
       e.bobPhase+=0.03;
     });
 
