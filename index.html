@@ -2185,7 +2185,8 @@ function applyLoginState(){
     pwdInput.style.display="none";
     if(agentLabelEl)agentLabelEl.style.display="";
     if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
-    robotCustomizer.classList.add("hidden");
+    if(loggedInAgent){robotCustomizer.classList.remove("hidden");loadAgentRobot()}
+    else{robotCustomizer.classList.add("hidden")}
   }else{
     riskTab.style.display="none";
     if(riskTab.classList.contains("active")){
@@ -2219,7 +2220,7 @@ document.getElementById("adminLoginBtn").addEventListener("click",async()=>{
   st.textContent="Logging in...";st.classList.add("missing");
   const result=await supaLogin(pwd);
   if(!result){st.textContent="Invalid password";st.classList.add("missing");return}
-  if(result.role==="admin"){isAdmin=true;loggedInAgent=null}
+  if(result.role==="admin"){isAdmin=true;loggedInAgent=result.agent_name||"Admin"}
   else{isAdmin=false;loggedInAgent=result.agent_name}
   applyLoginState();
 });
