@@ -427,6 +427,12 @@ async function loadAllRobots(){
   return data||[];
 }
 
+async function loadAdminAgents(){
+  const{data,error}=await sb.from("agent_logins").select("agent_name").eq("role","admin");
+  if(error){console.error("Supabase admin load error:",error);return[]}
+  return(data||[]).map(r=>r.agent_name).filter(Boolean);
+}
+
 // ═══════════ OVERRIDE PERSISTENCE ═══════════
 const OVR_KEY="servicehub_overrides";
 function loadOverrides(){try{return JSON.parse(localStorage.getItem(OVR_KEY)||"{}")}catch(e){return{}}}
@@ -2367,6 +2373,7 @@ let currentRobot={color:"blue",eyes:"visor",antenna:"spike",accessory:"none",rob
 
 // Global cache of all robot configs (loaded from Supabase)
 let allRobotConfigs=[];
+let adminAgentNames=[];
 const DEFAULT_ROBOT={color:"blue",eyes:"visor",antenna:"none",accessory:"none",robot_name:""};
 
 function getRobotConfigForAgent(agentName){
@@ -2606,16 +2613,17 @@ async function loadRobotGallery(){
   });
 }
 
-// Load gallery and robot configs on page load
+// Load gallery, robot configs, and admin list on page load
 setTimeout(async()=>{
   allRobotConfigs=await loadAllRobots();
+  adminAgentNames=await loadAdminAgents();
   loadRobotGallery();
 },1000);
 
 
 // ═══════════ BATTLEFIELD ENGINE ═══════════
 const BF={
-  canvas:null,ctx:null,W:0,H:160,scale:2,warriors:[],enemies:[],projectiles:[],grenades:[],floatingTexts:[],airStrikes:[],frontLine:0.5,
+  canvas:null,ctx:null,W:0,H:160,scale:2,warriors:[],commanders:[],enemies:[],projectiles:[],grenades:[],floatingTexts:[],airStrikes:[],frontLine:0.5,
   targetFront:0.5,frame:0,running:false,muted:true,hoveredEntity:null,
   lastHourClosedCount:0,lastHourCheckTime:0,
   prevWarriorState:{}, // Cache warrior positions across refreshes
@@ -2859,6 +2867,34 @@ const BF={
       if(w.attacking){w.atkFrame++;if(w.atkFrame>16)w.attacking=false}
       // Cache position and weapon
       this.prevWarriorState[w.name]={x:w.x,y:w.y,weapon:w.weapon,weaponLevel:w.weaponLevel,prevLevel:w.prevLevel};
+    });
+
+    // Build/update commanders (admin agents — positioned far left, behind warriors)
+    const adminNames=adminAgentNames.filter(n=>!roster.some(r=>r.name===n));
+    if(this.commanders.length!==adminNames.length){
+      const oldCmds=this.commanders;
+      this.commanders=adminNames.map((name,i)=>{
+        const existing=oldCmds.find(c2=>c2.name===name);
+        const rCfg=getRobotConfigForAgent(name);
+        const rColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
+        const cmdColor=rColorObj?rColorObj.hex:"#FFD700";
+        return{
+          id:-100-i,name,color:cmdColor,isCommander:true,
+          x:existing?existing.x:battleLeft+40*s,
+          y:existing?existing.y:this.groundY,
+          frame:existing?existing.frame:Math.floor(Math.random()*200),
+          bobPhase:existing?existing.bobPhase:Math.random()*Math.PI*2
+        };
+      });
+    }
+    // Position commanders at far left, staggered
+    this.commanders.forEach((cmd,i)=>{
+      const targetX=battleLeft+60*s+i*50*s;
+      const targetY=this.groundY-i*4*s;
+      cmd.x+=(targetX-cmd.x)*0.04;
+      cmd.y+=(targetY-cmd.y)*0.04;
+      cmd.frame++;
+      cmd.bobPhase+=0.03;
     });
 
     // Build enemies from active tickets
@@ -3158,6 +3194,56 @@ const BF={
     }
   },
 
+  drawCommander(x,y,cmd){
+    const c=this.ctx,s=this.scale;
+    const bob=Math.sin(cmd.bobPhase)*2*s;
+    const yy=y+bob;
+
+    // Commander sprite is 25% larger than regular warriors
+    const scale=1.25;
+    const dh=this.spriteDH*scale;
+    const dw=dh*(this.spriteFrameW/this.spriteFrameH);
+    const frameIdx=Math.floor(cmd.frame/18)%this.spriteFrames;
+    const sx=frameIdx*this.spriteFrameW;
+
+    const rCfg=getRobotConfigForAgent(cmd.name);
+    const robotColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
+    const tintColor=robotColorObj?robotColorObj.hex:cmd.color;
+
+    // Shadow
+    c.fillStyle="rgba(0,0,0,0.3)";
+    c.beginPath();c.ellipse(x,y+10*s,dw*0.35,5*s,0,0,Math.PI*2);c.fill();
+
+    const groundOffset=dh*0.38;
+    const tinted=this.spriteLoaded?this.getTintedSprite(tintColor):null;
+    if(tinted){
+      c.drawImage(tinted,sx,0,this.spriteFrameW,this.spriteFrameH,x-dw/2,yy-dh+groundOffset,dw,dh);
+    }else{
+      c.fillStyle=tintColor;
+      c.fillRect(x-15*s,yy-38*s,30*s,38*s);
+    }
+
+    // Draw accessories (slightly larger pixel scale for commander)
+    this.drawWarriorAccessories(c,x,yy,dw,dh,groundOffset,s*scale,rCfg);
+
+    // Commander star badge above head
+    const starY=yy-dh*0.68+groundOffset;
+    c.fillStyle="#FFD700";
+    c.globalAlpha=0.7+Math.sin(cmd.bobPhase*2)*0.3;
+    c.beginPath();
+    const starX=x;const starR=4*s;
+    for(let i=0;i<5;i++){
+      const ang=i*Math.PI*2/5-Math.PI/2;
+      const ox=starX+Math.cos(ang)*starR;
+      const oy=starY+Math.sin(ang)*starR;
+      if(i===0)c.moveTo(ox,oy);else c.lineTo(ox,oy);
+      const innerAng=ang+Math.PI/5;
+      c.lineTo(starX+Math.cos(innerAng)*starR*0.4,starY+Math.sin(innerAng)*starR*0.4);
+    }
+    c.closePath();c.fill();
+    c.globalAlpha=1;
+  },
+
   drawEnemy(x,y,e){
     const c=this.ctx,s=this.scale;
     const hovered=this.hoveredEntity&&this.hoveredEntity.type==="enemy"&&this.hoveredEntity.id===e.id;
@@ -3329,11 +3415,21 @@ const BF={
     const tooltip=document.getElementById("battleTooltip");
     let found=null;
     const s=this.scale;
-    for(const w of this.warriors){
-      const dh=this.spriteDH;
-      const dw=dh*(this.spriteFrameW/this.spriteFrameH);
-      if(mx>=w.x-dw/2&&mx<=w.x+dw/2&&my>=w.y-dh*0.42&&my<=w.y+4*s){
-        found={type:"warrior",id:w.id,entity:w};break;
+    // Check commanders first (larger hitbox)
+    for(const cmd of this.commanders){
+      const cdh=this.spriteDH*1.25;
+      const cdw=cdh*(this.spriteFrameW/this.spriteFrameH);
+      if(mx>=cmd.x-cdw/2&&mx<=cmd.x+cdw/2&&my>=cmd.y-cdh*0.42&&my<=cmd.y+4*s){
+        found={type:"commander",id:cmd.id,entity:cmd};break;
+      }
+    }
+    if(!found){
+      for(const w of this.warriors){
+        const dh=this.spriteDH;
+        const dw=dh*(this.spriteFrameW/this.spriteFrameH);
+        if(mx>=w.x-dw/2&&mx<=w.x+dw/2&&my>=w.y-dh*0.42&&my<=w.y+4*s){
+          found={type:"warrior",id:w.id,entity:w};break;
+        }
       }
     }
     if(!found){
@@ -3356,7 +3452,11 @@ const BF={
     this.hoveredEntity=found;
     if(found){
       let html="";
-      if(found.type==="warrior"){
+      if(found.type==="commander"){
+        const cmd=found.entity;
+        html=`<div style="font-weight:700;font-size:12px;margin-bottom:4px;color:${cmd.color}">${cmd.name}</div>`;
+        html+=`<div style="font-size:10px;color:#FFD700;font-weight:700;letter-spacing:1px;text-transform:uppercase">Commander</div>`;
+      }else if(found.type==="warrior"){
         const w=found.entity;
         const tt=actTix.filter(x=>x.assignedTo===w.id);
         let rank;
@@ -3390,11 +3490,16 @@ const BF={
     if(!this.ctx)return;
     const c=this.ctx,s=this.scale;
     this.drawBackground();
-    // Draw entities sorted by y for depth
-    const all=[...this.enemies.map(e=>({type:"e",e,y:e.y})),...this.warriors.map(w=>({type:"w",w,y:w.y}))];
+    // Draw entities sorted by y for depth (commanders, warriors, enemies)
+    const all=[
+      ...this.enemies.map(e=>({type:"e",e,y:e.y})),
+      ...this.warriors.map(w=>({type:"w",w,y:w.y})),
+      ...this.commanders.map(cmd=>({type:"cmd",cmd,y:cmd.y}))
+    ];
     all.sort((a,b)=>a.y-b.y);
     all.forEach(item=>{
       if(item.type==="w")this.drawWarrior(item.w.x,item.w.y,item.w);
+      else if(item.type==="cmd")this.drawCommander(item.cmd.x,item.cmd.y,item.cmd);
       else this.drawEnemy(item.e.x,item.e.y,item.e);
     });
     // Draw projectiles on top
@@ -3570,7 +3675,7 @@ const BF={
     if(roster.length&&actTix.length){
       section.classList.remove("hidden");
       if(!this.canvas)this.init();
-      else{this.resize();this.warriors=[]}// Rebuild warriors but positions cached
+      else{this.resize();this.warriors=[];this.commanders=[]}// Rebuild warriors/commanders but positions cached
     }else{section.classList.add("hidden")}
   }
 };
