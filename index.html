@@ -564,7 +564,7 @@ function procHist(){
   // Convert clientCatStats to summaries
   Object.keys(clientCatStats).forEach(ck=>{const a=clientCatStats[ck];clientCatStats[ck]={n:a.length,med:med(a),mean:a.reduce((x,y)=>x+y,0)/a.length}});
 
-  buildAgentStats();populateKPIClients();populateCampaignFilters();renderKPI();teamAiCache={};updateBanner();
+  buildAgentStats();populateKPIClients();populateCampaignFilters();renderKPI();renderCampaignCharts();teamAiCache={};updateBanner();
 }
 
 // ═══════════ ACTIVE PROCESSING ═══════════
@@ -2088,12 +2088,19 @@ function applyLoginState(){
   const pwdInput=document.getElementById("adminPwd");
   const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#capTab .qbr-select label:nth-of-type(2)');
   const agentSelect=document.getElementById("kpiAgent");
-  // Find the agent filter label+select wrapper elements
+  // Find the agent filter label+select wrapper elements (Workload tab)
   const agentFilterEls=document.querySelectorAll('#capTab .qbr-select > *');
   let agentLabelEl=null,agentSelectEl=null;
   agentFilterEls.forEach(el=>{
     if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")agentLabelEl=el;
     if(el.id==="kpiAgent")agentSelectEl=el;
+  });
+  // Find the agent filter label+select wrapper elements (Campaign tab)
+  const campFilterEls=document.querySelectorAll('#campaignTab .qbr-select > *');
+  let campAgentLabelEl=null,campAgentSelectEl=null;
+  campFilterEls.forEach(el=>{
+    if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")campAgentLabelEl=el;
+    if(el.id==="campaignAgent")campAgentSelectEl=el;
   });
   const robotCustomizer=document.getElementById("robotCustomizer");
   if(isAdmin){
@@ -2103,6 +2110,8 @@ function applyLoginState(){
     pwdInput.style.display="none";
     if(agentLabelEl)agentLabelEl.style.display="";
     if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
+    if(campAgentLabelEl)campAgentLabelEl.style.display="";
+    if(campAgentSelectEl){campAgentSelectEl.style.display="";campAgentSelectEl.value="";}
     if(loggedInAgent){robotCustomizer.classList.remove("hidden");loadAgentRobot()}
     else{robotCustomizer.classList.add("hidden")}
   }else{
@@ -2115,6 +2124,8 @@ function applyLoginState(){
     }
     if(agentLabelEl)agentLabelEl.style.display="none";
     if(agentSelectEl)agentSelectEl.style.display="none";
+    if(campAgentLabelEl)campAgentLabelEl.style.display="none";
+    if(campAgentSelectEl)campAgentSelectEl.style.display="none";
     if(loggedInAgent){
       st.textContent="Logged in as "+loggedInAgent;st.classList.remove("missing");st.classList.add("set");
       loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
@@ -2157,7 +2168,7 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden");if(tg==="campaign"){renderCampaignCharts()}})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
 document.getElementById("estBtn").addEventListener("click",runEst);
 document.getElementById("aiX").addEventListener("click",()=>document.getElementById("aiP").classList.add("hidden"));
 document.getElementById("apiK").addEventListener("input",e=>{apiKey=e.target.value.trim();const s=document.getElementById("ksT");const inp=document.getElementById("apiK");const lbl=document.getElementById("apiKeyPanel").querySelector("label");if(hasK()){s.textContent="✓ Enabled";s.className="ks valid";inp.style.borderColor="var(--green)";inp.style.color="var(--green)";lbl.style.color="var(--green)"}else{s.textContent="Not set";s.className="ks missing";inp.style.borderColor="";inp.style.color="";lbl.style.color=""}});
