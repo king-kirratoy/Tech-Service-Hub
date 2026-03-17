@@ -1866,9 +1866,9 @@ function renderTeamAll(){
         else closedColor="color:#fb9e00";
       }else{
         if(a.total===0)closedColor="color:#8aa4c4";
-        else if(a.total>=30)closedColor="color:#00E5FF";
-        else if(a.total>=20)closedColor="color:#84BD00";
-        else if(a.total>=10)closedColor="color:#fcdc00";
+        else if(a.total>=55)closedColor="color:#00E5FF";
+        else if(a.total>=40)closedColor="color:#84BD00";
+        else if(a.total>=25)closedColor="color:#fcdc00";
         else closedColor="color:#fb9e00";
       }
       h+=`<td style="${closedColor}">${a.total.toLocaleString()}</td>`;
@@ -1878,13 +1878,13 @@ function renderTeamAll(){
       let assignedColor="";
       if(agentTimeFilter==="today"){
         if(a.assigned===0)assignedColor="color:#8aa4c4";
-        else if(a.assigned>=12)assignedColor="color:#fb9e00";
-        else if(a.assigned>=6)assignedColor="color:#fcdc00";
+        else if(a.assigned>=16)assignedColor="color:#fb9e00";
+        else if(a.assigned>=8)assignedColor="color:#fcdc00";
         else assignedColor="color:#84BD00";
       }else{
         if(a.assigned===0)assignedColor="color:#8aa4c4";
-        else if(a.assigned>=30)assignedColor="color:#fb9e00";
-        else if(a.assigned>=18)assignedColor="color:#fcdc00";
+        else if(a.assigned>=80)assignedColor="color:#fb9e00";
+        else if(a.assigned>=40)assignedColor="color:#fcdc00";
         else assignedColor="color:#84BD00";
       }
       h+=`<td style="${assignedColor}">${a.assigned.toLocaleString()}</td>`;
@@ -1894,13 +1894,13 @@ function renderTeamAll(){
       let ewColor="";
       if(agentTimeFilter==="today"){
         if(a.emailWeb===0)ewColor="color:#8aa4c4";
-        else if(a.emailWeb>=10)ewColor="color:#fb9e00";
-        else if(a.emailWeb>=5)ewColor="color:#fcdc00";
+        else if(a.emailWeb>=16)ewColor="color:#fb9e00";
+        else if(a.emailWeb>=8)ewColor="color:#fcdc00";
         else ewColor="color:#84BD00";
       }else{
         if(a.emailWeb===0)ewColor="color:#8aa4c4";
-        else if(a.emailWeb>=25)ewColor="color:#fb9e00";
-        else if(a.emailWeb>=15)ewColor="color:#fcdc00";
+        else if(a.emailWeb>=80)ewColor="color:#fb9e00";
+        else if(a.emailWeb>=40)ewColor="color:#fcdc00";
         else ewColor="color:#84BD00";
       }
       h+=`<td style="${ewColor}">${a.emailWeb.toLocaleString()}</td>`;
@@ -1910,13 +1910,13 @@ function renderTeamAll(){
       let pmColor="";
       if(agentTimeFilter==="today"){
         if(a.phoneManual===0)pmColor="color:#8aa4c4";
-        else if(a.phoneManual>=10)pmColor="color:#fb9e00";
-        else if(a.phoneManual>=5)pmColor="color:#fcdc00";
+        else if(a.phoneManual>=16)pmColor="color:#fb9e00";
+        else if(a.phoneManual>=8)pmColor="color:#fcdc00";
         else pmColor="color:#84BD00";
       }else{
         if(a.phoneManual===0)pmColor="color:#8aa4c4";
-        else if(a.phoneManual>=25)pmColor="color:#fb9e00";
-        else if(a.phoneManual>=15)pmColor="color:#fcdc00";
+        else if(a.phoneManual>=80)pmColor="color:#fb9e00";
+        else if(a.phoneManual>=40)pmColor="color:#fcdc00";
         else pmColor="color:#84BD00";
       }
       h+=`<td style="${pmColor}">${a.phoneManual.toLocaleString()}</td>`;
