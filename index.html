@@ -240,6 +240,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 <symbol id="iq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
 <symbol id="iw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
 <symbol id="iad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+<symbol id="ibk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/></symbol>
 </defs></svg>
 <div class="ttm" id="dgm"></div></div>
 
@@ -264,7 +265,8 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div class="glass api-key-bar hidden" id="apiKeyPanel"><label>API Key</label><input type="password" id="apiK" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"><span class="ks missing" id="ksT">Not set</span></div>
   <div class="glass api-key-bar hidden" id="adminPanel"><label>Password</label><input type="password" id="adminPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Not logged in</span></div>
   <div class="tabs">
-    <button class="tab active" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Team Workload</button>
+    <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
+    <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Team Workload</button>
     <button class="tab" data-tab="kpi"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Team Stats</button>
     <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Risk Monitor <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
@@ -302,7 +304,16 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Ticket Types</h3><canvas id="cTypes" style="min-height:180px"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#fdcb6e"></span>CSAT Score Breakdown</h3><canvas id="cCsat" style="min-height:180px"></canvas></div></div>
   </div>
-  <div id="capTab">
+  <div id="barracksTab">
+    <div style="margin-bottom:20px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Barracks</h2>
+      <p style="font-size:12px;color:var(--text-muted)">Your squad's player cards, ranks, and battle readiness.</p>
+    </div>
+    <div id="playerCards" class="hidden">
+      <div id="playerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
+    </div>
+  </div>
+  <div id="capTab" class="hidden">
     <div style="margin-bottom:20px">
       <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Team Workload</h2>
       <p style="font-size:12px;color:var(--text-muted)">Ticket scheduling, capacity overview, and assignment recommendations.</p>
@@ -317,10 +328,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <div class="cal-main">
         <div id="ca"></div>
       </div>
-    </div>
-    <div id="playerCards" class="hidden" style="margin-top:18px">
-      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Tech Player Cards</h3>
-      <div id="playerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
     </div>
     <div id="unassignedSection" class="hidden" style="margin-top:18px">
       <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Unassigned Tickets — Assignment Recommendations</h3>
@@ -1665,8 +1672,8 @@ function renderTeamAll(){
   });
 
   // Determine best/worst for highlighting (only for numeric cols with >=2 agents)
-  const cols=["csat","csatRate"];
-  const higherBetter={csat:true,csatRate:true};
+  const cols=["csat"];
+  const higherBetter={csat:true};
   const best={},worst={};
   if(agents.length>=2){
     cols.forEach(col=>{
@@ -1686,17 +1693,17 @@ function renderTeamAll(){
     return"";
   }
 
-  const hd=[
-    {key:"name",label:"Agent"},
-    {key:"total",label:"Tickets Closed"},
-    {key:"assigned",label:"Tickets Assigned"},
-    {key:"emailWeb",label:"Email/Web"},
-    {key:"phoneManual",label:"Phone/Manual"},
-    {key:"frtPct",label:"Resp SLA %"},
-    {key:"slaPct",label:"Res SLA %"},
-    {key:"csatRate",label:"CSAT Rate %"},
-    {key:"csat",label:"CSAT Score"},
+  const allCols=[
+    {key:"name",label:"Agent",public:true},
+    {key:"total",label:"Tickets Closed",public:false},
+    {key:"assigned",label:"Tickets Assigned",public:true},
+    {key:"emailWeb",label:"Email/Web",public:true},
+    {key:"phoneManual",label:"Phone/Manual",public:true},
+    {key:"frtPct",label:"Resp SLA %",public:false},
+    {key:"slaPct",label:"Res SLA %",public:false},
+    {key:"csat",label:"CSAT Score",public:false},
   ];
+  const hd=(isAdmin||loggedInAgent)?allCols:allCols.filter(c=>c.public);
 
   let h=`<table class="agent-table"><thead><tr>`;
   hd.forEach(col=>{
@@ -1705,91 +1712,100 @@ function renderTeamAll(){
     h+=`<th data-col="${col.key}" class="${sorted?"sorted":""}">${col.label}<span class="sort-arrow">${arrow}</span></th>`;
   });
   h+=`</tr></thead><tbody>`;
-  // In agent view, only show logged-in agent's row; admin sees all (with optional filter)
+  // Admin: all agents, all columns. Agent login: own row, all columns. No login: all agents, public columns only.
   let visibleAgents=agents;
-  if(!isAdmin){
-    if(loggedInAgent){
-      visibleAgents=agents.filter(a=>a.name===loggedInAgent);
-    }else{
-      visibleAgents=[];
-      h+=`<tr><td colspan="${hd.length}" style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px">Login to view your stats</td></tr>`;
-    }
+  if(!isAdmin&&loggedInAgent){
+    visibleAgents=agents.filter(a=>a.name===loggedInAgent);
   }
+  const visCols=new Set(hd.map(c=>c.key));
   visibleAgents.forEach(a=>{
     h+=`<tr>`;
-    h+=`<td>${a.name}</td>`;
+    if(visCols.has("name"))h+=`<td>${a.name}</td>`;
     // Tickets Closed with color logic based on toggle
-    let closedColor="";
-    if(agentTimeFilter==="today"){
-      if(a.total===0)closedColor="color:#8aa4c4";
-      else if(a.total>=11)closedColor="color:#00E5FF";
-      else if(a.total>=8)closedColor="color:#84BD00";
-      else if(a.total>=4)closedColor="color:#fcdc00";
-      else closedColor="color:#fb9e00";
-    }else{
-      if(a.total===0)closedColor="color:#8aa4c4";
-      else if(a.total>=55)closedColor="color:#00E5FF";
-      else if(a.total>=40)closedColor="color:#84BD00";
-      else if(a.total>=25)closedColor="color:#fcdc00";
-      else closedColor="color:#fb9e00";
+    if(visCols.has("total")){
+      let closedColor="";
+      if(agentTimeFilter==="today"){
+        if(a.total===0)closedColor="color:#8aa4c4";
+        else if(a.total>=11)closedColor="color:#00E5FF";
+        else if(a.total>=8)closedColor="color:#84BD00";
+        else if(a.total>=4)closedColor="color:#fcdc00";
+        else closedColor="color:#fb9e00";
+      }else{
+        if(a.total===0)closedColor="color:#8aa4c4";
+        else if(a.total>=55)closedColor="color:#00E5FF";
+        else if(a.total>=40)closedColor="color:#84BD00";
+        else if(a.total>=25)closedColor="color:#fcdc00";
+        else closedColor="color:#fb9e00";
+      }
+      h+=`<td style="${closedColor}">${a.total.toLocaleString()}</td>`;
     }
-    h+=`<td style="${closedColor}">${a.total.toLocaleString()}</td>`;
     // Tickets Assigned with color logic based on toggle
-    let assignedColor="";
-    if(agentTimeFilter==="today"){
-      if(a.assigned===0)assignedColor="color:#8aa4c4";
-      else if(a.assigned>=16)assignedColor="color:#fb9e00";
-      else if(a.assigned>=8)assignedColor="color:#fcdc00";
-      else assignedColor="color:#84BD00";
-    }else{
-      if(a.assigned===0)assignedColor="color:#8aa4c4";
-      else if(a.assigned>=80)assignedColor="color:#fb9e00";
-      else if(a.assigned>=40)assignedColor="color:#fcdc00";
-      else assignedColor="color:#84BD00";
+    if(visCols.has("assigned")){
+      let assignedColor="";
+      if(agentTimeFilter==="today"){
+        if(a.assigned===0)assignedColor="color:#8aa4c4";
+        else if(a.assigned>=16)assignedColor="color:#fb9e00";
+        else if(a.assigned>=8)assignedColor="color:#fcdc00";
+        else assignedColor="color:#84BD00";
+      }else{
+        if(a.assigned===0)assignedColor="color:#8aa4c4";
+        else if(a.assigned>=80)assignedColor="color:#fb9e00";
+        else if(a.assigned>=40)assignedColor="color:#fcdc00";
+        else assignedColor="color:#84BD00";
+      }
+      h+=`<td style="${assignedColor}">${a.assigned.toLocaleString()}</td>`;
     }
-    h+=`<td style="${assignedColor}">${a.assigned.toLocaleString()}</td>`;
-    // Email/Web color logic (same thresholds as Tickets Assigned)
-    let ewColor="";
-    if(agentTimeFilter==="today"){
-      if(a.emailWeb===0)ewColor="color:#8aa4c4";
-      else if(a.emailWeb>=16)ewColor="color:#fb9e00";
-      else if(a.emailWeb>=8)ewColor="color:#fcdc00";
-      else ewColor="color:#84BD00";
-    }else{
-      if(a.emailWeb===0)ewColor="color:#8aa4c4";
-      else if(a.emailWeb>=80)ewColor="color:#fb9e00";
-      else if(a.emailWeb>=40)ewColor="color:#fcdc00";
-      else ewColor="color:#84BD00";
+    // Email/Web color logic
+    if(visCols.has("emailWeb")){
+      let ewColor="";
+      if(agentTimeFilter==="today"){
+        if(a.emailWeb===0)ewColor="color:#8aa4c4";
+        else if(a.emailWeb>=16)ewColor="color:#fb9e00";
+        else if(a.emailWeb>=8)ewColor="color:#fcdc00";
+        else ewColor="color:#84BD00";
+      }else{
+        if(a.emailWeb===0)ewColor="color:#8aa4c4";
+        else if(a.emailWeb>=80)ewColor="color:#fb9e00";
+        else if(a.emailWeb>=40)ewColor="color:#fcdc00";
+        else ewColor="color:#84BD00";
+      }
+      h+=`<td style="${ewColor}">${a.emailWeb.toLocaleString()}</td>`;
     }
-    h+=`<td style="${ewColor}">${a.emailWeb.toLocaleString()}</td>`;
-    // Phone/Manual color logic (same thresholds as Tickets Assigned)
-    let pmColor="";
-    if(agentTimeFilter==="today"){
-      if(a.phoneManual===0)pmColor="color:#8aa4c4";
-      else if(a.phoneManual>=16)pmColor="color:#fb9e00";
-      else if(a.phoneManual>=8)pmColor="color:#fcdc00";
-      else pmColor="color:#84BD00";
-    }else{
-      if(a.phoneManual===0)pmColor="color:#8aa4c4";
-      else if(a.phoneManual>=80)pmColor="color:#fb9e00";
-      else if(a.phoneManual>=40)pmColor="color:#fcdc00";
-      else pmColor="color:#84BD00";
+    // Phone/Manual color logic
+    if(visCols.has("phoneManual")){
+      let pmColor="";
+      if(agentTimeFilter==="today"){
+        if(a.phoneManual===0)pmColor="color:#8aa4c4";
+        else if(a.phoneManual>=16)pmColor="color:#fb9e00";
+        else if(a.phoneManual>=8)pmColor="color:#fcdc00";
+        else pmColor="color:#84BD00";
+      }else{
+        if(a.phoneManual===0)pmColor="color:#8aa4c4";
+        else if(a.phoneManual>=80)pmColor="color:#fb9e00";
+        else if(a.phoneManual>=40)pmColor="color:#fcdc00";
+        else pmColor="color:#84BD00";
+      }
+      h+=`<td style="${pmColor}">${a.phoneManual.toLocaleString()}</td>`;
     }
-    h+=`<td style="${pmColor}">${a.phoneManual.toLocaleString()}</td>`;
-    // Resp SLA % color: >=90 green, >=80 orange, <80 red
-    const frtColor=a.frtPct>=90?"color:#84BD00":a.frtPct>=80?"color:#fcdc00":"color:#fb9e00";
-    h+=`<td style="${frtColor}">${a.frtPct.toFixed(1)}</td>`;
-    // Res SLA % color: >=90 green, >=80 orange, <80 red
-    const slaColor=a.slaPct>=90?"color:#84BD00":a.slaPct>=80?"color:#fcdc00":"color:#fb9e00";
-    h+=`<td style="${slaColor}">${a.slaPct.toFixed(1)}</td>`;
-    // CSAT Score: label + topScore/total format
-    let csatCell="—";
-    if(a.csat!==null){
-      const topScore=a.csat>=3.5?4:a.csat>=2.5?3:a.csat>=1.5?2:1;
-      csatCell=`${csatLabel(a.csat)} <span style="font-size:9px;color:var(--text-dim)">${a.csatCounts[topScore]}/${a.csatN}</span>`;
+    // Resp SLA %
+    if(visCols.has("frtPct")){
+      const frtColor=a.frtPct>=90?"color:#84BD00":a.frtPct>=80?"color:#fcdc00":"color:#fb9e00";
+      h+=`<td style="${frtColor}">${a.frtPct.toFixed(1)}</td>`;
     }
-    h+=`<td style="color:#eaf2ff">${a.csatRate.toFixed(1)}</td>`;
-    h+=`<td${cellClass("csat",a.csat)}>${csatCell}</td>`;
+    // Res SLA %
+    if(visCols.has("slaPct")){
+      const slaColor=a.slaPct>=90?"color:#84BD00":a.slaPct>=80?"color:#fcdc00":"color:#fb9e00";
+      h+=`<td style="${slaColor}">${a.slaPct.toFixed(1)}</td>`;
+    }
+    // CSAT Score
+    if(visCols.has("csat")){
+      let csatCell="—";
+      if(a.csat!==null){
+        const topScore=a.csat>=3.5?4:a.csat>=2.5?3:a.csat>=1.5?2:1;
+        csatCell=`${csatLabel(a.csat)} <span style="font-size:9px;color:var(--text-dim)">${a.csatCounts[topScore]}/${a.csatN}</span>`;
+      }
+      h+=`<td${cellClass("csat",a.csat)}>${csatCell}</td>`;
+    }
     h+=`</tr>`;
   });
   h+=`</tbody></table>`;
@@ -2124,8 +2140,8 @@ function applyLoginState(){
     if(riskTab.classList.contains("active")){
       riskTab.classList.remove("active");
       document.getElementById("riskTab").classList.add("hidden");
-      document.querySelector('.tab[data-tab="capacity"]').classList.add("active");
-      document.getElementById("capTab").classList.remove("hidden");
+      document.querySelector('.tab[data-tab="barracks"]').classList.add("active");
+      document.getElementById("barracksTab").classList.remove("hidden");
     }
     if(agentLabelEl)agentLabelEl.style.display="none";
     if(agentSelectEl)agentSelectEl.style.display="none";
@@ -2160,7 +2176,7 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["kpiTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={kpi:"kpiTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","kpiTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",kpi:"kpiTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
 document.getElementById("estBtn").addEventListener("click",runEst);
 document.getElementById("aiX").addEventListener("click",()=>document.getElementById("aiP").classList.add("hidden"));
 document.getElementById("apiK").addEventListener("input",e=>{apiKey=e.target.value.trim();const s=document.getElementById("ksT");const inp=document.getElementById("apiK");const lbl=document.getElementById("apiKeyPanel").querySelector("label");if(hasK()){s.textContent="✓ Enabled";s.className="ks valid";inp.style.borderColor="var(--green)";inp.style.color="var(--green)";lbl.style.color="var(--green)"}else{s.textContent="Not set";s.className="ks missing";inp.style.borderColor="";inp.style.color="";lbl.style.color=""}});
