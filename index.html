@@ -312,8 +312,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div class="stat-grid" id="sg"></div>
     <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#00cec9"></span>Top 5 Ticket Categories</h3><canvas id="cTopCats" style="min-height:180px"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#fd79a8"></span>Top 5 Clients</h3><canvas id="cTopClients" style="min-height:180px"></canvas></div></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Ticket Types</h3><canvas id="cTypes" style="min-height:180px"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#fdcb6e"></span>CSAT Score Breakdown</h3><canvas id="cCsat" style="min-height:180px"></canvas></div></div>
   </div>
   <div id="barracksTab">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -946,35 +944,6 @@ function renderCharts(){
     {label:"Phone/Manual",data:assignedPhoneManual,backgroundColor:"rgba(132,189,0,0.5)",borderColor:"#84BD00",borderWidth:1,borderRadius:2},
     {label:"Other",data:assignedOther,backgroundColor:"rgba(162,155,254,0.5)",borderColor:"#a29bfe",borderWidth:1,borderRadius:2}
   ]},options:{...co,plugins:{legend:{display:false},title:{display:true,text:`${totalAssigned.toLocaleString()} total`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{...co.scales,x:{...co.scales.x,stacked:true},y:{...co.scales.y,beginAtZero:true,stacked:true}}}});
-
-  // Top 5 Ticket Categories
-  const topCatLabels=topCats.map(e=>e[0]);
-  const topCatData=topCats.map(e=>e[1]);
-  const topCatTotal=topCatData.reduce((s,v)=>s+v,0);
-  const catColors=["rgba(0,206,201,0.5)","rgba(0,149,200,0.5)","rgba(132,189,0,0.5)","rgba(162,155,254,0.5)","rgba(255,183,77,0.5)"];
-  const catBorders=["#00cec9","#0095C8","#84BD00","#a29bfe","#ffb74d"];
-  charts.topCats=new Chart(document.getElementById("cTopCats"),{type:"bar",data:{labels:topCatLabels,datasets:[{data:topCatData,backgroundColor:topCatLabels.map((_,i)=>catColors[i%catColors.length]),borderColor:topCatLabels.map((_,i)=>catBorders[i%catBorders.length]),borderWidth:1,borderRadius:5}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:`${topCatTotal} tickets in top 5`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"},beginAtZero:true},y:{ticks:{color:"#8aa4c4",font:{size:11,weight:"600"},autoSkip:false},grid:{display:false}}}}});
-
-  // Top 5 Clients
-  const topClientLabels=topClients.map(e=>e[0]);
-  const topClientData=topClients.map(e=>e[1]);
-  const topClientTotal=topClientData.reduce((s,v)=>s+v,0);
-  const clientColors=["rgba(253,121,168,0.5)","rgba(0,149,200,0.5)","rgba(132,189,0,0.5)","rgba(162,155,254,0.5)","rgba(255,183,77,0.5)"];
-  const clientBorders=["#fd79a8","#0095C8","#84BD00","#a29bfe","#ffb74d"];
-  charts.topClients=new Chart(document.getElementById("cTopClients"),{type:"bar",data:{labels:topClientLabels,datasets:[{data:topClientData,backgroundColor:topClientLabels.map((_,i)=>clientColors[i%clientColors.length]),borderColor:topClientLabels.map((_,i)=>clientBorders[i%clientBorders.length]),borderWidth:1,borderRadius:5}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:`${topClientTotal} tickets in top 5`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"},beginAtZero:true},y:{ticks:{color:"#8aa4c4",font:{size:11,weight:"600"},autoSkip:false},grid:{display:false}}}}});
-
-  // Row 2: Ticket Types + CSAT Score Breakdown
-  const typeLabels=Object.keys(typeCounts).sort((a,b)=>typeCounts[b]-typeCounts[a]);
-  const typeData=typeLabels.map(k=>typeCounts[k]);
-  const typeTotal=typeData.reduce((s,v)=>s+v,0);
-  const typeColors=["rgba(162,155,254,0.5)","rgba(0,149,200,0.5)","rgba(132,189,0,0.5)","rgba(255,183,77,0.5)","rgba(255,92,92,0.5)","rgba(0,206,201,0.5)","rgba(253,161,255,0.5)","rgba(116,185,255,0.5)"];
-  const typeBorders=["#a29bfe","#0095C8","#84BD00","#ffb74d","#fb9e00","#00cec9","#fda1ff","#74b9ff"];
-  charts.types=new Chart(document.getElementById("cTypes"),{type:"bar",data:{labels:typeLabels,datasets:[{data:typeData,backgroundColor:typeLabels.map((_,i)=>typeColors[i%typeColors.length]),borderColor:typeLabels.map((_,i)=>typeBorders[i%typeBorders.length]),borderWidth:1,borderRadius:5}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:`${typeTotal} total tickets`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"},beginAtZero:true},y:{ticks:{color:"#8aa4c4",font:{size:11,weight:"600"},autoSkip:false},grid:{display:false}}}}});
-
-  const csatTotals={4:0,3:0,2:0,1:0};
-  dm.forEach(m=>{if(m.csatBk){csatTotals[4]+=m.csatBk[4];csatTotals[3]+=m.csatBk[3];csatTotals[2]+=m.csatBk[2];csatTotals[1]+=m.csatBk[1]}});
-  const csatTotal=csatTotals[4]+csatTotals[3]+csatTotals[2]+csatTotals[1];
-  charts.csat=new Chart(document.getElementById("cCsat"),{type:"bar",data:{labels:["Excellent","Good","Okay","Poor"],datasets:[{data:[csatTotals[4],csatTotals[3],csatTotals[2],csatTotals[1]],backgroundColor:["rgba(132,189,0,0.5)","rgba(0,149,200,0.5)","rgba(255,183,77,0.5)","rgba(255,92,92,0.5)"],borderColor:["#84BD00","#0095C8","#ffb74d","#fb9e00"],borderWidth:1,borderRadius:5}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:`${csatTotal} total responses`,color:"#506a8a",font:{size:10,weight:"normal"},padding:{bottom:4}}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"},beginAtZero:true},y:{ticks:{color:"#8aa4c4",font:{size:12,weight:"600"}},grid:{display:false}}}}});
 
   // Response SLA % + Resolution SLA % (color based on weekly average)
   const respSlaData=dm.map(d=>d.respSlaPct);
@@ -1892,9 +1861,9 @@ function renderTeamAll(){
         else closedColor="color:#fb9e00";
       }else{
         if(a.total===0)closedColor="color:#8aa4c4";
-        else if(a.total>=55)closedColor="color:#00E5FF";
-        else if(a.total>=40)closedColor="color:#84BD00";
-        else if(a.total>=25)closedColor="color:#fcdc00";
+        else if(a.total>=30)closedColor="color:#00E5FF";
+        else if(a.total>=20)closedColor="color:#84BD00";
+        else if(a.total>=10)closedColor="color:#fcdc00";
         else closedColor="color:#fb9e00";
       }
       h+=`<td style="${closedColor}">${a.total.toLocaleString()}</td>`;
@@ -1904,13 +1873,13 @@ function renderTeamAll(){
       let assignedColor="";
       if(agentTimeFilter==="today"){
         if(a.assigned===0)assignedColor="color:#8aa4c4";
-        else if(a.assigned>=16)assignedColor="color:#fb9e00";
-        else if(a.assigned>=8)assignedColor="color:#fcdc00";
+        else if(a.assigned>=12)assignedColor="color:#fb9e00";
+        else if(a.assigned>=6)assignedColor="color:#fcdc00";
         else assignedColor="color:#84BD00";
       }else{
         if(a.assigned===0)assignedColor="color:#8aa4c4";
-        else if(a.assigned>=80)assignedColor="color:#fb9e00";
-        else if(a.assigned>=40)assignedColor="color:#fcdc00";
+        else if(a.assigned>=30)assignedColor="color:#fb9e00";
+        else if(a.assigned>=18)assignedColor="color:#fcdc00";
         else assignedColor="color:#84BD00";
       }
       h+=`<td style="${assignedColor}">${a.assigned.toLocaleString()}</td>`;
@@ -1920,13 +1889,13 @@ function renderTeamAll(){
       let ewColor="";
       if(agentTimeFilter==="today"){
         if(a.emailWeb===0)ewColor="color:#8aa4c4";
-        else if(a.emailWeb>=16)ewColor="color:#fb9e00";
-        else if(a.emailWeb>=8)ewColor="color:#fcdc00";
+        else if(a.emailWeb>=10)ewColor="color:#fb9e00";
+        else if(a.emailWeb>=5)ewColor="color:#fcdc00";
         else ewColor="color:#84BD00";
       }else{
         if(a.emailWeb===0)ewColor="color:#8aa4c4";
-        else if(a.emailWeb>=80)ewColor="color:#fb9e00";
-        else if(a.emailWeb>=40)ewColor="color:#fcdc00";
+        else if(a.emailWeb>=25)ewColor="color:#fb9e00";
+        else if(a.emailWeb>=15)ewColor="color:#fcdc00";
         else ewColor="color:#84BD00";
       }
       h+=`<td style="${ewColor}">${a.emailWeb.toLocaleString()}</td>`;
@@ -1936,13 +1905,13 @@ function renderTeamAll(){
       let pmColor="";
       if(agentTimeFilter==="today"){
         if(a.phoneManual===0)pmColor="color:#8aa4c4";
-        else if(a.phoneManual>=16)pmColor="color:#fb9e00";
-        else if(a.phoneManual>=8)pmColor="color:#fcdc00";
+        else if(a.phoneManual>=10)pmColor="color:#fb9e00";
+        else if(a.phoneManual>=5)pmColor="color:#fcdc00";
         else pmColor="color:#84BD00";
       }else{
         if(a.phoneManual===0)pmColor="color:#8aa4c4";
-        else if(a.phoneManual>=80)pmColor="color:#fb9e00";
-        else if(a.phoneManual>=40)pmColor="color:#fcdc00";
+        else if(a.phoneManual>=25)pmColor="color:#fb9e00";
+        else if(a.phoneManual>=15)pmColor="color:#fcdc00";
         else pmColor="color:#84BD00";
       }
       h+=`<td style="${pmColor}">${a.phoneManual.toLocaleString()}</td>`;
