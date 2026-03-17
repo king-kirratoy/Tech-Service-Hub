@@ -2818,9 +2818,9 @@ const BF={
     const sortedWarriors=[...this.warriors].sort((a,b)=>b.closedCount-a.closedCount);
     const wIdxMap={};sortedWarriors.forEach((w,i)=>{wIdxMap[w.id]=i});
 
-    // Position warriors along ground near front line
+    // Position warriors along ground near front line (horizontal spread, 2 rows)
     const wSpacing=80*s;
-    const wRows=5;
+    const wRows=2;
     this.warriors.forEach(w=>{
       const i=wIdxMap[w.id];
       const col=Math.floor(i/wRows);
@@ -2905,15 +2905,15 @@ const BF={
         };
       });
     }
-    // Position commanders in grid formation behind warriors
+    // Position commanders in horizontal line behind warriors
     const wCols=Math.ceil(this.warriors.length/wRows);
     const behindWarriorsX=fxAbs-50*s-(wCols+1)*wSpacing;
-    const cRows=2;
+    const cRows=1;
     const cSpacing=90*s;
     this.commanders.forEach((cmd,i)=>{
-      const col=Math.floor(i/cRows);
-      const row=i%cRows;
-      const stagger=(row%2)*30*s;
+      const col=i;
+      const row=0;
+      const stagger=0;
       const targetX=Math.min(behindWarriorsX-col*cSpacing-stagger+Math.sin(this.frame*0.02+cmd.id)*4*s,battleLeft+50*s);
       const targetY=this.groundY-row*18*s;
       cmd.x+=(targetX-cmd.x)*0.04;
