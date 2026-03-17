@@ -239,6 +239,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 <symbol id="is" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
 <symbol id="iq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
 <symbol id="iw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+<symbol id="iad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
 </defs></svg>
 <div class="ttm" id="dgm"></div></div>
 
@@ -248,6 +249,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div style="display:flex;align-items:center;gap:14px">
     <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace">Connecting...</span>
     <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
+    <button class="btn" id="adminBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> Login</button>
     <button class="btn" id="apiKeyBtn"><svg style="width:14px;height:14px"><use href="#is"/></svg> API Key</button>
   </div>
 </div>
@@ -260,6 +262,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 </div>
 <div class="container">
   <div class="glass api-key-bar hidden" id="apiKeyPanel"><label>API Key</label><input type="password" id="apiK" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"><span class="ks missing" id="ksT">Not set</span></div>
+  <div class="glass api-key-bar hidden" id="adminPanel"><label>Password</label><input type="password" id="adminPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Not logged in</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Team Workload</button>
     <button class="tab" data-tab="kpi"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Team Stats</button>
@@ -332,6 +335,36 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 // ═══════════ STATE ═══════════
 let histRaw=[],actRaw=[],kpiM=[],catStats={},clientCatStats={},clientKPI={},actTix=[],closedTix=[],roster=[];
 let selTech=null,calV="week",calD=new Date(),charts={};
+let isAdmin=false;
+let loggedInAgent=null;
+const ADMIN_PWD="TicketSlayer9000";
+const AGENT_CREDENTIALS={
+  "Agent 1":"phoenix-blaze-01",
+  "Agent 2":"thunder-byte-02",
+  "Agent 3":"pixel-storm-03",
+  "Agent 4":"cyber-wolf-04",
+  "Agent 5":"neon-hawk-05",
+  "Agent 6":"iron-pulse-06",
+  "Agent 7":"turbo-spark-07",
+  "Agent 8":"frost-byte-08",
+  "Agent 9":"shadow-ping-09",
+  "Agent 10":"mega-flux-10",
+  "Agent 11":"solar-glitch-11",
+  "Agent 12":"data-knight-12",
+  "Agent 13":"echo-surge-13",
+  "Agent 14":"blazer-root-14",
+  "Agent 15":"hyper-node-15",
+  "Agent 16":"volt-crash-16",
+  "Agent 17":"omega-stack-17",
+  "Agent 18":"rapid-cache-18",
+  "Agent 19":"ghost-wire-19",
+  "Agent 20":"nitro-link-20",
+  "Agent 21":"quantum-bug-21",
+  "Agent 22":"stealth-ram-22",
+  "Agent 23":"cosmic-ping-23",
+  "Agent 24":"rocket-bit-24",
+  "Agent 25":"ultra-hash-25",
+};
 
 // ═══════════ OVERRIDE PERSISTENCE ═══════════
 const OVR_KEY="servicehub_overrides";
@@ -1672,7 +1705,17 @@ function renderTeamAll(){
     h+=`<th data-col="${col.key}" class="${sorted?"sorted":""}">${col.label}<span class="sort-arrow">${arrow}</span></th>`;
   });
   h+=`</tr></thead><tbody>`;
-  agents.forEach(a=>{
+  // In agent view, only show logged-in agent's row; admin sees all (with optional filter)
+  let visibleAgents=agents;
+  if(!isAdmin){
+    if(loggedInAgent){
+      visibleAgents=agents.filter(a=>a.name===loggedInAgent);
+    }else{
+      visibleAgents=[];
+      h+=`<tr><td colspan="${hd.length}" style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px">Login to view your stats</td></tr>`;
+    }
+  }
+  visibleAgents.forEach(a=>{
     h+=`<tr>`;
     h+=`<td>${a.name}</td>`;
     // Tickets Closed with color logic based on toggle
@@ -2048,12 +2091,76 @@ document.getElementById("apiKeyBtn").addEventListener("click",()=>{
   panel.classList.toggle("hidden");
   btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#is"/></svg> API Key':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide API Key';
 });
+// Login button toggle
+document.getElementById("adminBtn").addEventListener("click",()=>{
+  const panel=document.getElementById("adminPanel");const btn=document.getElementById("adminBtn");
+  panel.classList.toggle("hidden");
+  btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#iad"/></svg> Login':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide Login';
+});
+function applyLoginState(){
+  const riskTab=document.querySelector('.tab[data-tab="risk"]');
+  const st=document.getElementById("adminStatus");
+  const loginBtn=document.getElementById("adminLoginBtn");
+  const logoutBtn=document.getElementById("adminLogoutBtn");
+  const pwdInput=document.getElementById("adminPwd");
+  const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#kpiTab .qbr-select label:nth-of-type(2)');
+  const agentSelect=document.getElementById("kpiAgent");
+  // Find the agent filter label+select wrapper elements
+  const agentFilterEls=document.querySelectorAll('#kpiTab .qbr-select > *');
+  let agentLabelEl=null,agentSelectEl=null;
+  agentFilterEls.forEach(el=>{
+    if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")agentLabelEl=el;
+    if(el.id==="kpiAgent")agentSelectEl=el;
+  });
+  if(isAdmin){
+    riskTab.style.display="";
+    st.textContent="Admin View";st.classList.remove("missing");st.classList.add("set");
+    loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
+    pwdInput.style.display="none";
+    if(agentLabelEl)agentLabelEl.style.display="";
+    if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
+  }else{
+    riskTab.style.display="none";
+    if(riskTab.classList.contains("active")){
+      riskTab.classList.remove("active");
+      document.getElementById("riskTab").classList.add("hidden");
+      document.querySelector('.tab[data-tab="capacity"]').classList.add("active");
+      document.getElementById("capTab").classList.remove("hidden");
+    }
+    if(agentLabelEl)agentLabelEl.style.display="none";
+    if(agentSelectEl)agentSelectEl.style.display="none";
+    if(loggedInAgent){
+      st.textContent="Logged in as "+loggedInAgent;st.classList.remove("missing");st.classList.add("set");
+      loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
+      pwdInput.style.display="none";
+    }else{
+      st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
+      loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
+      pwdInput.style.display="";pwdInput.value="";
+    }
+  }
+  renderTeamAll();
+}
+document.getElementById("adminLoginBtn").addEventListener("click",()=>{
+  const pwd=document.getElementById("adminPwd").value.trim();
+  if(!pwd)return;
+  if(pwd===ADMIN_PWD){isAdmin=true;loggedInAgent=null;applyLoginState();return}
+  const match=Object.entries(AGENT_CREDENTIALS).find(([name,pw])=>pw===pwd);
+  if(match){loggedInAgent=match[0];isAdmin=false;applyLoginState()}
+  else{document.getElementById("adminStatus").textContent="Invalid password";document.getElementById("adminStatus").classList.add("missing")}
+});
+document.getElementById("adminPwd").addEventListener("keydown",(e)=>{
+  if(e.key==="Enter")document.getElementById("adminLoginBtn").click();
+});
+document.getElementById("adminLogoutBtn").addEventListener("click",()=>{
+  isAdmin=false;loggedInAgent=null;applyLoginState();
+});
 // Last sync timestamp
 function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["kpiTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={kpi:"kpiTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["kpiTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={kpi:"kpiTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
 document.getElementById("estBtn").addEventListener("click",runEst);
 document.getElementById("aiX").addEventListener("click",()=>document.getElementById("aiP").classList.add("hidden"));
 document.getElementById("apiK").addEventListener("input",e=>{apiKey=e.target.value.trim();const s=document.getElementById("ksT");const inp=document.getElementById("apiK");const lbl=document.getElementById("apiKeyPanel").querySelector("label");if(hasK()){s.textContent="✓ Enabled";s.className="ks valid";inp.style.borderColor="var(--green)";inp.style.color="var(--green)";lbl.style.color="var(--green)"}else{s.textContent="Not set";s.className="ks missing";inp.style.borderColor="";inp.style.color="";lbl.style.color=""}});
@@ -2122,6 +2229,8 @@ function stopAutoRefresh(){
 
 // Auto-start on page load
 setTimeout(startAutoRefresh,500);
+// Apply default agent view (hide Risk Monitor tab, hide agent filter)
+applyLoginState();
 
 
 // ═══════════ BATTLEFIELD ENGINE ═══════════
