@@ -311,12 +311,14 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   </div>
   <div id="barracksTab">
     <div style="margin-bottom:20px">
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Barracks</h2>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+        <h2 style="font-size:16px;font-weight:700;margin:0">Barracks</h2>
+        <div id="robotCustomizer" class="hidden"><button id="robotCustomizeToggle" class="btn" style="font-size:11px;padding:4px 10px;gap:6px"><svg style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg> Customize Robot</button></div>
+      </div>
       <p style="font-size:12px;color:var(--text-muted)">Your squad's player cards, ranks, and battle readiness.</p>
     </div>
-    <!-- Robot Customizer (visible when agent is logged in) -->
-    <div id="robotCustomizer" class="hidden" style="margin-bottom:22px">
-      <button id="robotCustomizeToggle" class="btn" style="margin-bottom:12px;gap:8px"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg> Customize Your Robot</button>
+    <!-- Robot Customizer Panel -->
+    <div style="margin-bottom:22px">
       <div id="robotCustomizerPanel" class="hidden" style="margin-bottom:14px">
         <div class="glass" style="display:flex;gap:24px;padding:20px;flex-wrap:wrap;align-items:flex-start">
           <div style="flex-shrink:0">
@@ -1345,7 +1347,7 @@ function renderPlayerCards(){
         <div class="pcard-bar" style="width:${c.xpInLevel}%;background:linear-gradient(90deg,rgba(0,149,200,0.6),#0095C8)"></div>
       </div>
       <div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-        <canvas id="${canvasId}" width="80" height="100" style="image-rendering:pixelated"></canvas>
+        <canvas id="${canvasId}" width="120" height="150" style="image-rendering:pixelated"></canvas>
         <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:2px">${rName}</div>
       </div>
     </div>`;
@@ -1359,7 +1361,7 @@ function renderPlayerCards(){
       if(!cvs)return;
       const ctx=cvs.getContext("2d");
       const rCfg=getRobotConfigForAgent(c.tech.name);
-      drawRobot(ctx,cvs.width,cvs.height,rCfg,2.5);
+      drawRobot(ctx,cvs.width,cvs.height,rCfg,3.5);
     });
   });
 }
@@ -2440,7 +2442,7 @@ function drawRobot(ctx,w,h,config,scale){
   const baseY=h*0.92;
 
   if(tinted){
-    ctx.drawImage(tinted,0,0,SPRITE_FRAME_W,SPRITE_FRAME_H,cx-dw/2,baseY-dh,dw,dh);
+    ctx.drawImage(tinted,1,0,SPRITE_FRAME_W,SPRITE_FRAME_H,cx-dw/2,baseY-dh,dw,dh);
   }else{
     // Fallback: simple colored rectangle
     ctx.fillStyle=hex;
@@ -2508,11 +2510,11 @@ function initRobotCustomizer(){
     const panel=document.getElementById("robotCustomizerPanel");
     const btn=document.getElementById("robotCustomizeToggle");
     panel.classList.toggle("hidden");
-    btn.textContent=panel.classList.contains("hidden")?"Customize Your Robot":"Hide Customizer";
+    btn.textContent=panel.classList.contains("hidden")?"Customize Robot":"Hide Customizer";
   });
   document.getElementById("robotCloseBtn").addEventListener("click",()=>{
     document.getElementById("robotCustomizerPanel").classList.add("hidden");
-    document.getElementById("robotCustomizeToggle").textContent="Customize Your Robot";
+    document.getElementById("robotCustomizeToggle").textContent="Customize Robot";
   });
 
   updateRobotPreview();
@@ -2974,7 +2976,7 @@ const BF={
     const dh=this.spriteDH;
     const dw=dh*(this.spriteFrameW/this.spriteFrameH);
     const frameIdx=Math.floor(w.frame/18)%this.spriteFrames;
-    const sx=frameIdx*this.spriteFrameW;
+    const sx=frameIdx*this.spriteFrameW+1;
 
     // Get robot config for this agent — use body color for tinting
     const rCfg=getRobotConfigForAgent(w.name);
@@ -3016,12 +3018,11 @@ const BF={
     const bob=Math.sin(cmd.bobPhase)*2*s;
     const yy=y+bob;
 
-    // Commander sprite is 25% larger than regular warriors
-    const scale=1.25;
-    const dh=this.spriteDH*scale;
+    // Commander same size as regular warriors
+    const dh=this.spriteDH;
     const dw=dh*(this.spriteFrameW/this.spriteFrameH);
     const frameIdx=Math.floor(cmd.frame/18)%this.spriteFrames;
-    const sx=frameIdx*this.spriteFrameW;
+    const sx=frameIdx*this.spriteFrameW+1;
 
     const rCfg=getRobotConfigForAgent(cmd.name);
     const robotColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
@@ -3029,7 +3030,7 @@ const BF={
 
     // Shadow
     c.fillStyle="rgba(0,0,0,0.3)";
-    c.beginPath();c.ellipse(x,y+10*s,dw*0.35,5*s,0,0,Math.PI*2);c.fill();
+    c.beginPath();c.ellipse(x,y+10*s,dw*0.35,4*s,0,0,Math.PI*2);c.fill();
 
     const groundOffset=dh*0.38;
     const hatId=rCfg.accessory||"none";
@@ -3040,23 +3041,6 @@ const BF={
       c.fillStyle=tintColor;
       c.fillRect(x-15*s,yy-38*s,30*s,38*s);
     }
-
-    // Commander star badge above head (above any hat)
-    const starY=yy-dh*0.76+groundOffset;
-    c.fillStyle="#FFD700";
-    c.globalAlpha=0.7+Math.sin(cmd.bobPhase*2)*0.3;
-    c.beginPath();
-    const starX=x;const starR=4*s;
-    for(let i=0;i<5;i++){
-      const ang=i*Math.PI*2/5-Math.PI/2;
-      const ox=starX+Math.cos(ang)*starR;
-      const oy=starY+Math.sin(ang)*starR;
-      if(i===0)c.moveTo(ox,oy);else c.lineTo(ox,oy);
-      const innerAng=ang+Math.PI/5;
-      c.lineTo(starX+Math.cos(innerAng)*starR*0.4,starY+Math.sin(innerAng)*starR*0.4);
-    }
-    c.closePath();c.fill();
-    c.globalAlpha=1;
   },
 
   drawEnemy(x,y,e){
