@@ -2753,10 +2753,17 @@ const BF={
     const closedToday=closedTix.filter(t=>t.dateClosed&&isSD(t.dateClosed,today)).length;
     const createdToday=actTix.filter(t=>t.dateCreated&&isSD(t.dateCreated,today)).length+closedToday;
     const diff=closedToday-createdToday;
-    // Overdue NRD tickets push the enemy further left (penalty scales per overdue ticket)
+    // Overdue response SLA tickets push the enemy further left (response SLA only, not resolution)
     const overdueNRD=actTix.filter(t=>t.nextResponse&&t.nextResponse<today&&!t.isWaiting).length;
-    const overduePenalty=overdueNRD*0.012;
-    this.targetFront=Math.max(0.15,Math.min(0.8,0.5+diff*0.003-overduePenalty));
+    const overduePenalty=overdueNRD*0.006;
+    // SLA-met bonus: closed tickets today where response and/or resolution targets were met push right
+    const closedTodayTix=closedTix.filter(t=>t.dateClosed&&isSD(t.dateClosed,today));
+    let slaBonus=0;
+    closedTodayTix.forEach(t=>{
+      if(t.frt!==null&&t.frt<=FRT_SLA)slaBonus+=0.008;
+      if(t.dateClosed&&t.slaTgt&&t.dateClosed<=t.slaTgt)slaBonus+=0.008;
+    });
+    this.targetFront=Math.max(0.30,Math.min(0.70,0.5+diff*0.003-overduePenalty+slaBonus));
     this.frontLine+=(this.targetFront-this.frontLine)*0.015;
 
     const battleLeft=this.contentLeft;
