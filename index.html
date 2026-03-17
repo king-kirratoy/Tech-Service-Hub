@@ -121,6 +121,10 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .tt.nrd-risk{background:rgba(140,20,20,0.55)}
 .tt.tt-closed{opacity:0.35;position:relative!important;left:auto!important;right:auto!important;margin:0 3px 2px 3px}
 .tt.tt-closed:hover{opacity:0.7}
+.closed-body{display:none;overflow:hidden}
+.closed-expanded .closed-body{display:block}
+.closed-chev{transform:rotate(0deg)}
+.closed-chev-open{transform:rotate(90deg)!important}
 .tt-inner{padding:3px 7px;overflow:hidden;height:100%}
 .tt:hover{box-shadow:0 0 0 2px var(--blue),0 4px 20px rgba(0,0,0,0.4);z-index:50;overflow:visible}
 
@@ -1203,15 +1207,21 @@ function renderCal(){
   });
   h+=`</div></div>`;
 
-  // Closed-this-week section: uses a table layout to guarantee column alignment with calendar
+  // Closed-this-week section: collapsible, defaults to collapsed
   const anyClosedForTech=closedTix.some(t=>t.assignedTo===selTech);
   if(anyClosedForTech){
     const closedHt=0.25*HH;
-    // Use CSS table so columns share widths with the header row
+    // Toggle header row
     h+=`<div style="border-top:1px solid var(--border-bright)">`;
+    h+=`<div onclick="this.parentElement.classList.toggle('closed-expanded');this.querySelector('.closed-chev').classList.toggle('closed-chev-open')" style="cursor:pointer;padding:6px 12px;display:flex;align-items:center;gap:6px;user-select:none">`;
+    h+=`<svg class="closed-chev" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;color:var(--text-dim)" viewBox="0 0 10 10"><path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    h+=`<span style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-dim)">Closed</span>`;
+    h+=`</div>`;
+    // Closed tickets table (hidden by default)
+    h+=`<div class="closed-body">`;
     h+=`<table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup><col style="width:70px">`;
     for(let d=0;d<5;d++)h+=`<col>`;
-    h+=`</colgroup><tr><td style="vertical-align:top;padding:8px 4px;text-align:center"><span style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-dim)">Closed</span></td>`;
+    h+=`</colgroup><tr><td></td>`;
     days.forEach((day,di)=>{
       const closedDay=closedTix.filter(t=>t.assignedTo===selTech&&t.dayIdx===di);
       h+=`<td style="vertical-align:top;padding:4px 0;border-left:1px solid rgba(0,149,200,0.08)">`;
@@ -1239,7 +1249,7 @@ function renderCal(){
       });
       h+=`</td>`;
     });
-    h+=`</tr></table></div>`;
+    h+=`</tr></table></div></div>`;
   }
 
   h+=`</div>`;
