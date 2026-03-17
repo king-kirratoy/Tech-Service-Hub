@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{--navy:#002855;--navy-deep:#001a3a;--navy-darker:#00112a;--navy-light:#003670;--green:#84BD00;--green-dim:#6a9700;--green-glow2:rgba(132,189,0,0.06);--lime:#9CE200;--gray:#6C6C6C;--ltgray:#F2F2F2;--medgray:#A7A7A7;--blue:#0095C8;--surface:rgba(0,40,85,0.45);--border:rgba(0,149,200,0.15);--border-bright:rgba(0,149,200,0.3);--text:#eaf2ff;--text-muted:#8aa4c4;--text-dim:#506a8a;--danger:#ff5c5c;--warning:#ffb74d;--font-heading:'Roboto Condensed','Arial Narrow',sans-serif;--font-body:'Calibri','Arial',sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -219,6 +220,14 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .pcard-bar-wrap{height:8px;background:rgba(0,20,40,0.8);border-radius:4px;overflow:hidden;margin-bottom:4px;border:1px solid rgba(0,149,200,0.1)}
 .pcard-bar{height:100%;border-radius:3px;transition:width .5s ease}
 .pcard-bar-label{display:flex;justify-content:space-between;font-size:9px;font-weight:600;font-family:'IBM Plex Mono',monospace;margin-bottom:8px}
+.robo-opt{width:32px;height:32px;border-radius:6px;border:2px solid var(--border);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text);background:rgba(0,20,40,0.8)}
+.robo-opt:hover{border-color:var(--blue);transform:scale(1.1)}
+.robo-opt.active{border-color:var(--green);box-shadow:0 0 8px rgba(132,189,0,0.4)}
+.robo-card{padding:12px;border-radius:10px;background:linear-gradient(135deg,rgba(0,40,85,0.7),rgba(0,20,50,0.6));border:1px solid var(--border);text-align:center;position:relative;overflow:hidden}
+.robo-card::after{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,149,200,0.4),transparent)}
+.robo-card canvas{image-rendering:pixelated;margin-bottom:6px}
+.robo-card-name{font-size:11px;font-weight:700;color:var(--text);font-family:var(--font-heading)}
+.robo-card-agent{font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
 @media(max-width:768px){.chart-grid,.upload-panel{grid-template-columns:1fr}.cal-layout{flex-direction:column}.tech-sidebar{width:100%;position:static}.stat-grid{grid-template-columns:repeat(2,1fr)}}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--navy-darker)}::-webkit-scrollbar-thumb{background:var(--navy-light);border-radius:3px}
 </style>
@@ -309,7 +318,46 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Barracks</h2>
       <p style="font-size:12px;color:var(--text-muted)">Your squad's player cards, ranks, and battle readiness.</p>
     </div>
+    <!-- Robot Customizer (visible when agent is logged in) -->
+    <div id="robotCustomizer" class="hidden" style="margin-bottom:22px">
+      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Your Tech Robot</h3>
+      <div class="glass" style="display:flex;gap:24px;padding:20px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex-shrink:0">
+          <canvas id="robotPreview" width="160" height="200" style="image-rendering:pixelated;border:1px solid var(--border);border-radius:8px;background:rgba(0,15,35,0.8)"></canvas>
+        </div>
+        <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Robot Name</label>
+            <input type="text" id="robotName" placeholder="Name your robot..." maxlength="20" style="background:rgba(0,20,40,0.8);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;width:100%;font-family:var(--font-body)">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Body Color</label>
+            <div id="robotColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Eye Style</label>
+            <div id="robotEyePicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Antenna</label>
+            <div id="robotAntennaPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:block">Accessory</label>
+            <div id="robotAccessoryPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <button class="btn-accent" id="robotSaveBtn" style="padding:8px 16px;font-size:11px;margin-top:4px;width:fit-content">Save Robot</button>
+          <span id="robotSaveStatus" style="font-size:10px;color:var(--text-muted)"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Squad Robots Gallery (visible to everyone) -->
+    <div id="robotGallery" style="margin-bottom:22px">
+      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Squad Robots</h3>
+      <div id="robotGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px"></div>
+    </div>
     <div id="playerCards" class="hidden">
+      <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Tech Player Cards</h3>
       <div id="playerGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
     </div>
   </div>
@@ -344,34 +392,35 @@ let histRaw=[],actRaw=[],kpiM=[],catStats={},clientCatStats={},clientKPI={},actT
 let selTech=null,calV="week",calD=new Date(),charts={};
 let isAdmin=false;
 let loggedInAgent=null;
-const ADMIN_PWD="TicketSlayer9000";
-const AGENT_CREDENTIALS={
-  "Agent 1":"phoenix-blaze-01",
-  "Agent 2":"thunder-byte-02",
-  "Agent 3":"pixel-storm-03",
-  "Agent 4":"cyber-wolf-04",
-  "Agent 5":"neon-hawk-05",
-  "Agent 6":"iron-pulse-06",
-  "Agent 7":"turbo-spark-07",
-  "Agent 8":"frost-byte-08",
-  "Agent 9":"shadow-ping-09",
-  "Agent 10":"mega-flux-10",
-  "Agent 11":"solar-glitch-11",
-  "Agent 12":"data-knight-12",
-  "Agent 13":"echo-surge-13",
-  "Agent 14":"blazer-root-14",
-  "Agent 15":"hyper-node-15",
-  "Agent 16":"volt-crash-16",
-  "Agent 17":"omega-stack-17",
-  "Agent 18":"rapid-cache-18",
-  "Agent 19":"ghost-wire-19",
-  "Agent 20":"nitro-link-20",
-  "Agent 21":"quantum-bug-21",
-  "Agent 22":"stealth-ram-22",
-  "Agent 23":"cosmic-ping-23",
-  "Agent 24":"rocket-bit-24",
-  "Agent 25":"ultra-hash-25",
-};
+
+// ═══════════ SUPABASE ═══════════
+const SUPA_URL="https://sqkqczkxjeutxcirbsgv.supabase.co";
+const SUPA_KEY="sb_publishable_OKjtHa6csB206hHGBaNa1g_LZrYXtvo";
+const supabase=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+
+async function supaLogin(password){
+  const{data,error}=await supabase.from("agent_logins").select("agent_name,role").eq("password",password).maybeSingle();
+  if(error){console.error("Supabase login error:",error);return null}
+  return data; // {agent_name, role} or null
+}
+
+async function loadRobotConfig(agentName){
+  const{data,error}=await supabase.from("agent_robots").select("*").eq("agent_name",agentName).maybeSingle();
+  if(error){console.error("Supabase robot load error:",error);return null}
+  return data;
+}
+
+async function saveRobotConfig(agentName,config){
+  const{error}=await supabase.from("agent_robots").upsert({agent_name:agentName,...config},{onConflict:"agent_name"});
+  if(error){console.error("Supabase robot save error:",error);return false}
+  return true;
+}
+
+async function loadAllRobots(){
+  const{data,error}=await supabase.from("agent_robots").select("*");
+  if(error){console.error("Supabase robots load error:",error);return[]}
+  return data||[];
+}
 
 // ═══════════ OVERRIDE PERSISTENCE ═══════════
 const OVR_KEY="servicehub_overrides";
@@ -2128,6 +2177,7 @@ function applyLoginState(){
     if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")agentLabelEl=el;
     if(el.id==="kpiAgent")agentSelectEl=el;
   });
+  const robotCustomizer=document.getElementById("robotCustomizer");
   if(isAdmin){
     riskTab.style.display="";
     st.textContent="Admin View";st.classList.remove("missing");st.classList.add("set");
@@ -2135,6 +2185,7 @@ function applyLoginState(){
     pwdInput.style.display="none";
     if(agentLabelEl)agentLabelEl.style.display="";
     if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
+    robotCustomizer.classList.add("hidden");
   }else{
     riskTab.style.display="none";
     if(riskTab.classList.contains("active")){
@@ -2149,21 +2200,28 @@ function applyLoginState(){
       st.textContent="Logged in as "+loggedInAgent;st.classList.remove("missing");st.classList.add("set");
       loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
       pwdInput.style.display="none";
+      robotCustomizer.classList.remove("hidden");
+      loadAgentRobot();
     }else{
       st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
       loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
       pwdInput.style.display="";pwdInput.value="";
+      robotCustomizer.classList.add("hidden");
     }
   }
   renderTeamAll();
+  loadRobotGallery();
 }
-document.getElementById("adminLoginBtn").addEventListener("click",()=>{
+document.getElementById("adminLoginBtn").addEventListener("click",async()=>{
   const pwd=document.getElementById("adminPwd").value.trim();
+  const st=document.getElementById("adminStatus");
   if(!pwd)return;
-  if(pwd===ADMIN_PWD){isAdmin=true;loggedInAgent=null;applyLoginState();return}
-  const match=Object.entries(AGENT_CREDENTIALS).find(([name,pw])=>pw===pwd);
-  if(match){loggedInAgent=match[0];isAdmin=false;applyLoginState()}
-  else{document.getElementById("adminStatus").textContent="Invalid password";document.getElementById("adminStatus").classList.add("missing")}
+  st.textContent="Logging in...";st.classList.add("missing");
+  const result=await supaLogin(pwd);
+  if(!result){st.textContent="Invalid password";st.classList.add("missing");return}
+  if(result.role==="admin"){isAdmin=true;loggedInAgent=null}
+  else{isAdmin=false;loggedInAgent=result.agent_name}
+  applyLoginState();
 });
 document.getElementById("adminPwd").addEventListener("keydown",(e)=>{
   if(e.key==="Enter")document.getElementById("adminLoginBtn").click();
@@ -2247,6 +2305,255 @@ function stopAutoRefresh(){
 setTimeout(startAutoRefresh,500);
 // Apply default agent view (hide Risk Monitor tab, hide agent filter)
 applyLoginState();
+
+
+// ═══════════ ROBOT CUSTOMIZER ═══════════
+const ROBOT_COLORS=[
+  {id:"blue",hex:"#0095C8",label:"Cyber Blue"},
+  {id:"green",hex:"#84BD00",label:"Neon Green"},
+  {id:"red",hex:"#ff5c5c",label:"Blaze Red"},
+  {id:"purple",hex:"#a29bfe",label:"Phantom Purple"},
+  {id:"orange",hex:"#fb9e00",label:"Volt Orange"},
+  {id:"cyan",hex:"#00E5FF",label:"Ice Cyan"},
+  {id:"pink",hex:"#ff6b9d",label:"Plasma Pink"},
+  {id:"gold",hex:"#fcdc00",label:"Solar Gold"},
+];
+const ROBOT_EYES=[
+  {id:"visor",label:"Visor"},
+  {id:"round",label:"Round"},
+  {id:"angry",label:"Angry"},
+  {id:"cyclops",label:"Cyclops"},
+];
+const ROBOT_ANTENNAS=[
+  {id:"none",label:"None"},
+  {id:"spike",label:"Spike"},
+  {id:"dish",label:"Dish"},
+  {id:"dual",label:"Dual"},
+];
+const ROBOT_ACCESSORIES=[
+  {id:"none",label:"None"},
+  {id:"shield",label:"Shield"},
+  {id:"sword",label:"Sword"},
+  {id:"wrench",label:"Wrench"},
+];
+
+let currentRobot={color:"blue",eyes:"visor",antenna:"spike",accessory:"none",robot_name:""};
+
+function drawRobot(ctx,w,h,config,scale){
+  const s=scale||4;
+  ctx.clearRect(0,0,w,h);
+  const c=ROBOT_COLORS.find(x=>x.id===config.color)||ROBOT_COLORS[0];
+  const hex=c.hex;
+  const dark=shadeColor(hex,-30);
+  const light=shadeColor(hex,30);
+  const cx=Math.floor(w/(2*s))*s;
+  const baseY=Math.floor(h*0.85/s)*s;
+
+  function px(x,y,color){ctx.fillStyle=color;ctx.fillRect(x,y,s,s)}
+  function rect(x,y,rw,rh,color){ctx.fillStyle=color;ctx.fillRect(x,y,rw*s,rh*s)}
+
+  // Antenna
+  if(config.antenna==="spike"){
+    rect(cx-s*0.5,baseY-19*s,1,3,light);
+    px(cx-s*0.5,baseY-20*s,"#fff");
+  }else if(config.antenna==="dish"){
+    rect(cx-s*0.5,baseY-18*s,1,2,light);
+    rect(cx-2.5*s,baseY-19*s,5,1,hex);
+    rect(cx-1.5*s,baseY-20*s,3,1,light);
+  }else if(config.antenna==="dual"){
+    rect(cx-3*s,baseY-18*s,1,2,light);
+    px(cx-3*s,baseY-19*s,"#fff");
+    rect(cx+2*s,baseY-18*s,1,2,light);
+    px(cx+2*s,baseY-19*s,"#fff");
+  }
+
+  // Head
+  rect(cx-4*s,baseY-16*s,8,6,hex);
+  rect(cx-3*s,baseY-16*s,6,1,light);
+  rect(cx-4*s,baseY-11*s,8,1,dark);
+  // Side panels
+  px(cx-5*s,baseY-15*s,dark);
+  px(cx-5*s,baseY-14*s,dark);
+  px(cx+4*s,baseY-15*s,dark);
+  px(cx+4*s,baseY-14*s,dark);
+
+  // Eyes
+  if(config.eyes==="visor"){
+    rect(cx-3*s,baseY-14*s,6,2,"#001a2e");
+    rect(cx-2*s,baseY-14*s,1,1,"#00E5FF");
+    rect(cx+1*s,baseY-14*s,1,1,"#00E5FF");
+    rect(cx-2*s,baseY-13*s,4,1,"rgba(0,229,255,0.3)");
+  }else if(config.eyes==="round"){
+    rect(cx-3*s,baseY-15*s,2,2,"#001a2e");
+    rect(cx+1*s,baseY-15*s,2,2,"#001a2e");
+    px(cx-2*s,baseY-15*s,"#fff");
+    px(cx+2*s,baseY-15*s,"#fff");
+  }else if(config.eyes==="angry"){
+    rect(cx-3*s,baseY-14*s,6,2,"#001a2e");
+    px(cx-2*s,baseY-14*s,"#ff5c5c");
+    px(cx+1*s,baseY-14*s,"#ff5c5c");
+    px(cx-3*s,baseY-15*s,light);
+    px(cx+2*s,baseY-15*s,light);
+  }else if(config.eyes==="cyclops"){
+    rect(cx-1.5*s,baseY-15*s,3,3,"#001a2e");
+    rect(cx-0.5*s,baseY-14*s,1,1,"#ff5c5c");
+    px(cx-0.5*s,baseY-15*s,"rgba(255,92,92,0.4)");
+  }
+
+  // Body
+  rect(cx-5*s,baseY-10*s,10,8,hex);
+  rect(cx-4*s,baseY-10*s,8,1,light);
+  rect(cx-5*s,baseY-3*s,10,1,dark);
+  // Chest detail
+  rect(cx-2*s,baseY-8*s,4,3,"#001a2e");
+  rect(cx-1*s,baseY-7*s,2,1,config.color==="cyan"?"#ff5c5c":"#00E5FF");
+
+  // Arms
+  rect(cx-7*s,baseY-9*s,2,7,dark);
+  rect(cx+5*s,baseY-9*s,2,7,dark);
+  // Hands
+  rect(cx-7*s,baseY-3*s,2,1,light);
+  rect(cx+5*s,baseY-3*s,2,1,light);
+
+  // Legs
+  rect(cx-3*s,baseY-2*s,2,3,dark);
+  rect(cx+1*s,baseY-2*s,2,3,dark);
+  // Feet
+  rect(cx-4*s,baseY+1*s,3,1,hex);
+  rect(cx+1*s,baseY+1*s,3,1,hex);
+
+  // Accessory
+  if(config.accessory==="shield"){
+    rect(cx-9*s,baseY-8*s,2,5,"#fcdc00");
+    rect(cx-10*s,baseY-7*s,1,3,"#fb9e00");
+    px(cx-8*s,baseY-6*s,"#fff");
+  }else if(config.accessory==="sword"){
+    rect(cx+7*s,baseY-12*s,1,6,"#ccc");
+    rect(cx+7*s,baseY-13*s,1,1,"#fff");
+    rect(cx+6*s,baseY-7*s,3,1,"#fb9e00");
+  }else if(config.accessory==="wrench"){
+    rect(cx+7*s,baseY-10*s,1,5,"#8aa4c4");
+    rect(cx+6*s,baseY-11*s,3,1,"#8aa4c4");
+    px(cx+6*s,baseY-10*s,"#8aa4c4");
+    px(cx+8*s,baseY-10*s,"#8aa4c4");
+  }
+}
+
+function shadeColor(hex,pct){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.max(0,Math.min(255,r+pct));g=Math.max(0,Math.min(255,g+pct));b=Math.max(0,Math.min(255,b+pct));
+  return"#"+[r,g,b].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+
+function initRobotCustomizer(){
+  const colorPicker=document.getElementById("robotColorPicker");
+  const eyePicker=document.getElementById("robotEyePicker");
+  const antennaPicker=document.getElementById("robotAntennaPicker");
+  const accessoryPicker=document.getElementById("robotAccessoryPicker");
+
+  function buildPicker(container,items,key,isColor){
+    container.innerHTML=items.map(item=>{
+      const active=currentRobot[key]===item.id?"active":"";
+      if(isColor){
+        return`<div class="robo-opt ${active}" data-key="${key}" data-val="${item.id}" style="background:${item.hex}" title="${item.label}"></div>`;
+      }
+      return`<div class="robo-opt ${active}" data-key="${key}" data-val="${item.id}" title="${item.label}">${item.label.slice(0,3)}</div>`;
+    }).join("");
+    container.querySelectorAll(".robo-opt").forEach(el=>{
+      el.addEventListener("click",()=>{
+        currentRobot[el.dataset.key]=el.dataset.val;
+        buildPicker(container,items,key,isColor);
+        updateRobotPreview();
+      });
+    });
+  }
+
+  buildPicker(colorPicker,ROBOT_COLORS,"color",true);
+  buildPicker(eyePicker,ROBOT_EYES,"eyes",false);
+  buildPicker(antennaPicker,ROBOT_ANTENNAS,"antenna",false);
+  buildPicker(accessoryPicker,ROBOT_ACCESSORIES,"accessory",false);
+
+  document.getElementById("robotName").addEventListener("input",(e)=>{
+    currentRobot.robot_name=e.target.value;
+  });
+
+  document.getElementById("robotSaveBtn").addEventListener("click",async()=>{
+    if(!loggedInAgent)return;
+    const st=document.getElementById("robotSaveStatus");
+    st.textContent="Saving...";st.style.color="var(--blue)";
+    const ok=await saveRobotConfig(loggedInAgent,{
+      robot_name:currentRobot.robot_name,
+      body_color:currentRobot.color,
+      eye_style:currentRobot.eyes,
+      antenna:currentRobot.antenna,
+      accessory:currentRobot.accessory
+    });
+    if(ok){st.textContent="Saved!";st.style.color="var(--green)";loadRobotGallery()}
+    else{st.textContent="Save failed";st.style.color="var(--danger)"}
+    setTimeout(()=>{st.textContent=""},3000);
+  });
+
+  updateRobotPreview();
+}
+
+function updateRobotPreview(){
+  const canvas=document.getElementById("robotPreview");
+  if(!canvas)return;
+  const ctx=canvas.getContext("2d");
+  drawRobot(ctx,canvas.width,canvas.height,currentRobot,5);
+}
+
+async function loadAgentRobot(){
+  if(!loggedInAgent)return;
+  const data=await loadRobotConfig(loggedInAgent);
+  if(data){
+    currentRobot.color=data.body_color||"blue";
+    currentRobot.eyes=data.eye_style||"visor";
+    currentRobot.antenna=data.antenna||"spike";
+    currentRobot.accessory=data.accessory||"none";
+    currentRobot.robot_name=data.robot_name||"";
+    document.getElementById("robotName").value=currentRobot.robot_name;
+  }else{
+    currentRobot={color:"blue",eyes:"visor",antenna:"spike",accessory:"none",robot_name:""};
+    document.getElementById("robotName").value="";
+  }
+  initRobotCustomizer();
+}
+
+async function loadRobotGallery(){
+  const grid=document.getElementById("robotGrid");
+  const robots=await loadAllRobots();
+  if(!robots.length){
+    grid.innerHTML='<p style="font-size:11px;color:var(--text-dim);grid-column:1/-1">No robots deployed yet. Login and build yours!</p>';
+    return;
+  }
+  grid.innerHTML=robots.map(r=>{
+    const canvasId="robo_"+r.agent_name.replace(/\s+/g,"_");
+    return`<div class="robo-card">
+      <canvas id="${canvasId}" width="100" height="120" style="image-rendering:pixelated"></canvas>
+      <div class="robo-card-name">${r.robot_name||"Unnamed"}</div>
+      <div class="robo-card-agent">${r.agent_name}</div>
+    </div>`;
+  }).join("");
+  // Render each robot after DOM update
+  requestAnimationFrame(()=>{
+    robots.forEach(r=>{
+      const canvasId="robo_"+r.agent_name.replace(/\s+/g,"_");
+      const cvs=document.getElementById(canvasId);
+      if(!cvs)return;
+      const ctx=cvs.getContext("2d");
+      drawRobot(ctx,cvs.width,cvs.height,{
+        color:r.body_color||"blue",
+        eyes:r.eye_style||"visor",
+        antenna:r.antenna||"spike",
+        accessory:r.accessory||"none"
+      },3);
+    });
+  });
+}
+
+// Load gallery on page load
+setTimeout(loadRobotGallery,1000);
 
 
 // ═══════════ BATTLEFIELD ENGINE ═══════════
