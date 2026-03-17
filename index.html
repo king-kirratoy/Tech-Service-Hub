@@ -2895,14 +2895,13 @@ const BF={
     // Position commanders directly behind the last column of warriors
     const wCols=this.warriors.length; // Each warrior has own column in diagonal grid
     const behindWarriorsX=fxAbs-50*s-wCols*wSpacing;
-    const cRows=Math.min(wRows,Math.max(2,this.commanders.length));
-    const cSpacing=75*s;
+    const cDiagRows=3;
+    const cSpacing=40*s;
     this.commanders.forEach((cmd,i)=>{
-      const col=Math.floor(i/cRows);
-      const row=i%cRows;
-      const stagger=(row%2)*28*s;
-      const targetX=behindWarriorsX-col*cSpacing-stagger+Math.sin(this.frame*0.02+cmd.id)*4*s;
-      const targetY=this.groundY-row*5*s;
+      const col=i;
+      const diagRow=cDiagRows-1-(i%cDiagRows); // 2,1,0,2,1,0... = "/" diagonal
+      const targetX=behindWarriorsX-col*cSpacing+Math.sin(this.frame*0.02+cmd.id)*4*s;
+      const targetY=this.groundY-diagRow*5*s;
       cmd.x+=(targetX-cmd.x)*0.04;
       cmd.y+=(targetY-cmd.y)*0.04;
       cmd.frame++;
