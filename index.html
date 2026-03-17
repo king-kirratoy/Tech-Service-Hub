@@ -684,7 +684,10 @@ function procAct(){
 
   applyOverrides();
   schedTix();
-  if(roster.length&&!selTech)selTech=roster[0].id;
+  if(roster.length&&!selTech){
+    if(!loggedInAgent||isAdmin){selTech=0}
+    else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
+  }
   renderSidebar();renderCal();renderRisk();renderPlayerCards();renderUnassigned();updateBanner();BF.refresh();
   document.getElementById("estBtn").disabled=false;
 }
@@ -2291,6 +2294,11 @@ function applyLoginState(){
       robotCustomizer.classList.add("hidden");
     }
   }
+  // Update default workload selection based on login state
+  if(roster.length){
+    if(!loggedInAgent||isAdmin){selTech=0}
+    else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
+  }
   renderTeamAll();
 }
 document.getElementById("adminLoginBtn").addEventListener("click",async()=>{
@@ -2792,7 +2800,7 @@ const BF={
       const row=i%wRows;
       const stagger=(row%2)*28*s;
       const targetX=fxAbs-50*s-col*wSpacing-stagger+Math.sin(this.frame*0.02+w.id)*4*s;
-      const targetY=this.groundY-row*5*s;
+      const targetY=this.groundY-row*18*s;
       w.x+=(targetX-w.x)*0.04;
       w.y+=(targetY-w.y)*0.04;
       w.frame++;
@@ -2870,17 +2878,17 @@ const BF={
         };
       });
     }
-    // Position commanders in grid formation behind warriors (same style, tighter spacing for slight overlap)
+    // Position commanders in grid formation behind warriors
     const wCols=Math.ceil(this.warriors.length/wRows);
     const behindWarriorsX=fxAbs-50*s-(wCols+1)*wSpacing;
-    const cRows=3;
-    const cSpacing=60*s;
+    const cRows=2;
+    const cSpacing=90*s;
     this.commanders.forEach((cmd,i)=>{
       const col=Math.floor(i/cRows);
       const row=i%cRows;
-      const stagger=(row%2)*22*s;
+      const stagger=(row%2)*30*s;
       const targetX=Math.min(behindWarriorsX-col*cSpacing-stagger+Math.sin(this.frame*0.02+cmd.id)*4*s,battleLeft+50*s);
-      const targetY=this.groundY-row*5*s;
+      const targetY=this.groundY-row*18*s;
       cmd.x+=(targetX-cmd.x)*0.04;
       cmd.y+=(targetY-cmd.y)*0.04;
       cmd.frame++;
