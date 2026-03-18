@@ -2252,7 +2252,14 @@ async function fetchHaloReport(reportName,onSuccess){
   if(ss){ss.textContent="Fetching data...";ss.style.color="var(--blue)"}
   try{
     const r=await fetch(PROXY_BASE+"/api/active",{headers:authH()});
-    if(r.status===401){authToken="";sessionStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();return}
+    if(r.status===401){
+      // Try silent widget re-auth before showing login gate
+      if(_widgetKey&&_inIframe){
+        const reOk=await widgetReauth();
+        if(reOk){fetchHaloReport(reportName,onSuccess);return}// Retry with fresh token
+      }
+      authToken="";sessionStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();return;
+    }
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
     const rows=Array.isArray(data)?data:data.report_data||data.results||data.data||[];
@@ -2300,31 +2307,41 @@ function stopAutoRefresh(){
 
 // ═══════════ WIDGET AUTO-LOGIN ═══════════
 // If loaded inside an iframe with ?wk= parameter, auto-authenticate via widget key
-(async function widgetAutoLogin(){
-  const params=new URLSearchParams(window.location.search);
-  const wk=params.get("wk");
-  const inIframe=window.self!==window.top;
-  if(!wk||!inIframe)return; // Only auto-login when embedded with widget key
+const _widgetParams=new URLSearchParams(window.location.search);
+const _widgetKey=_widgetParams.get("wk");
+const _inIframe=window.self!==window.top;
+
+async function widgetReauth(){
+  if(!_widgetKey||!_inIframe)return false;
   try{
-    const r=await fetch(PROXY_BASE+"/api/widget-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:wk})});
-    if(!r.ok)return; // Fall back to normal login gate
+    const r=await fetch(PROXY_BASE+"/api/widget-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:_widgetKey})});
+    if(!r.ok)return false;
     const d=await r.json();
     authToken=d.token;
     sessionStorage.setItem("hubToken",authToken);
     isAdmin=false;
     loggedInAgent=d.agent_name||"Widget Viewer";
+    return true;
+  }catch(e){console.error("Widget auto-login failed:",e);return false}
+}
+
+(async function widgetAutoLogin(){
+  if(!_widgetKey||!_inIframe){
+    // Not a widget — use normal auth flow
+    if(authToken){loadBaselines().then(()=>{setTimeout(startAutoRefresh,500)})}
+    applyLoginState();
+    return;
+  }
+  // Widget mode: always re-auth to get a fresh token before showing anything
+  const ok=await widgetReauth();
+  if(ok){
     await loadBaselines();
     applyLoginState();
     startAutoRefresh();
-  }catch(e){console.error("Widget auto-login failed:",e)}
+  }else{
+    applyLoginState(); // Show login gate as fallback
+  }
 })();
-
-// Auto-start on page load only if already authenticated (token in sessionStorage)
-if(authToken){
-  loadBaselines().then(()=>{setTimeout(startAutoRefresh,500)});
-}
-// Apply default agent view (hide Risk Monitor tab, hide agent filter)
-applyLoginState();
 
 
 // ═══════════ ROBOT CUSTOMIZER ═══════════
