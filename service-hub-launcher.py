@@ -7,6 +7,7 @@ Authenticates users via Supabase, issues JWT tokens,
 and gates all data endpoints behind auth.
 """
 
+import logging
 import os
 import time
 import requests
@@ -15,6 +16,9 @@ from functools import wraps
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import jwt
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -26,7 +30,9 @@ HALOPSA_REPORT_URL = os.environ.get("HALOPSA_REPORT_URL", "")
 HALO_BEARER_TOKEN = os.environ.get("HALO_BEARER_TOKEN", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
-JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
+JWT_SECRET = os.environ.get("JWT_SECRET", "")
+if not JWT_SECRET:
+    log.warning("JWT_SECRET is not set — authentication will fail")
 WIDGET_KEY = os.environ.get("WIDGET_KEY", "")
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://king-kirratoy.github.io")
 
@@ -145,6 +151,7 @@ def check_rate_limit(ip):
 def login():
     ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     if check_rate_limit(ip):
+        log.warning("Rate limit hit for IP %s", ip)
         return jsonify({"error": "Too many login attempts. Try again in a few minutes."}), 429
 
     data = request.get_json(silent=True) or {}
@@ -164,10 +171,11 @@ def login():
     rows = resp.json()
     if not rows:
         LOGIN_ATTEMPTS[ip].append(time.time())
-        remaining = MAX_LOGIN_ATTEMPTS - len(LOGIN_ATTEMPTS[ip])
-        return jsonify({"error": f"Invalid password. {remaining} attempts remaining."}), 401
+        log.warning("Failed login attempt from IP %s", ip)
+        return jsonify({"error": "Invalid password"}), 401
 
     agent = rows[0]
+    log.info("Successful login: %s", agent["agent_name"])
     token = create_token(agent["agent_name"], agent["role"])
     return jsonify({
         "token": token,
@@ -341,9 +349,10 @@ def create_comms_card():
     if not agent_name or agent_name == "Widget Viewer":
         return jsonify({"error": "Must be logged in as an agent"}), 403
 
-    grid_row = body.get("grid_row")
-    grid_col = body.get("grid_col")
-    if grid_row is None or grid_col is None:
+    try:
+        grid_row = int(body.get("grid_row"))
+        grid_col = int(body.get("grid_col"))
+    except (TypeError, ValueError):
         return jsonify({"error": "Grid position required"}), 400
     if not (0 <= grid_row <= 9 and 0 <= grid_col <= 4):
         return jsonify({"error": "Invalid grid position"}), 400
@@ -459,6 +468,8 @@ def toggle_comms_reaction():
     emoji = body.get("emoji", "")
     if not card_id or not emoji:
         return jsonify({"error": "card_id and emoji required"}), 400
+    if len(emoji) > 32:
+        return jsonify({"error": "Invalid emoji"}), 400
 
     # Check if reaction already exists
     check = supabase_request("GET", "comms_reactions", params={
