@@ -254,8 +254,10 @@ def get_active():
 @app.route("/api/baselines", methods=["GET"])
 @require_auth
 def get_baselines():
-    """Serve BL_CC / BL_CAT baselines (no client names in the HTML)."""
-    return jsonify(load_baselines())
+    """Serve category-only baselines (BL_CC stripped to protect client names)."""
+    data = load_baselines()
+    # Only return BL_CAT — never expose BL_CC which contains client names
+    return jsonify({"BL_CAT": data.get("BL_CAT", {})})
 
 
 @app.route("/api/robots", methods=["GET"])
