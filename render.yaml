@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: service-hub-launcher
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn service-hub-launcher:app
+    envVars:
+      - key: HALOPSA_REPORT_URL
+        sync: false
+      - key: HALOPSA_BEARER_TOKEN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PROXY_KEY
+        sync: false
