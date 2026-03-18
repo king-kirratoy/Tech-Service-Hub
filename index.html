@@ -1813,9 +1813,10 @@ function renderTeamAll(){
       if(weekNeutral){/* neutral */}
       else if(agentTimeFilter==="today"){
         if(a.emailWeb===0)ewColor="color:#8aa4c4";
-        else if(a.emailWeb>=16)ewColor="color:#fb9e00";
-        else if(a.emailWeb>=8)ewColor="color:#fcdc00";
-        else ewColor="color:#84BD00";
+        else if(a.emailWeb>=11)ewColor="color:#00E5FF";
+        else if(a.emailWeb>=8)ewColor="color:#84BD00";
+        else if(a.emailWeb>=4)ewColor="color:#fcdc00";
+        else ewColor="color:#fb9e00";
       }else{
         if(a.emailWeb===0)ewColor="color:#8aa4c4";
         else if(a.emailWeb>=80)ewColor="color:#fb9e00";
@@ -1854,11 +1855,13 @@ function renderTeamAll(){
     // CSAT Score
     if(visCols.has("csat")){
       let csatCell="—";
+      let csatStyle="";
       if(a.csat!==null){
         const topScore=a.csat>=3.5?4:a.csat>=2.5?3:a.csat>=1.5?2:1;
         csatCell=`${csatLabel(a.csat)} <span style="font-size:9px;color:var(--text-dim)">${a.csatCounts[topScore]}/${a.csatN}</span>`;
+        csatStyle=`color:${csatColor(a.csat)}`;
       }
-      h+=`<td${cellClass("csat",a.csat)}>${csatCell}</td>`;
+      h+=`<td style="${csatStyle}"${cellClass("csat",a.csat)}>${csatCell}</td>`;
     }
     h+=`</tr>`;
   });
