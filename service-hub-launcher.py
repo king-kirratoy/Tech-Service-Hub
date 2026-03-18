@@ -502,6 +502,15 @@ def toggle_comms_reaction():
         return jsonify({"action": "added"})
 
 
+@app.route("/api/agent-schedules", methods=["GET"])
+@require_auth
+def get_agent_schedules():
+    resp = supabase_request("GET", "agent_schedules", params={"select": "*"})
+    if resp.status_code != 200:
+        return jsonify({"error": "Failed to fetch schedules"}), 502
+    return jsonify(resp.json())
+
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})

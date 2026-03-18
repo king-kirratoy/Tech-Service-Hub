@@ -581,11 +581,10 @@ const PC={Critical:"#fb9e00",High:"#ffb74d",Medium:"#0095C8",Low:"#6C6C6C"};
 const SC={New:"#88ed61","In Progress":"#f2f400","Pending Reply":"#e27300","Client Update":"#ef0a90","Re-Assigned":"#653294","Pending AM":"#0c797d","Pending Vendor":"#aea1ff","Pending Opportunity":"#194d33","Re-Opened":"#f44e3b",Scheduled:"#999999",Monitoring:"#009ce0","License Update":"#fda1ff",Licensing:"#fda1ff","Pending Followup":"#e27300"};
 const SHIFTS=[{l:"7:30 AM — 4:30 PM",s:7.5,e:16.5},{l:"8:30 AM — 5:30 PM",s:8.5,e:17.5}];
 const LUNCHES=[{l:"11:15 — 12:15",s:11.25,e:12.25},{l:"12:30 — 1:30",s:12.5,e:13.5},{l:"1:45 — 2:45",s:13.75,e:14.75}];
-const AGENT_LUNCH={
-  "Adam Gasper":0,"Ammi Jacobus":0,"Dana Reistoffer":0,"Matthew Lamm":0,"James Swiercek":0,"Valeri Kyall":0,
-  "Jack Nelson":1,"Logan Brown":1,"Michael Salmen":1,"Zack Johnson":1,"Kim Schlachter":1,"William Thorp":1,
-  "Bailey Stout":2,"Keagan Buechter":2,"Kevin Watke":2,"Patrick Pfister":2,"Ben Monday":2,"Grace Howard":2
-};
+let AGENT_LUNCH={};
+async function loadAgentSchedules(){
+  try{const r=await fetchRetry(PROXY_BASE+"/api/agent-schedules",{headers:authH()});if(!r||!r.ok)return;const d=await r.json();AGENT_LUNCH={};d.forEach(s=>{AGENT_LUNCH[s.agent_name]=s.lunch_slot!=null?s.lunch_slot:1})}catch(e){console.error("Agent schedules load error:",e)}
+}
 let techSched={};
 function getSched(id){if(techSched[id])return techSched[id];return{ss:SHIFTS[1].s,se:SHIFTS[1].e,ls:LUNCHES[1].s,le:LUNCHES[1].e,si:1,li:1}}
 
@@ -2153,7 +2152,7 @@ async function doGateLogin(){
   if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
   if(result.role==="admin"){isAdmin=true;loggedInAgent=result.agent_name||"Admin"}
   else{isAdmin=false;loggedInAgent=result.agent_name}
-  await loadBaselines();
+  await Promise.all([loadBaselines(),loadAgentSchedules()]);
   applyLoginState();
   startAutoRefresh();
 }
@@ -2170,7 +2169,7 @@ document.getElementById("adminLoginBtn").addEventListener("click",async()=>{
   if(result.error){st.textContent=result.error;st.classList.add("missing");return}
   if(result.role==="admin"){isAdmin=true;loggedInAgent=result.agent_name||"Admin"}
   else{isAdmin=false;loggedInAgent=result.agent_name}
-  await loadBaselines();
+  await Promise.all([loadBaselines(),loadAgentSchedules()]);
   applyLoginState();
   startAutoRefresh();
 });
@@ -2290,14 +2289,14 @@ async function widgetReauth(){
 (async function widgetAutoLogin(){
   if(!_widgetKey||!_inIframe){
     // Not a widget — use normal auth flow
-    if(authToken){loadBaselines().then(()=>{setTimeout(startAutoRefresh,500)})}
+    if(authToken){Promise.all([loadBaselines(),loadAgentSchedules()]).then(()=>{setTimeout(startAutoRefresh,500)})}
     applyLoginState();
     return;
   }
   // Widget mode: always re-auth to get a fresh token before showing anything
   const ok=await widgetReauth();
   if(ok){
-    await loadBaselines();
+    await Promise.all([loadBaselines(),loadAgentSchedules()]);
     applyLoginState();
     startAutoRefresh();
   }else{
@@ -3698,13 +3697,12 @@ function buildCommsCard(card){
       <div class="comms-card-avatar"><canvas id="${canvasId}" width="64" height="64"></canvas></div>
       <span class="comms-card-agent">${esc(card.agent_name)}</span>
       ${iconEmoji?`<span class="comms-card-icon">${iconEmoji}</span>`:""}
-      ${isOwner?`<button class="comms-edit-btn" onclick="editCommsCard('${card.id}')" title="Edit">✏️</button>`:""}
     </div>
     <div class="comms-card-body">
       ${card.title?`<div class="comms-card-title">${esc(card.title)}</div>`:""}
       ${card.body?`<div class="comms-card-text">${esc(card.body)}</div>`:""}
     </div>
-    <div class="comms-reactions">${reactionsHtml}${addReactHtml}</div>
+    <div class="comms-reactions">${reactionsHtml}${addReactHtml}${isOwner?`<button class="comms-edit-btn" onclick="editCommsCard('${card.id}')" title="Edit">✏️</button>`:""}</div>
   `;
 
   // Draw robot head after DOM insert via microtask
