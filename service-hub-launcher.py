@@ -15,12 +15,14 @@ from collections import defaultdict
 from functools import wraps
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 import jwt
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # ═══════════════════════════════════════════════════════════
 # CONFIGURATION — All from environment variables
@@ -149,7 +151,7 @@ def check_rate_limit(ip):
 
 @app.route("/api/login", methods=["POST"])
 def login():
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    ip = request.remote_addr
     if check_rate_limit(ip):
         log.warning("Rate limit hit for IP %s", ip)
         return jsonify({"error": "Too many login attempts. Try again in a few minutes."}), 429
