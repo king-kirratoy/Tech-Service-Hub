@@ -394,7 +394,11 @@ let isWidgetMode=false;
 
 // ═══════════ AUTH & PROXY ═══════════
 const PROXY_BASE="https://service-hub-launcher.onrender.com";
-let authToken=sessionStorage.getItem("hubToken")||"";
+function isTokenExpired(token){
+  try{const p=JSON.parse(atob(token.split(".")[1]));return!p.exp||p.exp*1000<Date.now()}catch(e){return true}
+}
+let authToken=localStorage.getItem("hubToken")||"";
+if(authToken&&isTokenExpired(authToken)){authToken="";localStorage.removeItem("hubToken")}
 
 function authH(){return{"Content-Type":"application/json","Authorization":"Bearer "+authToken}}
 
@@ -404,7 +408,7 @@ async function supaLogin(password){
     if(!r.ok){const err=await r.json().catch(()=>({}));return{error:err.error||"Login failed"}}
     const d=await r.json();
     authToken=d.token;
-    sessionStorage.setItem("hubToken",authToken);
+    localStorage.setItem("hubToken",authToken);
     return{agent_name:d.agent_name,role:d.role};
   }catch(e){console.error("Login error:",e);return{error:"Cannot reach server"}}
 }
@@ -2076,7 +2080,7 @@ document.getElementById("adminLogoutBtn").addEventListener("click",async()=>{
     applyLoginState();
     if(ok)startAutoRefresh();
   }else{
-    authToken="";sessionStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();
+    authToken="";localStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();
   }
 });
 // Last sync timestamp
@@ -2112,7 +2116,7 @@ async function fetchHaloReport(reportName,onSuccess){
         const reOk=await widgetReauth();
         if(reOk){fetchHaloReport(reportName,onSuccess);return}// Retry with fresh token
       }
-      authToken="";sessionStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();return;
+      authToken="";localStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();return;
     }
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
@@ -2172,7 +2176,7 @@ async function widgetReauth(){
     if(!r.ok)return false;
     const d=await r.json();
     authToken=d.token;
-    sessionStorage.setItem("hubToken",authToken);
+    localStorage.setItem("hubToken",authToken);
     isWidgetMode=true;
     return true;
   }catch(e){console.error("Widget auto-login failed:",e);return false}
