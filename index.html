@@ -346,6 +346,17 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Workload</h2>
       <p style="font-size:12px;color:var(--text-muted)">This weeks capacity and stats.</p>
     </div>
+    <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
+      <label>Client:</label>
+      <select id="kpiClient"><option value="">— All Clients —</option></select>
+      <label style="margin-left:16px">Agent:</label>
+      <select id="kpiAgent"><option value="">— All Agents —</option></select>
+      <label style="margin-left:16px">Period:</label>
+      <select id="agentTimePeriod"><option value="today">Today</option><option value="week">This Week</option></select>
+    </div>
+    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
+    <div class="stat-grid" id="sg"></div>
+    <div style="margin-top:28px;margin-bottom:20px"></div>
     <div class="cal-layout">
       <div class="glass tech-sidebar">
         <button class="btn-accent" id="estBtn" style="padding:8px 16px;font-size:11px;white-space:nowrap;width:100%;margin-bottom:12px" disabled><svg style="width:14px;height:14px"><use href="#ib"/></svg> Estimate Time</button>
@@ -357,17 +368,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
         <div id="ca"></div>
       </div>
     </div>
-    <div style="margin-top:28px;margin-bottom:20px"></div>
-    <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <label>Client:</label>
-      <select id="kpiClient"><option value="">— All Clients —</option></select>
-      <label style="margin-left:16px">Agent:</label>
-      <select id="kpiAgent"><option value="">— All Agents —</option></select>
-      <label style="margin-left:16px">Period:</label>
-      <select id="agentTimePeriod"><option value="today">Today</option><option value="week">This Week</option></select>
-    </div>
-    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
-    <div class="stat-grid" id="sg"></div>
   </div>
   <div id="campaignTab" class="hidden">
     <div style="margin-bottom:20px">
