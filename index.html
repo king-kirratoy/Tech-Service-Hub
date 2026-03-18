@@ -145,8 +145,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .tt-popup .pop-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:11px}
 .tt-popup .pop-label{color:var(--text-dim);font-weight:600;white-space:nowrap;margin-right:10px}
 .tt-popup .pop-val{color:var(--text);font-weight:500;text-align:right;max-width:65%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tt-popup .pop-summary{font-size:11px;color:var(--text);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);word-wrap:break-word}
-.tt-popup .pop-detail{font-size:10px;color:var(--text-muted);line-height:1.4;margin-top:6px;max-height:80px;overflow:hidden;word-wrap:break-word}
+.tt-popup .pop-summary{font-size:11px;color:var(--text);line-height:1.5;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);word-wrap:break-word}
 .now-line{position:absolute;left:0;right:0;z-index:8;pointer-events:none;display:flex;align-items:center}
 .now-line::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-left:-4px}
 .now-line::after{content:"";flex:1;height:2px;background:var(--danger)}
@@ -736,7 +735,7 @@ function procAct(){
     const dateCreated=pD(r.Date_Created);
     const frd=pD(r.First_Response_Date);
     const status=r.Status||"Closed";
-    return{id:r.Ticket_ID||`CL-${i}`,title:r.Summary||"Untitled",client:cl,user:r.End_User||"—",category:cat,type:r.Ticket_Type||"Service",agent,assignedTo:tech?tech.id:0,dayIdx,timeWorked,status,dateClosed:dc,dateCreated,nextResponse:nrd,slaTgt,frd,frt:!isNaN(frt)?frt:null,recentActions:(r.Recent_Actions||"").substring(0,1500),isClosed:true,dateAssigned:pD(r.Date_Assigned)};
+    return{id:r.Ticket_ID||`CL-${i}`,title:r.Summary||"Untitled",client:cl,user:r.End_User||"—",category:cat,type:r.Ticket_Type||"Service",agent,assignedTo:tech?tech.id:0,dayIdx,timeWorked,status,dateClosed:dc,dateCreated,nextResponse:nrd,slaTgt,frd,frt:!isNaN(frt)?frt:null,isClosed:true,dateAssigned:pD(r.Date_Assigned)};
   }).filter(t=>t.dayIdx>=0);
 
   // Feed closed-this-week tickets into KPI data (same structure as histRaw processing)
@@ -773,7 +772,6 @@ function procAct(){
     const status=r.Status||"New";
     const tw=parseFloat(r.Time_Taken||"0");
     const timeWorked=(!isNaN(tw)&&tw>0)?tw:0;
-    const recentActions=(r.Recent_Actions||"").substring(0,1500);
     const dateCreated=pD(r.Date_Created);
     const slaTgt=pD(r.SLA_Resolution_Target);
     const isWaiting=WAIT_STATUSES.has(status);
@@ -787,7 +785,7 @@ function procAct(){
       est=Math.round(est*4)/4;
     }
 
-    return{id:r.Ticket_ID||`TK-${i}`,title:r.Summary||"Untitled",recentActions,client:cl,user:r.End_User||"—",category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,isWaiting,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
+    return{id:r.Ticket_ID||`TK-${i}`,title:r.Summary||"Untitled",client:cl,user:r.End_User||"—",category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,isWaiting,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
   });
 
   // Sort by Next Response Date (soonest first), then by status priority
@@ -822,13 +820,8 @@ function schedTix(){
   const startDayIdx=todayDayIdx>=0?todayDayIdx:0;
 
   // Detect actionable Client Update tickets
-  const THANKS_PATTERNS=/^(thanks|thank you|thx|ty|great|awesome|perfect|sounds good|got it|ok|okay|will do|noted|appreciate)/i;
   function isActionableClientUpdate(tk){
-    if(tk.status!=="Client Update")return false;
-    const note=(tk.recentActions||"").replace(/^.*?action note:\s*/i,"").trim();
-    if(!note||note.length<5)return false;
-    if(THANKS_PATTERNS.test(note))return false;
-    return true;
+    return tk.status==="Client Update";
   }
 
   // Assign a scheduling priority score (lower = schedule sooner)
@@ -1292,7 +1285,6 @@ function renderCal(){
       const stC=SC[tk.status]||"var(--text-dim)";
       const endH=tk.startHour+tk.est;
       const nrd=tk.nextResponse?tk.nextResponse.toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"—";
-      const recentActSnip=(tk.recentActions||"").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g," ").substring(0,400);
       const waitLabel=tk.isWaiting?`<span style="font-size:8px;background:rgba(255,183,77,0.2);color:#ffb74d;padding:1px 5px;border-radius:3px;margin-left:4px">WAITING</span>`:"";
       const popSide=(di>=3?"pop-left":"")+" "+(tk.startHour>=14?"pop-bottom":"");
       const riskClass=tk.nrdAtRisk?"nrd-risk":"";
@@ -1304,6 +1296,7 @@ function renderCal(){
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
+          <div class="pop-summary">${esc(tk.title)}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}${waitLabel}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${esc(tk.client)}</span></div>
@@ -1312,8 +1305,6 @@ function renderCal(){
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${tk.timeWorked.toFixed(1)}h</span></div>
           <div class="pop-row"><span class="pop-label">Est. Remaining</span><span class="pop-val" style="color:var(--green)">${tk.est}h</span></div>
           <div class="pop-row"><span class="pop-label">Next Response</span><span class="pop-val" style="${nrdColor}">${nrd}</span></div>
-          <div class="pop-summary">${esc(tk.title)}</div>
-          ${recentActSnip?`<div class="pop-detail">${recentActSnip}${tk.recentActions&&tk.recentActions.length>400?"...":""}</div>`:""}
         </div>
       </div>`;
     });
@@ -1342,7 +1333,6 @@ function renderCal(){
       closedDay.forEach(ct=>{
         const stC=SC[ct.status]||"#999999";
         const closedDate=ct.dateClosed?ct.dateClosed.toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"—";
-        const recentActSnip=(ct.recentActions||"").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g," ").substring(0,400);
         const popSide=(di>=3?"pop-left":"")+" pop-bottom";
         h+=`<div class="tt tt-closed" style="height:${closedHt}px;border-left-color:${stC}">
         <div class="tt-inner">
@@ -1351,13 +1341,12 @@ function renderCal(){
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">Closed ${closedDate}</div>
+          <div class="pop-summary">${esc(ct.title)}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(ct.id)}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:#999">Closed</span></div>
           <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${esc(ct.client)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(ct.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${ct.timeWorked.toFixed(1)}h</span></div>
-          <div class="pop-summary">${esc(ct.title)}</div>
-          ${recentActSnip?`<div class="pop-detail">${recentActSnip}</div>`:""}
         </div>
       </div>`;
       });
