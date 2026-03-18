@@ -36,7 +36,8 @@ ALLOWED_ORIGINS = [
     ALLOWED_ORIGIN,
     "https://halo.lutz.us",
 ]
-CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
+CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"])
 
 # ═══════════════════════════════════════════════════════════
 # X-FRAME-OPTIONS — Only allow embedding from HaloPSA
