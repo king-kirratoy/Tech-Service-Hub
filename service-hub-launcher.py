@@ -34,7 +34,6 @@ ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://king-kirratoy.github.
 # Allowed origins for CORS and X-Frame-Options
 ALLOWED_ORIGINS = [
     ALLOWED_ORIGIN,
-    "https://halo.lutz.us",
 ]
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True,
      allow_headers=["Content-Type", "Authorization"],
@@ -58,10 +57,10 @@ def handle_preflight():
             return response
 
 # ═══════════════════════════════════════════════════════════
-# X-FRAME-OPTIONS — Only allow embedding from HaloPSA
+# X-FRAME-OPTIONS — Only allow embedding from allowed origin
 # ═══════════════════════════════════════════════════════════
 
-ALLOWED_FRAME_ANCESTOR = "https://halo.lutz.us"
+ALLOWED_FRAME_ANCESTOR = os.environ.get("ALLOWED_FRAME_ANCESTOR", ALLOWED_ORIGIN)
 
 @app.after_request
 def set_security_headers(response):
