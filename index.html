@@ -239,7 +239,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .comms-card-body{padding:0 12px 8px;flex:1;overflow:hidden}
 .comms-card-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-family:var(--font-heading);letter-spacing:0.3px;text-transform:uppercase}
 .comms-card-text{font-size:11px;color:var(--text-muted);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
-.comms-card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .2s}
+.comms-card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .2s;z-index:2}
 .comms-card:hover .comms-card-actions{opacity:1}
 .comms-card-actions button{background:rgba(0,20,40,0.8);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;padding:2px 6px;font-size:10px;transition:all .15s}
 .comms-card-actions button:hover{color:var(--text);border-color:var(--blue)}
@@ -3602,7 +3602,7 @@ function drawRobotHead(canvas,config){
   const tinted=getTintedHatSprite(hatId,c.hex);
   if(tinted){
     // Crop the head region: roughly top 45% of the 369px sprite
-    const srcY=0,srcH=Math.round(SPRITE_FRAME_H*0.45);
+    const srcY=Math.round(SPRITE_FRAME_H*0.05),srcH=Math.round(SPRITE_FRAME_H*0.50);
     const srcX=SPRITE_INSET,srcW=SPRITE_FRAME_W-SPRITE_INSET*2;
     ctx.drawImage(tinted,srcX,srcY,srcW,srcH,0,0,w,h);
   }else{
