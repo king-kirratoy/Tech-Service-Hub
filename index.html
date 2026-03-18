@@ -229,7 +229,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .comms-slot.available:hover{border-color:var(--green);background:rgba(132,189,0,0.06);box-shadow:0 0 20px rgba(132,189,0,0.15)}
 .comms-slot.occupied{border:none;background:none;min-height:auto}
 @keyframes slotGlow{0%,100%{box-shadow:0 0 5px rgba(132,189,0,0.05)}50%{box-shadow:0 0 15px rgba(132,189,0,0.12)}}
-.comms-card{border-radius:12px;position:relative;overflow:hidden;height:100%;display:flex;flex-direction:column}
+.comms-card{border-radius:12px;position:relative;overflow:visible;height:100%;display:flex;flex-direction:column}
 .comms-card::after{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)}
 .comms-card-header{display:flex;align-items:center;gap:8px;padding:12px 12px 8px;position:relative}
 .comms-card-avatar{width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;background:rgba(0,15,35,0.6)}
@@ -251,7 +251,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .comms-react-btn .react-count{font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace}
 .comms-react-add{background:rgba(0,20,40,0.4);border:1px dashed rgba(0,149,200,0.15);border-radius:10px;padding:2px 6px;font-size:11px;cursor:pointer;color:var(--text-dim);transition:all .15s;position:relative}
 .comms-react-add:hover{border-color:var(--blue);color:var(--text-muted)}
-.comms-emoji-picker{display:none;position:absolute;bottom:100%;left:0;background:rgba(0,20,50,0.97);border:1px solid var(--border-bright);border-radius:8px;padding:6px;z-index:100;backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,0.5);white-space:nowrap}
+.comms-emoji-picker{display:none;position:absolute;bottom:100%;right:0;background:rgba(0,20,50,0.97);border:1px solid var(--border-bright);border-radius:8px;padding:6px;z-index:100;backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,0.5);flex-wrap:wrap;max-width:180px}
 .comms-emoji-picker.open{display:flex;gap:2px}
 .comms-emoji-opt{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;font-size:16px;transition:all .15s;border:none;background:none}
 .comms-emoji-opt:hover{background:rgba(0,149,200,0.15);transform:scale(1.2)}
