@@ -2672,28 +2672,32 @@ const BF={
     this._fxAbs+=(targetFxAbs-this._fxAbs)*0.015;
     const fxAbs=this._fxAbs;
 
-    // Build/update warriors
-    if(this.warriors.length!==roster.length){
-      const oldWarriors=this.warriors;
-      this.warriors=roster.map((t,i)=>{
+    // Build/update warriors — diff-based: keep existing, add new, remove departed
+    const rosterNames=new Set(roster.map(t=>t.name));
+    const existingByName={};this.warriors.forEach(w=>{existingByName[w.name]=w});
+    if(this._needsSync||this.warriors.length!==roster.length||roster.some(t=>!existingByName[t.name])){
+      this._needsSync=false;
+      const newWarriors=roster.map((t,i)=>{
+        const existing=existingByName[t.name];
+        if(existing){existing.id=t.id;return existing}// Keep in place
         const cached=this.prevWarriorState[t.name];
-        const existing=oldWarriors.find(w=>w.name===t.name);
         const rCfg=getRobotConfigForAgent(t.name);
         const rColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
         const wColor=rColorObj?rColorObj.hex:this.WCOLORS[i%this.WCOLORS.length];
         return{
           id:t.id,name:t.name,color:wColor,
           level:0,hp:100,
-          x:cached?cached.x:existing?existing.x:fxAbs-80*s,
-          y:cached?cached.y:existing?existing.y:this.groundY,
+          x:cached?cached.x:fxAbs-80*s,
+          y:cached?cached.y:this.groundY,
           vx:0,frame:Math.floor(Math.random()*200),
           atkTimer:30+Math.floor(Math.random()*60),attacking:false,atkFrame:0,
           walkOff:0,bobPhase:Math.random()*Math.PI*2,
-          weapon:cached?cached.weapon:existing?existing.weapon:null,
-          weaponLevel:cached?cached.weaponLevel:existing?existing.weaponLevel:undefined,
-          prevLevel:cached?cached.prevLevel:existing?existing.prevLevel:undefined
+          weapon:cached?cached.weapon:null,
+          weaponLevel:cached?cached.weaponLevel:undefined,
+          prevLevel:cached?cached.prevLevel:undefined
         };
       });
+      this.warriors=newWarriors;
     }
     // Update warrior stats
     this.warriors.forEach((w,i)=>{
@@ -2792,25 +2796,23 @@ const BF={
 
     // Build/update commanders (admin agents — positioned far left, behind warriors)
     const adminNames=adminAgentNames.filter(n=>!roster.some(r=>r.name===n));
-    if(this.commanders.length!==adminNames.length){
-      const oldCmds=this.commanders;
+    const existingCmdByName={};this.commanders.forEach(c=>{existingCmdByName[c.name]=c});
+    if(this.commanders.length!==adminNames.length||adminNames.some(n=>!existingCmdByName[n])){
       this.commanders=adminNames.map((name,i)=>{
-        const existing=oldCmds.find(c2=>c2.name===name);
+        const existing=existingCmdByName[name];
+        if(existing)return existing;// Keep in place
         const rCfg=getRobotConfigForAgent(name);
         const rColorObj=ROBOT_COLORS.find(rc=>rc.id===rCfg.color);
         const cmdColor=rColorObj?rColorObj.hex:"#FFD700";
         return{
           id:-100-i,name,color:cmdColor,isCommander:true,
-          x:existing?existing.x:battleLeft+40*s,
-          y:existing?existing.y:this.groundY,
-          frame:existing?existing.frame:Math.floor(Math.random()*200),
-          bobPhase:existing?existing.bobPhase:Math.random()*Math.PI*2,
-          atkTimer:existing?existing.atkTimer:40+Math.floor(Math.random()*60),
-          attacking:existing?existing.attacking:false,
-          atkFrame:existing?existing.atkFrame:0,
-          weapon:existing?existing.weapon:null,
-          weaponLevel:existing?existing.weaponLevel:undefined,
-          level:existing?existing.level:30
+          x:battleLeft+40*s,
+          y:this.groundY,
+          frame:Math.floor(Math.random()*200),
+          bobPhase:Math.random()*Math.PI*2,
+          atkTimer:40+Math.floor(Math.random()*60),
+          attacking:false,atkFrame:0,
+          weapon:null,weaponLevel:undefined,level:30
         };
       });
     }
@@ -3542,7 +3544,7 @@ const BF={
     if(roster.length&&actTix.length){
       section.classList.remove("hidden");
       if(!this.canvas)this.init();
-      else{this.resize();this.warriors=[];this.commanders=[]}// Rebuild warriors/commanders but positions cached
+      else{this.resize();this._needsSync=true}// Flag for smooth sync on next update()
     }else{section.classList.add("hidden")}
   }
 };
