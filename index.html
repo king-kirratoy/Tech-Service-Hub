@@ -389,14 +389,13 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <p style="font-size:12px;color:var(--text-muted)">This weeks capacity and stats.</p>
     </div>
     <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <label>Client:</label>
-      <select id="kpiClient"><option value="">— All Clients —</option></select>
-      <label style="margin-left:16px">Agent:</label>
+      <label>Agent:</label>
       <select id="kpiAgent"><option value="">— All Agents —</option></select>
       <label style="margin-left:16px">Period:</label>
       <select id="agentTimePeriod"><option value="today">Today</option><option value="week">This Week</option></select>
     </div>
-    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
+    <select id="kpiClient" style="display:none"><option value="">— All Clients —</option></select>
+    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px;display:none" id="teamAllTable"></div>
     <div class="stat-grid" id="sg"></div>
     <div style="margin-top:28px;margin-bottom:20px"></div>
     <div class="cal-layout">
@@ -469,14 +468,13 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <p style="font-size:12px;color:var(--text-muted)">Ticket volume and SLA performance metrics.</p>
     </div>
     <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <label>Client:</label>
-      <select id="campaignClient"><option value="">— All Clients —</option></select>
-      <label style="margin-left:16px">Agent:</label>
+      <select id="campaignClient" style="display:none"><option value="">— All Clients —</option></select>
+      <label>Agent:</label>
       <select id="campaignAgent"><option value="">— All Agents —</option></select>
     </div>
     <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#0095C8"></span>Top 5 Clients</h3><canvas id="cTopClients"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Top 5 Users</h3><canvas id="cTopUsers"></canvas></div></div>
+    <div class="chart-grid" style="display:none"><div class="glass chart-card"><h3><span class="cdot" style="background:#0095C8"></span>Top 5 Clients</h3><canvas id="cTopClients"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Top 5 Users</h3><canvas id="cTopUsers"></canvas></div></div>
   </div>
 
 </div><!-- /mainContent -->
@@ -1291,7 +1289,7 @@ function renderCal(){
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
       h+=`<div class="tt ${riskClass}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${esc(tk.client)}</span><span class="ti">${haloLink(tk.id)}</span></div>
+          <div class="tt-row1"><span class="tc">${esc(tk.category)}</span><span class="ti">${haloLink(tk.id)}</span></div>
           <div class="tt-row2"><span class="tit">${esc(tk.title)}</span><span class="te">${tk.est}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
@@ -1299,7 +1297,6 @@ function renderCal(){
           <div class="pop-summary">${esc(tk.title)}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}${waitLabel}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${esc(tk.status)}</span></div>
-          <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${esc(tk.client)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(tk.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${esc(tk.type)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${tk.timeWorked.toFixed(1)}h</span></div>
@@ -1336,7 +1333,7 @@ function renderCal(){
         const popSide=(di>=3?"pop-left":"")+" pop-bottom";
         h+=`<div class="tt tt-closed" style="height:${closedHt}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${esc(ct.client)}</span><span class="ti">${haloLink(ct.id)}</span></div>
+          <div class="tt-row1"><span class="tc">${esc(ct.category)}</span><span class="ti">${haloLink(ct.id)}</span></div>
           <div class="tt-row2"><span class="tit">${esc(ct.title)}</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
@@ -1344,7 +1341,6 @@ function renderCal(){
           <div class="pop-summary">${esc(ct.title)}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(ct.id)}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:#999">Closed</span></div>
-          <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${esc(ct.client)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(ct.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${ct.timeWorked.toFixed(1)}h</span></div>
         </div>
@@ -2000,8 +1996,6 @@ function renderRisk(){
   document.getElementById("riskInsights").innerHTML=[
     {l:"At-Risk Agent",v:topRiskAgent?topRiskAgent[0]:"—",sub:topRiskAgent?`${topRiskAgent[1]} flagged ticket${topRiskAgent[1]>1?"s":""}`:"No risks detected",c:topRiskAgent?"var(--danger)":"var(--green)"},
     {l:"Heaviest Workload",v:topWorkload?topWorkload[0]:"—",sub:topWorkload?`${topWorkload[1].tix} active · ${topWorkload[1].hrs.toFixed(1)}h est`:"No data",c:topWorkload?"var(--warning)":"var(--text-dim)"},
-    {l:"At-Risk Client",v:topRiskClient?topRiskClient[0]:"—",sub:topRiskClient?`${topRiskClient[1].count} flagged · ${topRiskClient[1].overdueH.toFixed(1)}h overdue`:"No risks detected",c:topRiskClient?"var(--danger)":"var(--green)"},
-    {l:"Most Active Client",v:topClient?topClient[0]:"—",sub:topClient?`${topClient[1]} total ticket${topClient[1]>1?"s":""} · ${topClientActive} active`:"No data",c:topClient?"var(--blue)":"var(--text-dim)"},
   ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${(i+4)*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c};font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block" title="${c.v}">${c.v}</span></div><div class="stat-trend" style="color:var(--text-dim)">${c.sub}</div></div>`).join("");
 
   // Build sections
@@ -2046,7 +2040,7 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
   tickets.forEach(tk=>{
     const sev=tk.severity==="high"?"sev-high":tk.severity==="med"?"sev-med":"sev-low";
     const dateCreated=tk.dateCreated?tk.dateCreated.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+tk.dateCreated.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"—";
-    h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-client" title="${esc(tk.client)||""}">${esc(tk.client)||"—"}</span><span class="risk-user" title="${esc(tk.user)||""}">${esc(tk.user)||"—"}</span><span class="risk-title" title="${esc(tk.title)}">${esc(tk.title)}</span><span class="risk-agent">${esc(tk.agent)||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
+    h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-title" title="${esc(tk.title)}">${esc(tk.title)}</span><span class="risk-agent">${esc(tk.agent)||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
   });
   h+=`</div></div>`;
   return h;
@@ -2057,7 +2051,7 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
 // ═══════════ RESOLUTION ASSIST ═══════════
 
 // ═══════════ BANNER ═══════════
-function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateCreated&&wd.some(d=>isSD(d,t.dateCreated))).length+closedTix.length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
+function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateCreated&&wd.some(d=>isSD(d,t.dateCreated))).length+closedTix.length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
 
 // ═══════════ EVENTS ═══════════
 // Login button toggle
@@ -3322,7 +3316,7 @@ const BF={
         if(tk){
           const stC=SC[tk.status]||"var(--text-dim)";
           html=`<div style="font-weight:700;font-size:11px;color:var(--blue);margin-bottom:4px">${esc(tk.id)}</div>`;
-          html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">${esc(tk.client)}</div>`;
+          html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">${esc(tk.category)}</div>`;
           html+=`<div style="font-size:9px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(tk.title)}</div>`;
           html+=`<div style="font-size:9px"><span style="color:${stC}">${esc(tk.status)}</span> \u00b7 ${tk.est}h est</div>`;
         }
