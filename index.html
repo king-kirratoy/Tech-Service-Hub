@@ -402,6 +402,7 @@ let histRaw=[],actRaw=[],kpiM=[],catStats={},clientCatStats={},clientKPI={},actT
 let selTech=null,calV="week",calD=new Date(),charts={};
 let isAdmin=false;
 let loggedInAgent=null;
+let isWidgetMode=false;
 
 // ═══════════ AUTH & PROXY ═══════════
 const PROXY_BASE="https://service-hub-launcher.onrender.com";
@@ -2151,15 +2152,10 @@ function applyLoginState(){
   const robotCustomizer=document.getElementById("robotCustomizer");
   if(isAdmin){
     riskTab.style.display="";
-    st.textContent="Admin View";st.classList.remove("missing");st.classList.add("set");
-    loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
-    pwdInput.style.display="none";
     if(agentLabelEl)agentLabelEl.style.display="";
     if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
     if(campAgentLabelEl)campAgentLabelEl.style.display="";
     if(campAgentSelectEl){campAgentSelectEl.style.display="";campAgentSelectEl.value="";}
-    if(loggedInAgent){robotCustomizer.classList.remove("hidden");loadAgentRobot()}
-    else{robotCustomizer.classList.add("hidden")}
   }else{
     riskTab.style.display="none";
     if(riskTab.classList.contains("active")){
@@ -2172,18 +2168,20 @@ function applyLoginState(){
     if(agentSelectEl)agentSelectEl.style.display="none";
     if(campAgentLabelEl)campAgentLabelEl.style.display="none";
     if(campAgentSelectEl)campAgentSelectEl.style.display="none";
-    if(loggedInAgent){
-      st.textContent="Logged in as "+loggedInAgent;st.classList.remove("missing");st.classList.add("set");
-      loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
-      pwdInput.style.display="none";
-      robotCustomizer.classList.remove("hidden");
-      loadAgentRobot();
-    }else{
-      st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
-      loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
-      pwdInput.style.display="";pwdInput.value="";
-      robotCustomizer.classList.add("hidden");
-    }
+  }
+  // Login panel state — always accessible, content changes based on login
+  if(loggedInAgent){
+    const label=isAdmin?"Admin View":"Logged in as "+loggedInAgent;
+    st.textContent=label;st.classList.remove("missing");st.classList.add("set");
+    loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
+    pwdInput.style.display="none";
+    robotCustomizer.classList.remove("hidden");
+    loadAgentRobot();
+  }else{
+    st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
+    loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
+    pwdInput.style.display="";pwdInput.value="";
+    robotCustomizer.classList.add("hidden");
   }
   // Update default workload selection based on login state
   if(roster.length){
@@ -2226,8 +2224,16 @@ document.getElementById("adminLoginBtn").addEventListener("click",async()=>{
 document.getElementById("adminPwd").addEventListener("keydown",(e)=>{
   if(e.key==="Enter")document.getElementById("adminLoginBtn").click();
 });
-document.getElementById("adminLogoutBtn").addEventListener("click",()=>{
-  isAdmin=false;loggedInAgent=null;authToken="";sessionStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();
+document.getElementById("adminLogoutBtn").addEventListener("click",async()=>{
+  isAdmin=false;loggedInAgent=null;
+  if(isWidgetMode){
+    // Revert to widget-only auth (keep gate open, clear user identity)
+    const ok=await widgetReauth();
+    applyLoginState();
+    if(ok)startAutoRefresh();
+  }else{
+    authToken="";sessionStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();
+  }
 });
 // Last sync timestamp
 function updateLastSync(){
@@ -2326,8 +2332,7 @@ async function widgetReauth(){
     const d=await r.json();
     authToken=d.token;
     sessionStorage.setItem("hubToken",authToken);
-    isAdmin=false;
-    loggedInAgent=d.agent_name||"Widget Viewer";
+    isWidgetMode=true;
     return true;
   }catch(e){console.error("Widget auto-login failed:",e);return false}
 }

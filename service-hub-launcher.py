@@ -65,8 +65,10 @@ ALLOWED_FRAME_ANCESTOR = "https://halo.lutz.us"
 
 @app.after_request
 def set_security_headers(response):
-    response.headers["X-Frame-Options"] = f"ALLOW-FROM {ALLOWED_FRAME_ANCESTOR}"
     response.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {ALLOWED_FRAME_ANCESTOR}"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
 # ═══════════════════════════════════════════════════════════
@@ -77,12 +79,24 @@ LOGIN_ATTEMPTS = defaultdict(list)  # ip -> [timestamps]
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_WINDOW = 300  # 5 minutes
 
-# Load baselines from file
-BASELINES = {}
-baselines_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "baselines.json")
-if os.path.exists(baselines_path):
-    with open(baselines_path, "r") as f:
-        BASELINES = json.load(f)
+# Baselines — loaded lazily from Supabase on first request
+BASELINES = None
+
+def load_baselines():
+    """Fetch baselines from Supabase (single-row JSON blob in 'baselines' table)."""
+    global BASELINES
+    if BASELINES is not None:
+        return BASELINES
+    try:
+        resp = supabase_request("GET", "baselines", params={"select": "data", "limit": "1"})
+        if resp.status_code == 200:
+            rows = resp.json()
+            BASELINES = rows[0]["data"] if rows else {}
+        else:
+            BASELINES = {}
+    except Exception:
+        BASELINES = {}
+    return BASELINES
 
 
 # ═══════════════════════════════════════════════════════════
@@ -225,7 +239,7 @@ def get_active():
 @require_auth
 def get_baselines():
     """Serve BL_CC / BL_CAT baselines (no client names in the HTML)."""
-    return jsonify(BASELINES)
+    return jsonify(load_baselines())
 
 
 @app.route("/api/robots", methods=["GET"])
