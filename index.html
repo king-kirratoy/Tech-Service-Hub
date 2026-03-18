@@ -1985,7 +1985,7 @@ async function doGateLogin(){
   gst.textContent="Logging in...";gst.style.color="var(--blue)";
   const result=await supaLogin(pwd);
   if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
-  if(result.role==="commander"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
+  if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
   await Promise.all([loadBaselines(),loadAgentSchedules()]);
   applyLoginState();
@@ -2002,7 +2002,7 @@ document.getElementById("commanderLoginBtn").addEventListener("click",async()=>{
   st.textContent="Logging in...";st.classList.add("missing");
   const result=await supaLogin(pwd);
   if(result.error){st.textContent=result.error;st.classList.add("missing");return}
-  if(result.role==="commander"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
+  if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
   await Promise.all([loadBaselines(),loadAgentSchedules()]);
   applyLoginState();
