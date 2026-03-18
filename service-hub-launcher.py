@@ -27,7 +27,6 @@ HALOPSA_REPORT_URL = os.environ.get("HALOPSA_REPORT_URL", "")
 HALOPSA_BEARER_TOKEN = os.environ.get("HALOPSA_BEARER_TOKEN", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
 PROXY_KEY = os.environ.get("PROXY_KEY", "")
 
@@ -139,29 +138,6 @@ def get_active():
     except requests.RequestException as e:
         return jsonify({"error": str(e)}), 502
 
-
-@app.route("/api/ai", methods=["POST"])
-@require_auth
-def proxy_ai():
-    """Proxy Anthropic API calls — API key stays server-side."""
-    if not ANTHROPIC_API_KEY:
-        return jsonify({"error": "Anthropic API key not configured"}), 503
-    body = request.get_json(silent=True) or {}
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
-    }
-    try:
-        resp = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers=headers,
-            json=body,
-            timeout=60
-        )
-        return (resp.content, resp.status_code, {"Content-Type": "application/json"})
-    except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 502
 
 
 @app.route("/api/baselines", methods=["GET"])

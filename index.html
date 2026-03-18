@@ -261,6 +261,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace"></span>
     <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
     <button class="btn" id="adminBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> Login</button>
+    <button class="btn" id="apiKeyBtn"><svg style="width:14px;height:14px"><use href="#is"/></svg> API Key</button>
   </div>
 </div>
 <div id="battleSection" class="hidden" style="padding:0">
@@ -279,6 +280,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div id="gateStatus" style="margin-top:12px;font-size:11px;color:var(--text-dim)"></div>
   </div>
   <div id="mainContent" class="hidden">
+  <div class="glass api-key-bar hidden" id="apiKeyPanel"><label>API Key</label><input type="password" id="apiK" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"><span class="ks missing" id="ksT">Not set</span></div>
   <div class="glass api-key-bar hidden" id="adminPanel"><label>Password</label><input type="password" id="adminPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Not logged in</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
@@ -476,7 +478,9 @@ const AGENT_LUNCH={
 };
 let techSched={};
 function getSched(id){if(techSched[id])return techSched[id];return{ss:SHIFTS[1].s,se:SHIFTS[1].e,ls:LUNCHES[1].s,le:LUNCHES[1].e,si:1,li:1}}
-function hasK(){return!!authToken}
+let apiKey="";
+function apiH(){return{"Content-Type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true","x-api-key":apiKey}}
+function hasK(){return apiKey.length>10}
 
 // ═══════════ UTILS ═══════════
 function wkD(b){const d=new Date(b),w=d.getDay(),m=new Date(d);if(w===0)m.setDate(d.getDate()+1);else m.setDate(d.getDate()-((w+6)%7));return Array.from({length:5},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x})}
@@ -847,7 +851,7 @@ function mapP(r){const c=(r.Ticket_Category||"").toLowerCase();if(c.includes("se
 async function runEst(){
   const btn=document.getElementById("estBtn"),st=document.getElementById("estSt");
   btn.disabled=true;
-  if(!hasK()){st.textContent="⚠ Log in first";btn.disabled=false;return}
+  if(!hasK()){st.textContent="⚠ Enter API key";btn.disabled=false;return}
   st.textContent="Estimating...";
   // Clear all previous estimates so fresh AI estimates take effect
   clearAllOverrides();
@@ -881,7 +885,7 @@ async function runEst(){
     }).join("\n");
     const prompt=`IT time estimation engine. Estimate REMAINING hours of work needed per ticket. This is not total time — it's how much MORE work remains.\n\nKey factors to consider:\n- Ticket Type: Incidents typically require faster/more urgent resolution than Service Requests\n- Status: "Pending Reply/Vendor/AM" = waiting, likely just needs a 0.25h follow-up unless the recent actions suggest otherwise\n- Time already worked: subtract from typical category time, but use the recent actions to judge if work is nearly done or just starting\n- Recent actions: shows the last several actions — use them to understand the full progression and judge remaining effort\n- Similar resolved tickets: closure summaries from similar past tickets — use to judge total scope and typical resolution path\n- Ticket age: older tickets with lots of time worked are likely near completion\n- Category historical data (with typical resolutions): use as baseline but adjust based on the above\n\nHISTORICAL BASELINES:\n${topC}\n\nTICKETS (ID|Type|Category|Summary|...):\n${tl}\n\nRespond ONLY JSON: [{"id":"TK-xxx","hours":1.5},...]. Round to 0.25h. Min 0.25h. This is REMAINING time, not total.`;
     try{
-      const r=await fetch(PROXY_BASE+"/api/ai",{method:"POST",headers:authH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:apiH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
       const d=await r.json(),tx=d.content?.map(b=>b.text||"").join("")||"[]";
       JSON.parse(tx.replace(/```json|```/g,"").trim()).forEach(e=>{const t=actTix.find(x=>x.id===e.id);if(t){t.est=Math.max(0.25,e.hours);t.aiEst=true;setOverride(t.id,{est:t.est,aiEst:true})}});
       done+=batch.length;st.textContent=`${done}/${uest.length}...`;
@@ -1874,11 +1878,11 @@ function reqTeam(){
 
 async function callAICached(agentName,prompt){
   const p=document.getElementById("aiP"),b=document.getElementById("aiB");p.classList.remove("hidden");
-  if(!hasK()){b.innerHTML=`<div class="ai-content" style="color:var(--warning)">Log in first to use AI features.</div>`;return}
+  if(!hasK()){b.innerHTML=`<div class="ai-content" style="color:var(--warning)">Enter your API key first.</div>`;return}
   b.innerHTML=`<div class="ai-loading"><svg class="spinner" style="width:20px;height:20px;stroke:var(--green)" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Analyzing ${agentName}...</div>`;
   p.scrollIntoView({behavior:"smooth",block:"nearest"});
   try{
-    const r=await fetch(PROXY_BASE+"/api/ai",{method:"POST",headers:authH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:apiH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
     const d=await r.json(),t=d.content?.map(x=>x.text||"").join("\n")||"Error";
     const escaped=t.replace(/</g,"&lt;").replace(/>/g,"&gt;");
     teamAiCache[agentName]=escaped;
@@ -2078,10 +2082,10 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
 // ═══════════ AI ═══════════
 async function callAI(prompt){
   const p=document.getElementById("aiP"),b=document.getElementById("aiB");p.classList.remove("hidden");
-  if(!hasK()){b.innerHTML=`<div class="ai-content" style="color:var(--warning)">Log in first to use AI features.</div>`;return}
+  if(!hasK()){b.innerHTML=`<div class="ai-content" style="color:var(--warning)">Enter your API key first.</div>`;return}
   b.innerHTML=`<div class="ai-loading"><svg class="spinner" style="width:20px;height:20px;stroke:var(--green)" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Analyzing...</div>`;
   p.scrollIntoView({behavior:"smooth",block:"nearest"});
-  try{const r=await fetch(PROXY_BASE+"/api/ai",{method:"POST",headers:authH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});const d=await r.json(),t=d.content?.map(x=>x.text||"").join("\n")||"Error";b.innerHTML=`<div class="ai-content">${t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`}catch(e){b.innerHTML=`<div class="ai-content" style="color:var(--danger)">AI unavailable.</div>`}
+  try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:apiH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});const d=await r.json(),t=d.content?.map(x=>x.text||"").join("\n")||"Error";b.innerHTML=`<div class="ai-content">${t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`}catch(e){b.innerHTML=`<div class="ai-content" style="color:var(--danger)">AI unavailable.</div>`}
 }
 
 // ═══════════ RESOLUTION ASSIST ═══════════
@@ -2091,6 +2095,11 @@ function updateBanner(){const h=document.getElementById("headerStats");if(!h)ret
 
 // ═══════════ EVENTS ═══════════
 // Toggle buttons with label switching
+document.getElementById("apiKeyBtn").addEventListener("click",()=>{
+  const panel=document.getElementById("apiKeyPanel");const btn=document.getElementById("apiKeyBtn");
+  panel.classList.toggle("hidden");
+  btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#is"/></svg> API Key':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide API Key';
+});
 // Login button toggle
 document.getElementById("adminBtn").addEventListener("click",()=>{
   const panel=document.getElementById("adminPanel");const btn=document.getElementById("adminBtn");
@@ -2221,6 +2230,7 @@ function updateLastSync(){
 document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
 document.getElementById("estBtn").addEventListener("click",runEst);
 document.getElementById("aiX").addEventListener("click",()=>document.getElementById("aiP").classList.add("hidden"));
+document.getElementById("apiK").addEventListener("input",e=>{apiKey=e.target.value.trim();const s=document.getElementById("ksT");const inp=document.getElementById("apiK");const lbl=document.getElementById("apiKeyPanel").querySelector("label");if(hasK()){s.textContent="✓ Enabled";s.className="ks valid";inp.style.borderColor="var(--green)";inp.style.color="var(--green)";lbl.style.color="var(--green)"}else{s.textContent="Not set";s.className="ks missing";inp.style.borderColor="";inp.style.color="";lbl.style.color=""}});
 
 document.getElementById("kpiClient").addEventListener("change",()=>{renderKPI();document.getElementById("aiP").classList.add("hidden")});
 document.getElementById("kpiAgent").addEventListener("change",()=>{renderKPI();document.getElementById("aiP").classList.add("hidden")});

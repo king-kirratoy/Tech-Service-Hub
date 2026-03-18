@@ -13,8 +13,6 @@ services:
         sync: false
       - key: SUPABASE_KEY
         sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: PROXY_KEY
