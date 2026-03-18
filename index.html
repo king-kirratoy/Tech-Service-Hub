@@ -3415,8 +3415,8 @@ function drawRobotHead(canvas,config){
   const hatId=config.accessory||"none";
   const tinted=getTintedHatSprite(hatId,c.hex);
   if(tinted){
-    // Crop the head region: roughly top 45% of the 369px sprite
-    const srcY=Math.round(SPRITE_FRAME_H*0.02),srcH=Math.round(SPRITE_FRAME_H*0.50);
+    // Crop head+body region of the 369px sprite
+    const srcY=0,srcH=Math.round(SPRITE_FRAME_H*0.70);
     const srcX=SPRITE_INSET,srcW=SPRITE_FRAME_W-SPRITE_INSET*2;
     ctx.drawImage(tinted,srcX,srcY,srcW,srcH,0,0,w,h);
   }else{
