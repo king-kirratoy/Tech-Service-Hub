@@ -8,7 +8,6 @@ and gates all data endpoints behind auth.
 """
 
 import os
-import json
 import time
 import requests
 from collections import defaultdict
@@ -78,8 +77,6 @@ LOGIN_ATTEMPTS = defaultdict(list)  # ip -> [timestamps]
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_WINDOW = 300  # 5 minutes
 
-
-
 # ═══════════════════════════════════════════════════════════
 # AUTH HELPERS
 # ═══════════════════════════════════════════════════════════
@@ -123,12 +120,12 @@ def supabase_request(method, table, params=None, body=None):
         "Prefer": "return=representation"
     }
     if method == "GET":
-        resp = requests.get(url, headers=headers, params=params)
+        resp = requests.get(url, headers=headers, params=params, timeout=15)
     elif method == "POST":
         headers["Prefer"] = "resolution=merge-duplicates,return=representation"
-        resp = requests.post(url, headers=headers, params=params, json=body)
+        resp = requests.post(url, headers=headers, params=params, json=body, timeout=15)
     else:
-        resp = requests.request(method, url, headers=headers, params=params, json=body)
+        resp = requests.request(method, url, headers=headers, params=params, json=body, timeout=15)
     return resp
 
 
@@ -227,16 +224,8 @@ def get_active():
                             for field in STRIP_FIELDS:
                                 row.pop(field, None)
         return jsonify(data)
-    except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 502
-
-
-
-@app.route("/api/baselines", methods=["GET"])
-@require_auth
-def get_baselines():
-    """Baselines are now hardcoded in the frontend. Kept as a no-op for compatibility."""
-    return jsonify({"BL_CAT": {}})
+    except requests.RequestException:
+        return jsonify({"error": "Failed to fetch data from upstream service"}), 502
 
 
 @app.route("/api/robots", methods=["GET"])

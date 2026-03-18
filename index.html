@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tech Service Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--navy:#002855;--navy-deep:#001a3a;--navy-darker:#00112a;--navy-light:#003670;--green:#84BD00;--green-dim:#6a9700;--green-glow2:rgba(132,189,0,0.06);--lime:#9CE200;--gray:#6C6C6C;--ltgray:#F2F2F2;--medgray:#A7A7A7;--blue:#0095C8;--surface:rgba(0,40,85,0.45);--border:rgba(0,149,200,0.15);--border-bright:rgba(0,149,200,0.3);--text:#eaf2ff;--text-muted:#8aa4c4;--text-dim:#506a8a;--danger:#ff5c5c;--warning:#ffb74d;--font-heading:'Roboto Condensed','Arial Narrow',sans-serif;--font-body:'Calibri','Arial',sans-serif}
@@ -50,16 +48,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .chart-card h3{font-size:11px;font-family:var(--font-heading);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:18px}
 .chart-card h3 .cdot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:8px;vertical-align:middle}
 .chart-card canvas{max-height:200px}
-/* Upload */
-.upload-panel{padding:22px;margin-bottom:22px}
-.upload-panel h3{font-size:13px;font-weight:600;margin-bottom:10px}
-.upload-zone{border:2px dashed rgba(0,149,200,0.25);border-radius:12px;padding:30px 20px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(0,149,200,0.03)}
-.upload-zone:hover{border-color:var(--blue);background:rgba(0,149,200,0.08)}
-.upload-zone.loaded{border-color:var(--green);border-style:solid;background:rgba(132,189,0,0.05)}
-.upload-zone p{font-size:13px;font-weight:600;margin:10px 0 4px}
-.upload-zone small{font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
-.upload-info{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--green-glow2);border:1px solid rgba(132,189,0,0.12);border-radius:8px;font-size:11px;color:var(--text-muted);line-height:1.5}
-.upload-status{font-size:11px;color:var(--green);font-weight:600;margin-top:6px;font-family:'IBM Plex Mono',monospace}
 .auth-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;margin-bottom:20px}
 .auth-bar label{color:var(--text-muted);font-weight:600;white-space:nowrap;font-size:11px;letter-spacing:.5px;text-transform:uppercase;min-width:52px}
 .auth-bar input{flex:1;background:rgba(0,149,200,0.06);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none}
@@ -168,8 +156,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 /* AI */
 @keyframes spin{to{transform:rotate(360deg)}}.spinner{animation:spin 1s linear infinite}
 .hidden{display:none!important}
-.data-banner{padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--green)}
-.data-banner b{color:var(--text)}
 /* Risk Monitor */
 .risk-section{margin-bottom:20px}
 .risk-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;transition:background .2s}
@@ -248,7 +234,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .comms-icon-opt{width:32px;height:32px;border-radius:6px;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;background:rgba(0,20,40,0.8)}
 .comms-icon-opt:hover{border-color:var(--blue);transform:scale(1.1)}
 .comms-icon-opt.active{border-color:var(--green);box-shadow:0 0 8px rgba(132,189,0,0.4)}
-@media(max-width:768px){.chart-grid,.upload-panel{grid-template-columns:1fr}.cal-layout{flex-direction:column}.tech-sidebar{width:100%;position:static}.stat-grid{grid-template-columns:repeat(2,1fr)}.comms-board{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.chart-grid{grid-template-columns:1fr}.cal-layout{flex-direction:column}.tech-sidebar{width:100%;position:static}.stat-grid{grid-template-columns:repeat(2,1fr)}.comms-board{grid-template-columns:repeat(2,1fr)}}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--navy-darker)}::-webkit-scrollbar-thumb{background:var(--navy-light);border-radius:3px}
 </style>
 </head>
@@ -547,9 +533,7 @@ function applyOverrides(){
   });
 }
 const BL_CAT={"Client>Business Meeting":0.5,"Client>Consulting/Research":0.75,"Client>Infrastructure":0.75,"Client>MSP Offboarding":0.25,"Client>MSP Onboarding":19.25,"Client>Purchase Request":0.5,"Client>Renewal":0.75,"Client>Service Documentation":0.5,"Data Analytics>Access/Removal":0.75,"End User>Access Change":0.5,"End User>Account Info Update":0.5,"End User>Account Login Issue":0.5,"End User>Admin Permissions":0.5,"End User>Archive Mailbox":0.75,"End User>Automatic Reply":0.5,"End User>Calendar":0.75,"End User>Computer Setup":1.0,"End User>Email Alias":1.0,"End User>Email Contacts":0.75,"End User>Email Delivery Issue":0.5,"End User>Email Forwarding":0.75,"End User>Email Recovery":0.5,"End User>Email Rule":0.5,"End User>Email Signature":0.25,"End User>Faxing Issue":1.0,"End User>File Access Issue":0.5,"End User>File Recovery":0.5,"End User>File Relocation":0.75,"End User>File Share":0.5,"End User>General Inquiry":0.25,"End User>Group Management":0.25,"End User>Inactive Account Removal":0.5,"End User>International Travel":0.5,"End User>License Change":0.25,"End User>Mailbox Access":0.5,"End User>Mailbox Capacity":0.75,"End User>Mapped Drive Issue":0.5,"End User>Mobile Phone Setup":0.5,"End User>Name Change":0.5,"End User>New User Setup":0.75,"End User>Password Reset":0.25,"End User>SharePoint Access":0.5,"End User>Shared Mailbox":0.25,"End User>Training":0.75,"End User>User Termination":0.75,"End User>Windows Settings":0.5,"Hardware>Asset Shipping & Receiving":0.5,"Hardware>Audio Issue":0.5,"Hardware>Cable/Adapter":0.5,"Hardware>Charger":0.5,"Hardware>Conference Room Equipment":0.75,"Hardware>Desk Phone":0.5,"Hardware>Desktop":0.5,"Hardware>Disk Usage":0.75,"Hardware>Docking Station":0.5,"Hardware>Driver/Firmware Update":0.5,"Hardware>Firewall":0.5,"Hardware>Headset/Headphone":0.25,"Hardware>Inventory":0.5,"Hardware>Laptop":0.75,"Hardware>Microphone":0.5,"Hardware>Mobile Hotspot":0.5,"Hardware>Mobile Phone":0.75,"Hardware>Monitor":0.5,"Hardware>Mouse/Keyboard":0.25,"Hardware>NAS/SAN":0.75,"Hardware>Office Move/Setup":0.5,"Hardware>PC Performance Issue":0.75,"Hardware>Power Strip/Surge Protector":0.25,"Hardware>Printer/Scanner":0.75,"Hardware>Recycling":2.5,"Hardware>Server":0.75,"Hardware>Signature Pad":0.25,"Hardware>Speaker":0.5,"Hardware>Switch":4.0,"Hardware>Tablet":1.25,"Hardware>Time Clock":1.0,"Hardware>UPS/APC":1.25,"Hardware>Webcam":0.25,"Hardware>Wireless Access Point":0.5,"Hardware>iPad":0.5,"Network>DHCP/IP Management":0.75,"Network>DNS/Domain Management":0.75,"Network>Firewall Configuration":0.5,"Network>ISP/LTE":1.5,"Network>Meraki Licensing":0.5,"Network>Network Connectivity":0.75,"Network>Phone System":0.5,"Network>Power Outage":0.25,"Network>Security Camera/Door Access":1.5,"Network>Switch Configuration":1.0,"Network>VLAN Configuration":1.0,"Network>VPN":0.75,"Network>Website Access":0.5,"Network>Wireless Configuration":1.0,"Security>Account Compromise":0.75,"Security>Avanan":0.5,"Security>Certificate":1.5,"Security>Compliance/Audit":1.0,"Security>Conditional Access":0.25,"Security>Encryption":0.5,"Security>External Sharing/Access":0.5,"Security>Forensic Analysis":0.25,"Security>Huntress":0.25,"Security>MFA/2FA":0.25,"Security>Phishing/Spam":0.25,"Security>Proofpoint":0.5,"Security>Restore Request":0.5,"Security>SPF/DKIM/DMARC":2.5,"Security>Suspicious Activity":0.5,"Security>Threatlocker":0.5,"Security>Virus/Malware":0.25,"Software>Adobe":0.5,"Software>Applied Epic":0.25,"Software>AutoCAD":0.75,"Software>Bluebeam":0.5,"Software>CCH ProSystem/Axcess":0.5,"Software>Caseware":2.0,"Software>Citrix/VDI":0.5,"Software>Cloud Drive Mapper (CDM)":0.75,"Software>Datto":0.5,"Software>Dialpad":0.25,"Software>Egnyte":0.25,"Software>Google Chrome":0.5,"Software>Google Workspace":0.5,"Software>Halo":0.5,"Software>Locator":0.75,"Software>McLeod":0.5,"Software>Microsoft 365 Apps Install":1.0,"Software>Microsoft Azure/Entra":0.75,"Software>Microsoft Excel":0.5,"Software>Microsoft OneDrive":0.75,"Software>Microsoft OneNote":1.5,"Software>Microsoft Outlook":0.5,"Software>Microsoft Power Automate":0.25,"Software>Microsoft Power BI":0.5,"Software>Microsoft PowerPoint":0.25,"Software>Microsoft SharePoint":1.0,"Software>Microsoft Teams":0.5,"Software>Microsoft Word":0.5,"Software>Milestone XProtect":1.0,"Software>Nitro":0.25,"Software>Other Application":0.5,"Software>PerfectLaw/AIM":0.25,"Software>Printix":0.5,"Software>QuickBooks":0.5,"Software>RDP":0.5,"Software>SMTP2GO":0.75,"Software>Sage":1.0,"Software>Smokeball":0.25,"Software>Software Removal":0.75,"Software>Splashtop":0.5,"Software>Threadworks":0.25,"Software>Web Browser":0.5,"Software>Windows OS":1.0,"Software>Zee Drive":0.25,"Software>Zoom":0.5,"Software>macOS":1.0,"Triage>Call Transfer":0.25,"Triage>Co-Managed":0.5,"Triage>Merged":0.5,"Uncategorized":1.25};
-async function loadBaselines(){
-  // Baselines now hardcoded above — this function is a no-op kept for compatibility
-}
+
 
 const SH=7,EH=18,HH=128,BIZ_S=8.5,BIZ_E=16.5,BIZ_D=8,FRT_SLA=4,TU_MIN=5,TU_MAX=6;
 const TCOL=["#84BD00","#0095C8","#fdcb6e","#ff7675","#74b9ff","#fd79a8","#a29bfe","#00cec9","#e17055","#dfe6e9"];
@@ -588,8 +572,6 @@ function csatLabel(v){if(v>=3.5)return"Excellent";if(v>=2.5)return"Good";if(v>=1
 function csatColor(v){if(v>=3.5)return"var(--green)";if(v>=2.5)return"var(--blue)";if(v>=1.5)return"var(--warning)";return"var(--danger)"}
 function bizH(start,end){if(!start||!end||end<=start)return 0;let t=0;const c=new Date(start);while(c<end){const w=c.getDay();if(w>=1&&w<=5){const ch=c.getHours()+c.getMinutes()/60;const ed=new Date(c);ed.setHours(0,0,0,0);ed.setDate(ed.getDate()+1);const es=Math.max(ch,BIZ_S);let ee;if(end<ed)ee=Math.min(end.getHours()+end.getMinutes()/60,BIZ_E);else ee=BIZ_E;if(ee>es)t+=(ee-es)*60}const n=new Date(c);n.setHours(0,0,0,0);n.setDate(n.getDate()+1);n.setHours(Math.floor(BIZ_S),(BIZ_S%1)*60,0,0);c.setTime(n.getTime())}return t/60}
 function bizD(s,e){return bizH(s,e)/BIZ_D}
-function pf(file,cb){const ext=file.name.split(".").pop().toLowerCase();if(ext==="csv")Papa.parse(file,{header:true,dynamicTyping:false,skipEmptyLines:true,complete:r=>cb(r.data)});else{const rd=new FileReader();rd.onload=e=>{const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});cb(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""}))};rd.readAsArrayBuffer(file)}}
-
 // ═══════════ HISTORICAL PROCESSING ═══════════
 function procHist(){
   if(!histRaw.length)return;
@@ -628,7 +610,7 @@ function procHist(){
   });
   Object.keys(catStats).forEach(c=>{const a=catStats[c];catStats[c]={n:a.length,med:med(a),mean:a.reduce((x,y)=>x+y,0)/a.length,p90:p90(a)}});
 
-  buildAgentStats();populateKPIClients();populateCampaignFilters();renderKPI();renderCampaignCharts();updateBanner();
+  buildAgentStats();populateKPIClients();populateCampaignFilters();renderCampaignCharts();updateBanner();
 }
 
 // ═══════════ ACTIVE PROCESSING ═══════════
@@ -881,10 +863,6 @@ function schedTix(){
 function mapP(r){const c=(r.Ticket_Category||"").toLowerCase();if(c.includes("security")||c.includes("threat"))return"High";if(c.includes("network>"))return"High";if(c.includes("password"))return"Low";return"Medium"}
 
 
-// ═══════════ KPI DASHBOARD ═══════════
-function renderKPI(){
-  // KPI stats and agent table removed — kept as no-op for compatibility
-}
 
 let campaignCharts={};
 function killCampaignCharts(){Object.values(campaignCharts).forEach(c=>c.destroy());campaignCharts={}}
@@ -1438,286 +1416,7 @@ function buildAgentStats(){
 
 
 // ═══════════ TEAM VIEW (ALL AGENTS) ═══════════
-let teamAllSortCol="name",teamAllSortDir=1;
-let agentTimeFilter="today";
-function renderTeamAll(){
-  // Agent data table removed — function kept as no-op for compatibility
-  return;
-  const container=document.getElementById("teamAllTable");
-  if(!Object.keys(agentStats).length){
-    container.innerHTML='';
-    return;
-  }
-  const selAgent=document.getElementById("kpiAgent").value;
-
-  // Build per-agent data from histRaw, filtered by client and time period
-  const today=new Date();
-  const weekDaysTA=wkD(today);
-  const agentMap={};
-  histRaw.forEach(r=>{
-    const ag=r.Agent_Resolved||r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot")||ag==="HaloAPI")return;
-    if(selAgent&&ag!==selAgent)return;
-    const dc=pD(r.Date_Closed);if(!dc)return;
-    const da2=pD(r.Date_Assigned);
-    if(agentTimeFilter==="today"){
-      if(!isSD(dc,today))return;
-    }else{
-      if(!weekDaysTA.some(wd=>isSD(wd,dc)))return;
-    }
-
-    if(!agentMap[ag])agentMap[ag]={total:0,totalTW:0,respTimes:[],resDays:[],csatArr:[],slaMet:0,slaTotal:0,frtMet:0,frtTotal:0,closed:0,ftf:0,assigned:0,emailWeb:0,phoneManual:0};
-    const s=agentMap[ag];
-    s.total++;
-    const tw=parseFloat(r.Time_Taken);if(!isNaN(tw)&&tw>0)s.totalTW+=tw;
-    const frd=pD(r.First_Response_Date);
-    const frt=parseFloat(r.First_Response_Time);
-    if(!isNaN(frt)&&frt>=0){s.respTimes.push(frt);s.frtTotal++;if(frt<=FRT_SLA)s.frtMet++}
-    const cd=pD(r.Date_Closed);
-    const da=pD(r.Date_Assigned);
-    if(cd){s.closed++;if(frd&&isSD(frd,cd))s.ftf++}
-    if(cd&&da){const bd=bizD(da,cd);if(bd>=0&&bd<500)s.resDays.push(bd)}
-    const sl=pD(r.SLA_Resolution_Target);
-    if(cd&&sl){s.slaTotal++;if(cd<=sl)s.slaMet++}
-    const csatRaw=(r.CSAT_Score||r.CSAT_SCORE||"").trim();
-    const csatMap2={excellent:4,good:3,okay:2,poor:1,bad:1};
-    const csatNum=csatMap2[csatRaw.toLowerCase()];
-    if(csatNum)s.csatArr.push(csatNum);
-  });
-
-  // Count tickets assigned per agent (using Agent_Assigned and Date_Assigned)
-  actRaw.forEach(r=>{
-    const ag=r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot")||ag==="HaloAPI")return;
-    if(selAgent&&ag!==selAgent)return;
-    const da=pD(r.Date_Assigned);if(!da)return;
-    if(agentTimeFilter==="today"){
-      if(!isSD(da,today))return;
-    }else{
-      if(!weekDaysTA.some(wd=>isSD(wd,da)))return;
-    }
-    if(!agentMap[ag])agentMap[ag]={total:0,totalTW:0,respTimes:[],resDays:[],csatArr:[],slaMet:0,slaTotal:0,frtMet:0,frtTotal:0,closed:0,ftf:0,assigned:0,emailWeb:0,phoneManual:0};
-    agentMap[ag].assigned++;
-    const src=(r.Source||"").toUpperCase();
-    if(src.includes("EMAIL")||src.includes("WEB"))agentMap[ag].emailWeb++;
-    else if(src.includes("PHONE")||src.includes("MANUAL"))agentMap[ag].phoneManual++;
-  });
-
-  // Count active (open) tickets per agent
-  const activeMap={};
-  actRaw.filter(r=>!r.Date_Closed||!r.Date_Closed.trim()).forEach(r=>{
-    const ag=r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot")||ag==="HaloAPI")return;
-    if(selAgent&&ag!==selAgent)return;
-    activeMap[ag]=(activeMap[ag]||0)+1;
-  });
-
-  // Ensure agents with active tickets appear in the table even if they have no closed/assigned tickets in the period
-  Object.keys(activeMap).forEach(ag=>{
-    if(!agentMap[ag])agentMap[ag]={total:0,totalTW:0,respTimes:[],resDays:[],csatArr:[],slaMet:0,slaTotal:0,frtMet:0,frtTotal:0,closed:0,ftf:0,assigned:0,emailWeb:0,phoneManual:0};
-  });
-
-  const agents=Object.entries(agentMap).map(([name,s])=>{
-    const avgTW=s.total?s.totalTW/s.total:0;
-    const avgResp=s.respTimes.length?s.respTimes.reduce((a,b)=>a+b,0)/s.respTimes.length:0;
-    const avgRes=s.resDays.length?s.resDays.reduce((a,b)=>a+b,0)/s.resDays.length:0;
-    const frtPct=s.frtTotal?(s.frtMet/s.frtTotal*100):100;
-    const slaPct=s.slaTotal?(s.slaMet/s.slaTotal*100):100;
-    const ftfPct=s.closed?(s.ftf/s.closed*100):0;
-    const avgCsat=s.csatArr.length?s.csatArr.reduce((a,b)=>a+b,0)/s.csatArr.length:null;
-    const csatRate=s.total?(s.csatArr.length/s.total*100):0;
-    return{
-      name,
-      activeTickets:activeMap[name]||0,
-      total:s.total,
-      totalHrs:s.totalTW,
-      avgRespHrs:avgResp,
-      avgResDays:avgRes,
-      ftfPct,
-      frtPct,
-      slaPct,
-      csat:avgCsat,
-      csatN:s.csatArr.length,
-      csatCounts:{4:s.csatArr.filter(v=>v===4).length,3:s.csatArr.filter(v=>v===3).length,2:s.csatArr.filter(v=>v===2).length,1:s.csatArr.filter(v=>v===1).length},
-      csatRate,
-      assigned:s.assigned||0,
-      emailWeb:s.emailWeb||0,
-      phoneManual:s.phoneManual||0
-    };
-  });
-
-  // Sort
-  agents.sort((a,b)=>{
-    let av=a[teamAllSortCol],bv=b[teamAllSortCol];
-    if(av==null)av=-999;if(bv==null)bv=-999;
-    return teamAllSortDir*(av>bv?1:av<bv?-1:0);
-  });
-
-  // Determine best/worst for highlighting (only for numeric cols with >=2 agents)
-  const cols=["csat"];
-  const higherBetter={csat:true};
-  const best={},worst={};
-  if(agents.length>=2){
-    cols.forEach(col=>{
-      const vals=agents.map(a=>a[col]).filter(v=>v!=null&&v!==-999);
-      if(vals.length<2)return;
-      const hi=Math.max(...vals),lo=Math.min(...vals);
-      if(hi===lo)return;
-      best[col]=higherBetter[col]?hi:lo;
-      worst[col]=higherBetter[col]?lo:hi;
-    });
-  }
-
-  function cellClass(col,val){
-    if(val==null)return"";
-    if(best[col]!=null&&val===best[col])return' class="best-val"';
-    if(worst[col]!=null&&val===worst[col])return' class="worst-val"';
-    return"";
-  }
-
-  const allCols=[
-    {key:"name",label:"Agent",public:true},
-    {key:"activeTickets",label:"Active Tickets",public:true},
-    {key:"assigned",label:"Tickets Assigned",public:true},
-    {key:"emailWeb",label:"Email/Web",public:true},
-    {key:"phoneManual",label:"Phone/Manual",public:true},
-    {key:"total",label:"Tickets Closed",public:false},
-    {key:"frtPct",label:"Resp SLA %",public:false},
-    {key:"slaPct",label:"Res SLA %",public:false},
-    {key:"csat",label:"CSAT Score",public:false},
-  ];
-  const hd=(isCommander||loggedInAgent)?allCols:allCols.filter(c=>c.public);
-
-  let h=`<table class="agent-table"><thead><tr>`;
-  hd.forEach(col=>{
-    const sorted=teamAllSortCol===col.key;
-    const arrow=sorted?(teamAllSortDir===-1?"▼":"▲"):"▼";
-    h+=`<th data-col="${col.key}" class="${sorted?"sorted":""}">${col.label}<span class="sort-arrow">${arrow}</span></th>`;
-  });
-  h+=`</tr></thead><tbody>`;
-  // Commander: all agents, all columns. Agent login: own row, all columns. No login: all agents, public columns only.
-  let visibleAgents=agents;
-  if(!isCommander&&loggedInAgent){
-    visibleAgents=agents.filter(a=>a.name===loggedInAgent);
-  }
-  const visCols=new Set(hd.map(c=>c.key));
-  // Weekly color thresholds only apply on Friday; Mon-Thu "This Week" shows neutral color
-  const isFriday=today.getDay()===5;
-  const useWeeklyColors=agentTimeFilter==="week"&&isFriday;
-  const weekNeutral=agentTimeFilter==="week"&&!isFriday;
-  visibleAgents.forEach(a=>{
-    h+=`<tr>`;
-    if(visCols.has("name"))h+=`<td>${a.name}</td>`;
-    // Active Tickets
-    if(visCols.has("activeTickets")){
-      let atColor="color:#8aa4c4";
-      if(!weekNeutral&&a.activeTickets>0)atColor=a.activeTickets>=16?"color:#fb9e00":a.activeTickets>=8?"color:#fcdc00":"color:#84BD00";
-      h+=`<td style="${atColor}">${a.activeTickets.toLocaleString()}</td>`;
-    }
-    // Tickets Closed with color logic based on toggle
-    if(visCols.has("total")){
-      let closedColor="color:#8aa4c4";
-      if(weekNeutral){/* neutral for all values Mon-Thu */}
-      else if(agentTimeFilter==="today"){
-        if(a.total===0)closedColor="color:#8aa4c4";
-        else if(a.total>=16)closedColor="color:#fb9e00";
-        else if(a.total>=8)closedColor="color:#fcdc00";
-        else closedColor="color:#84BD00";
-      }else{
-        if(a.total===0)closedColor="color:#8aa4c4";
-        else if(a.total>=55)closedColor="color:#00E5FF";
-        else if(a.total>=40)closedColor="color:#84BD00";
-        else if(a.total>=25)closedColor="color:#fcdc00";
-        else closedColor="color:#fb9e00";
-      }
-      h+=`<td style="${closedColor}">${a.total.toLocaleString()}</td>`;
-    }
-    // Tickets Assigned with color logic based on toggle
-    if(visCols.has("assigned")){
-      let assignedColor="color:#8aa4c4";
-      if(weekNeutral){/* neutral */}
-      else if(agentTimeFilter==="today"){
-        if(a.assigned===0)assignedColor="color:#8aa4c4";
-        else if(a.assigned>=11)assignedColor="color:#00E5FF";
-        else if(a.assigned>=8)assignedColor="color:#84BD00";
-        else if(a.assigned>=4)assignedColor="color:#fcdc00";
-        else assignedColor="color:#fb9e00";
-      }else{
-        if(a.assigned===0)assignedColor="color:#8aa4c4";
-        else if(a.assigned>=80)assignedColor="color:#fb9e00";
-        else if(a.assigned>=40)assignedColor="color:#fcdc00";
-        else assignedColor="color:#84BD00";
-      }
-      h+=`<td style="${assignedColor}">${a.assigned.toLocaleString()}</td>`;
-    }
-    // Email/Web color logic
-    if(visCols.has("emailWeb")){
-      let ewColor="color:#8aa4c4";
-      if(weekNeutral){/* neutral */}
-      else if(agentTimeFilter==="today"){
-        if(a.emailWeb===0)ewColor="color:#8aa4c4";
-        else if(a.emailWeb>=11)ewColor="color:#00E5FF";
-        else if(a.emailWeb>=8)ewColor="color:#84BD00";
-        else if(a.emailWeb>=4)ewColor="color:#fcdc00";
-        else ewColor="color:#fb9e00";
-      }else{
-        if(a.emailWeb===0)ewColor="color:#8aa4c4";
-        else if(a.emailWeb>=80)ewColor="color:#fb9e00";
-        else if(a.emailWeb>=40)ewColor="color:#fcdc00";
-        else ewColor="color:#84BD00";
-      }
-      h+=`<td style="${ewColor}">${a.emailWeb.toLocaleString()}</td>`;
-    }
-    // Phone/Manual color logic
-    if(visCols.has("phoneManual")){
-      let pmColor="color:#8aa4c4";
-      if(weekNeutral){/* neutral */}
-      else if(agentTimeFilter==="today"){
-        if(a.phoneManual===0)pmColor="color:#8aa4c4";
-        else if(a.phoneManual>=16)pmColor="color:#fb9e00";
-        else if(a.phoneManual>=8)pmColor="color:#fcdc00";
-        else pmColor="color:#84BD00";
-      }else{
-        if(a.phoneManual===0)pmColor="color:#8aa4c4";
-        else if(a.phoneManual>=80)pmColor="color:#fb9e00";
-        else if(a.phoneManual>=40)pmColor="color:#fcdc00";
-        else pmColor="color:#84BD00";
-      }
-      h+=`<td style="${pmColor}">${a.phoneManual.toLocaleString()}</td>`;
-    }
-    // Resp SLA %
-    if(visCols.has("frtPct")){
-      const frtColor=weekNeutral?"color:#8aa4c4":a.frtPct>=90?"color:#84BD00":a.frtPct>=80?"color:#fcdc00":"color:#fb9e00";
-      h+=`<td style="${frtColor}">${a.frtPct.toFixed(1)}</td>`;
-    }
-    // Res SLA %
-    if(visCols.has("slaPct")){
-      const slaColor=weekNeutral?"color:#8aa4c4":a.slaPct>=90?"color:#84BD00":a.slaPct>=80?"color:#fcdc00":"color:#fb9e00";
-      h+=`<td style="${slaColor}">${a.slaPct.toFixed(1)}</td>`;
-    }
-    // CSAT Score
-    if(visCols.has("csat")){
-      let csatCell="—";
-      let csatStyle="";
-      if(a.csat!==null){
-        const topScore=a.csat>=3.5?4:a.csat>=2.5?3:a.csat>=1.5?2:1;
-        csatCell=`${csatLabel(a.csat)} <span style="font-size:9px;color:var(--text-dim)">${a.csatCounts[topScore]}/${a.csatN}</span>`;
-        csatStyle=`color:${csatColor(a.csat)}`;
-      }
-      h+=`<td style="${csatStyle}"${cellClass("csat",a.csat)}>${csatCell}</td>`;
-    }
-    h+=`</tr>`;
-  });
-  h+=`</tbody></table>`;
-  container.innerHTML=h;
-
-  // Bind sort headers
-  container.querySelectorAll("th[data-col]").forEach(th=>{
-    th.addEventListener("click",()=>{
-      const col=th.dataset.col;
-      if(teamAllSortCol===col)teamAllSortDir*=-1;
-      else{teamAllSortCol=col;teamAllSortDir=col==="name"?1:-1}
-      renderTeamAll();
-    });
-  });
-}
+function renderTeamAll(){}
 
 
 // ═══════════ RISK MONITOR ═══════════
@@ -1987,7 +1686,7 @@ async function doGateLogin(){
   if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
-  await Promise.all([loadBaselines(),loadAgentSchedules()]);
+  await loadAgentSchedules();
   applyLoginState();
   startAutoRefresh();
 }
@@ -2004,7 +1703,7 @@ document.getElementById("commanderLoginBtn").addEventListener("click",async()=>{
   if(result.error){st.textContent=result.error;st.classList.add("missing");return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
-  await Promise.all([loadBaselines(),loadAgentSchedules()]);
+  await loadAgentSchedules();
   applyLoginState();
   startAutoRefresh();
 });
@@ -2115,14 +1814,14 @@ async function widgetReauth(){
 (async function widgetAutoLogin(){
   if(!_widgetKey||!_inIframe){
     // Not a widget — use normal auth flow
-    if(authToken){Promise.all([loadBaselines(),loadAgentSchedules()]).then(()=>{setTimeout(startAutoRefresh,500)})}
+    if(authToken){loadAgentSchedules().then(()=>{setTimeout(startAutoRefresh,500)})}
     applyLoginState();
     return;
   }
   // Widget mode: always re-auth to get a fresh token before showing anything
   const ok=await widgetReauth();
   if(ok){
-    await Promise.all([loadBaselines(),loadAgentSchedules()]);
+    await loadAgentSchedules();
     applyLoginState();
     startAutoRefresh();
   }else{
@@ -3548,12 +3247,6 @@ function adjustAlpha(hex,factor){
   // Darken a hex color slightly
   const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
   return`rgb(${Math.round(r*factor)},${Math.round(g*factor)},${Math.round(b*factor)})`;
-}
-
-function getRobotConfigForAgent(agentName){
-  const cfg=allRobotConfigs.find(r=>r.agent_name===agentName);
-  if(cfg)return{color:cfg.body_color||"blue",eyes:cfg.eye_style||"visor",antenna:cfg.antenna||"none",accessory:cfg.accessory||"none",robot_name:cfg.robot_name||""};
-  return{...DEFAULT_ROBOT};
 }
 
 function toggleEmojiPicker(event,cardId){
