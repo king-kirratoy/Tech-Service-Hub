@@ -7,7 +7,7 @@ services:
     envVars:
       - key: HALOPSA_REPORT_URL
         sync: false
-      - key: HALOPSA_BEARER_TOKEN
+      - key: HALO_BEARER_TOKEN
         sync: false
       - key: SUPABASE_URL
         sync: false
@@ -15,7 +15,7 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: PROXY_KEY
+      - key: PROXY_SECRET
         sync: false
       - key: WIDGET_KEY
         sync: false

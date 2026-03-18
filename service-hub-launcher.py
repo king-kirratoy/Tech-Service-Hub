@@ -24,7 +24,7 @@ app = Flask(__name__)
 # ═══════════════════════════════════════════════════════════
 
 HALOPSA_REPORT_URL = os.environ.get("HALOPSA_REPORT_URL", "")
-HALOPSA_BEARER_TOKEN = os.environ.get("HALOPSA_BEARER_TOKEN", "")
+HALO_BEARER_TOKEN = os.environ.get("HALO_BEARER_TOKEN", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
@@ -190,8 +190,8 @@ def get_active():
     if not HALOPSA_REPORT_URL:
         return jsonify({"error": "HaloPSA not configured"}), 503
     headers = {"Accept": "application/json"}
-    if HALOPSA_BEARER_TOKEN:
-        headers["Authorization"] = f"Bearer {HALOPSA_BEARER_TOKEN}"
+    if HALO_BEARER_TOKEN:
+        headers["Authorization"] = f"Bearer {HALO_BEARER_TOKEN}"
     try:
         resp = requests.get(HALOPSA_REPORT_URL, headers=headers, timeout=30)
         resp.raise_for_status()
