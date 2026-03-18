@@ -37,7 +37,25 @@ ALLOWED_ORIGINS = [
     "https://halo.lutz.us",
 ]
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization"])
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "OPTIONS"])
+
+# ═══════════════════════════════════════════════════════════
+# PREFLIGHT — Explicit OPTIONS handler for all /api/* routes
+# ═══════════════════════════════════════════════════════════
+
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        origin = request.headers.get("Origin", "")
+        if origin in ALLOWED_ORIGINS:
+            response = make_response()
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Max-Age"] = "3600"
+            return response
 
 # ═══════════════════════════════════════════════════════════
 # X-FRAME-OPTIONS — Only allow embedding from HaloPSA
