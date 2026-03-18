@@ -280,7 +280,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div style="display:flex;align-items:center;gap:14px">
     <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace"></span>
     <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
-    <button class="btn" id="adminBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> Login</button>
+    <button class="btn" id="commanderBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> Login</button>
   </div>
 </div>
 <div id="battleSection" class="hidden" style="padding:0">
@@ -299,7 +299,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div id="gateStatus" style="margin-top:12px;font-size:11px;color:var(--text-dim)"></div>
   </div>
   <div id="mainContent" class="hidden">
-  <div class="glass auth-bar hidden" id="adminPanel"><label>Password</label><input type="password" id="adminPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Not logged in</span></div>
+  <div class="glass auth-bar hidden" id="commanderPanel"><label>Password</label><input type="password" id="commanderPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="commanderLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="commanderLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="commanderStatus">Not logged in</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>
@@ -463,7 +463,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 // ═══════════ STATE ═══════════
 let histRaw=[],actRaw=[],kpiM=[],catStats={},actTix=[],closedTix=[],roster=[];
 let selTech=null,calV="week",calD=new Date(),charts={};
-let isAdmin=false;
+let isCommander=false;
 let loggedInAgent=null;
 let isWidgetMode=false;
 
@@ -519,8 +519,8 @@ async function loadAllRobots(){
   try{const r=await fetchRetry(PROXY_BASE+"/api/robots",{headers:authH()});if(!r||!r.ok)return[];return await r.json()}catch(e){console.error("Robots load error:",e);return[]}
 }
 
-async function loadAdminAgents(){
-  try{const r=await fetchRetry(PROXY_BASE+"/api/admins",{headers:authH()});if(!r||!r.ok)return[];return await r.json()}catch(e){console.error("Admins load error:",e);return[]}
+async function loadCommanderAgents(){
+  try{const r=await fetchRetry(PROXY_BASE+"/api/commanders",{headers:authH()});if(!r||!r.ok)return[];return await r.json()}catch(e){console.error("Commanders load error:",e);return[]}
 }
 
 // ═══════════ OVERRIDE PERSISTENCE ═══════════
@@ -736,7 +736,7 @@ function procAct(){
   applyOverrides();
   schedTix();
   if(roster.length&&!selTech){
-    if(!loggedInAgent||isAdmin){selTech=0}
+    if(!loggedInAgent||isCommander){selTech=0}
     else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
   renderSidebar();renderCal();renderRisk();renderPlayerCards();updateBanner();BF.refresh();
@@ -1338,7 +1338,7 @@ function renderPlayerCards(){
   // ── Commander Cards ──
   const cmdSection=document.getElementById("commanderCards");
   const cmdGrid=document.getElementById("commanderGrid");
-  const cmdNames=adminAgentNames.filter(n=>!roster.some(r=>r.name===n));
+  const cmdNames=commanderAgentNames.filter(n=>!roster.some(r=>r.name===n));
   if(!cmdNames.length){cmdSection.classList.add("hidden");return}
   cmdSection.classList.remove("hidden");
 
@@ -1583,7 +1583,7 @@ function renderTeamAll(){
     {key:"slaPct",label:"Res SLA %",public:false},
     {key:"csat",label:"CSAT Score",public:false},
   ];
-  const hd=(isAdmin||loggedInAgent)?allCols:allCols.filter(c=>c.public);
+  const hd=(isCommander||loggedInAgent)?allCols:allCols.filter(c=>c.public);
 
   let h=`<table class="agent-table"><thead><tr>`;
   hd.forEach(col=>{
@@ -1592,9 +1592,9 @@ function renderTeamAll(){
     h+=`<th data-col="${col.key}" class="${sorted?"sorted":""}">${col.label}<span class="sort-arrow">${arrow}</span></th>`;
   });
   h+=`</tr></thead><tbody>`;
-  // Admin: all agents, all columns. Agent login: own row, all columns. No login: all agents, public columns only.
+  // Commander: all agents, all columns. Agent login: own row, all columns. No login: all agents, public columns only.
   let visibleAgents=agents;
-  if(!isAdmin&&loggedInAgent){
+  if(!isCommander&&loggedInAgent){
     visibleAgents=agents.filter(a=>a.name===loggedInAgent);
   }
   const visCols=new Set(hd.map(c=>c.key));
@@ -1895,30 +1895,30 @@ function updateBanner(){const h=document.getElementById("headerStats");if(!h)ret
 
 // ═══════════ EVENTS ═══════════
 // Login button toggle
-document.getElementById("adminBtn").addEventListener("click",()=>{
-  const panel=document.getElementById("adminPanel");const btn=document.getElementById("adminBtn");
+document.getElementById("commanderBtn").addEventListener("click",()=>{
+  const panel=document.getElementById("commanderPanel");const btn=document.getElementById("commanderBtn");
   panel.classList.toggle("hidden");
   btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#iad"/></svg> Login':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide Login';
 });
 function applyLoginState(){
   const mainContent=document.getElementById("mainContent");
   const loginGate=document.getElementById("loginGate");
-  const adminPanel=document.getElementById("adminPanel");
+  const commanderPanel=document.getElementById("commanderPanel");
   const ss=document.getElementById("syncStatus");
   if(!authToken){
     if(mainContent)mainContent.classList.add("hidden");
     if(loginGate)loginGate.classList.remove("hidden");
-    if(adminPanel)adminPanel.classList.add("hidden");
+    if(commanderPanel)commanderPanel.classList.add("hidden");
     if(ss)ss.textContent="";
   }else{
     if(mainContent)mainContent.classList.remove("hidden");
     if(loginGate)loginGate.classList.add("hidden");
   }
   const riskTab=document.querySelector('.tab[data-tab="risk"]');
-  const st=document.getElementById("adminStatus");
-  const loginBtn=document.getElementById("adminLoginBtn");
-  const logoutBtn=document.getElementById("adminLogoutBtn");
-  const pwdInput=document.getElementById("adminPwd");
+  const st=document.getElementById("commanderStatus");
+  const loginBtn=document.getElementById("commanderLoginBtn");
+  const logoutBtn=document.getElementById("commanderLogoutBtn");
+  const pwdInput=document.getElementById("commanderPwd");
   const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#capTab .qbr-select label:nth-of-type(2)');
   const agentSelect=document.getElementById("kpiAgent");
   // Find the agent filter label+select wrapper elements (Workload tab)
@@ -1936,7 +1936,7 @@ function applyLoginState(){
     if(el.id==="campaignAgent")campAgentSelectEl=el;
   });
   const robotCustomizer=document.getElementById("robotCustomizer");
-  if(isAdmin){
+  if(isCommander){
     riskTab.style.display="";
     if(agentLabelEl)agentLabelEl.style.display="";
     if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
@@ -1957,7 +1957,7 @@ function applyLoginState(){
   }
   // Login panel state — always accessible, content changes based on login
   if(loggedInAgent){
-    const label=isAdmin?"Admin View":"Logged in as "+loggedInAgent;
+    const label=isCommander?"Commander View":"Logged in as "+loggedInAgent;
     st.textContent=label;st.classList.remove("missing");st.classList.add("set");
     loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
     pwdInput.style.display="none";
@@ -1971,7 +1971,7 @@ function applyLoginState(){
   }
   // Update default workload selection based on login state
   if(roster.length){
-    if(!loggedInAgent||isAdmin){selTech=0}
+    if(!loggedInAgent||isCommander){selTech=0}
     else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
   renderTeamAll();
@@ -1985,8 +1985,8 @@ async function doGateLogin(){
   gst.textContent="Logging in...";gst.style.color="var(--blue)";
   const result=await supaLogin(pwd);
   if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
-  if(result.role==="admin"){isAdmin=true;loggedInAgent=result.agent_name||"Admin"}
-  else{isAdmin=false;loggedInAgent=result.agent_name}
+  if(result.role==="commander"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
+  else{isCommander=false;loggedInAgent=result.agent_name}
   await Promise.all([loadBaselines(),loadAgentSchedules()]);
   applyLoginState();
   startAutoRefresh();
@@ -1994,25 +1994,25 @@ async function doGateLogin(){
 document.getElementById("gateLoginBtn").addEventListener("click",doGateLogin);
 document.getElementById("gatePwd").addEventListener("keydown",(e)=>{if(e.key==="Enter")doGateLogin()});
 
-// In-app login (admin panel)
-document.getElementById("adminLoginBtn").addEventListener("click",async()=>{
-  const pwd=document.getElementById("adminPwd").value.trim();
-  const st=document.getElementById("adminStatus");
+// In-app login (commander panel)
+document.getElementById("commanderLoginBtn").addEventListener("click",async()=>{
+  const pwd=document.getElementById("commanderPwd").value.trim();
+  const st=document.getElementById("commanderStatus");
   if(!pwd)return;
   st.textContent="Logging in...";st.classList.add("missing");
   const result=await supaLogin(pwd);
   if(result.error){st.textContent=result.error;st.classList.add("missing");return}
-  if(result.role==="admin"){isAdmin=true;loggedInAgent=result.agent_name||"Admin"}
-  else{isAdmin=false;loggedInAgent=result.agent_name}
+  if(result.role==="commander"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
+  else{isCommander=false;loggedInAgent=result.agent_name}
   await Promise.all([loadBaselines(),loadAgentSchedules()]);
   applyLoginState();
   startAutoRefresh();
 });
-document.getElementById("adminPwd").addEventListener("keydown",(e)=>{
-  if(e.key==="Enter")document.getElementById("adminLoginBtn").click();
+document.getElementById("commanderPwd").addEventListener("keydown",(e)=>{
+  if(e.key==="Enter")document.getElementById("commanderLoginBtn").click();
 });
-document.getElementById("adminLogoutBtn").addEventListener("click",async()=>{
-  isAdmin=false;loggedInAgent=null;
+document.getElementById("commanderLogoutBtn").addEventListener("click",async()=>{
+  isCommander=false;loggedInAgent=null;
   if(isWidgetMode){
     // Revert to widget-only auth (keep gate open, clear user identity)
     const ok=await widgetReauth();
@@ -2027,7 +2027,7 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","commsTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",comms:"commsTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");if(tg==="comms")renderCommsBoard()})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isCommander&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","commsTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",comms:"commsTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");if(tg==="comms")renderCommsBoard()})});
 
 document.getElementById("campaignAgent").addEventListener("change",()=>{renderCampaignCharts()});
 
@@ -2182,7 +2182,7 @@ let currentRobot={color:"blue",eyes:"visor",antenna:"spike",accessory:"none",rob
 
 // Global cache of all robot configs (loaded from Supabase)
 let allRobotConfigs=[];
-let adminAgentNames=[];
+let commanderAgentNames=[];
 const DEFAULT_ROBOT={color:"blue",eyes:"visor",antenna:"none",accessory:"none",robot_name:""};
 
 // Sprite system for previews and battlefield — one sheet per hat
@@ -2367,10 +2367,10 @@ async function loadAgentRobot(){
 
 
 
-// Load robot configs, admin list, comms, and preview sprite on page load
+// Load robot configs, commander list, comms, and preview sprite on page load
 setTimeout(async()=>{
   allRobotConfigs=await loadAllRobots();
-  adminAgentNames=await loadAdminAgents();
+  commanderAgentNames=await loadCommanderAgents();
   loadAllHatSprites();
   initComms();
 },1000);
@@ -2599,11 +2599,11 @@ const BF={
       this.prevWarriorState[w.name]={x:w.x,y:w.y,weapon:w.weapon,weaponLevel:w.weaponLevel,prevLevel:w.prevLevel};
     });
 
-    // Build/update commanders (admin agents — positioned far left, behind warriors)
-    const adminNames=adminAgentNames.filter(n=>!roster.some(r=>r.name===n));
+    // Build/update commanders (commander agents — positioned far left, behind warriors)
+    const cmdNames=commanderAgentNames.filter(n=>!roster.some(r=>r.name===n));
     const existingCmdByName={};this.commanders.forEach(c=>{existingCmdByName[c.name]=c});
-    if(this.commanders.length!==adminNames.length||adminNames.some(n=>!existingCmdByName[n])){
-      this.commanders=adminNames.map((name,i)=>{
+    if(this.commanders.length!==cmdNames.length||cmdNames.some(n=>!existingCmdByName[n])){
+      this.commanders=cmdNames.map((name,i)=>{
         const existing=existingCmdByName[name];
         if(existing)return existing;// Keep in place
         const rCfg=getRobotConfigForAgent(name);
