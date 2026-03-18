@@ -79,24 +79,6 @@ LOGIN_ATTEMPTS = defaultdict(list)  # ip -> [timestamps]
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_WINDOW = 300  # 5 minutes
 
-# Baselines — loaded lazily from Supabase on first request
-BASELINES = None
-
-def load_baselines():
-    """Fetch baselines from Supabase (single-row JSON blob in 'baselines' table)."""
-    global BASELINES
-    if BASELINES is not None:
-        return BASELINES
-    try:
-        resp = supabase_request("GET", "baselines", params={"select": "data", "limit": "1"})
-        if resp.status_code == 200:
-            rows = resp.json()
-            BASELINES = rows[0]["data"] if rows else {}
-        else:
-            BASELINES = {}
-    except Exception:
-        BASELINES = {}
-    return BASELINES
 
 
 # ═══════════════════════════════════════════════════════════
@@ -254,8 +236,8 @@ def get_active():
 @app.route("/api/baselines", methods=["GET"])
 @require_auth
 def get_baselines():
-    """Serve BL_CC / BL_CAT baselines (no client names in the HTML)."""
-    return jsonify(load_baselines())
+    """Baselines are now hardcoded in the frontend. Kept as a no-op for compatibility."""
+    return jsonify({"BL_CAT": {}})
 
 
 @app.route("/api/robots", methods=["GET"])
