@@ -420,8 +420,15 @@ async function supaLogin(password){
   }catch(e){console.error("Login error:",e);return{error:"Cannot reach server"}}
 }
 
+async function fetchRetry(url,opts={},retries=3,delay=1500){
+  for(let i=0;i<=retries;i++){
+    try{const r=await fetch(url,opts);if(r.ok)return r;if(i<retries)await new Promise(ok=>setTimeout(ok,delay*(i+1)))}catch(e){if(i===retries)throw e;await new Promise(ok=>setTimeout(ok,delay*(i+1)))}
+  }
+  return null;
+}
+
 async function loadRobotConfig(agentName){
-  try{const r=await fetch(PROXY_BASE+"/api/robot?agent="+encodeURIComponent(agentName),{headers:authH()});if(!r.ok)return null;return await r.json()}catch(e){console.error("Robot load error:",e);return null}
+  try{const r=await fetchRetry(PROXY_BASE+"/api/robot?agent="+encodeURIComponent(agentName),{headers:authH()});if(!r||!r.ok)return null;return await r.json()}catch(e){console.error("Robot load error:",e);return null}
 }
 
 async function saveRobotConfig(agentName,config){
@@ -429,11 +436,11 @@ async function saveRobotConfig(agentName,config){
 }
 
 async function loadAllRobots(){
-  try{const r=await fetch(PROXY_BASE+"/api/robots",{headers:authH()});if(!r.ok)return[];return await r.json()}catch(e){console.error("Robots load error:",e);return[]}
+  try{const r=await fetchRetry(PROXY_BASE+"/api/robots",{headers:authH()});if(!r||!r.ok)return[];return await r.json()}catch(e){console.error("Robots load error:",e);return[]}
 }
 
 async function loadAdminAgents(){
-  try{const r=await fetch(PROXY_BASE+"/api/admins",{headers:authH()});if(!r.ok)return[];return await r.json()}catch(e){console.error("Admins load error:",e);return[]}
+  try{const r=await fetchRetry(PROXY_BASE+"/api/admins",{headers:authH()});if(!r||!r.ok)return[];return await r.json()}catch(e){console.error("Admins load error:",e);return[]}
 }
 
 // ═══════════ OVERRIDE PERSISTENCE ═══════════
