@@ -11,13 +11,13 @@ import os
 import json
 import time
 import requests
+from collections import defaultdict
 from functools import wraps
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import jwt
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
 
 # ═══════════════════════════════════════════════════════════
 # CONFIGURATION — All from environment variables
@@ -28,7 +28,33 @@ HALOPSA_BEARER_TOKEN = os.environ.get("HALOPSA_BEARER_TOKEN", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
-PROXY_KEY = os.environ.get("PROXY_KEY", "")
+
+# Allowed origins for CORS and X-Frame-Options
+ALLOWED_ORIGINS = [
+    "https://king-kirratoy.github.io",
+    "https://halo.lutz.us",
+]
+CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
+
+# ═══════════════════════════════════════════════════════════
+# X-FRAME-OPTIONS — Only allow embedding from HaloPSA
+# ═══════════════════════════════════════════════════════════
+
+ALLOWED_FRAME_ANCESTOR = "https://halo.lutz.us"
+
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Frame-Options"] = f"ALLOW-FROM {ALLOWED_FRAME_ANCESTOR}"
+    response.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {ALLOWED_FRAME_ANCESTOR}"
+    return response
+
+# ═══════════════════════════════════════════════════════════
+# RATE LIMITING — Login endpoint brute-force protection
+# ═══════════════════════════════════════════════════════════
+
+LOGIN_ATTEMPTS = defaultdict(list)  # ip -> [timestamps]
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_WINDOW = 300  # 5 minutes
 
 # Load baselines from file
 BASELINES = {}
@@ -93,8 +119,20 @@ def supabase_request(method, table, params=None, body=None):
 # ROUTES
 # ═══════════════════════════════════════════════════════════
 
+def check_rate_limit(ip):
+    """Returns True if the IP is rate-limited."""
+    now = time.time()
+    # Prune old attempts outside the window
+    LOGIN_ATTEMPTS[ip] = [t for t in LOGIN_ATTEMPTS[ip] if now - t < LOGIN_WINDOW]
+    return len(LOGIN_ATTEMPTS[ip]) >= MAX_LOGIN_ATTEMPTS
+
+
 @app.route("/api/login", methods=["POST"])
 def login():
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if check_rate_limit(ip):
+        return jsonify({"error": "Too many login attempts. Try again in a few minutes."}), 429
+
     data = request.get_json(silent=True) or {}
     password = data.get("password", "").strip()
     if not password:
@@ -111,7 +149,9 @@ def login():
 
     rows = resp.json()
     if not rows:
-        return jsonify({"error": "Invalid password"}), 401
+        LOGIN_ATTEMPTS[ip].append(time.time())
+        remaining = MAX_LOGIN_ATTEMPTS - len(LOGIN_ATTEMPTS[ip])
+        return jsonify({"error": f"Invalid password. {remaining} attempts remaining."}), 401
 
     agent = rows[0]
     token = create_token(agent["agent_name"], agent["role"])

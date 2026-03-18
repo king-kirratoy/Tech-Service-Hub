@@ -412,12 +412,12 @@ function authH(){return{"Content-Type":"application/json","Authorization":"Beare
 async function supaLogin(password){
   try{
     const r=await fetch(PROXY_BASE+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});
-    if(!r.ok)return null;
+    if(!r.ok){const err=await r.json().catch(()=>({}));return{error:err.error||"Login failed"}}
     const d=await r.json();
     authToken=d.token;
     sessionStorage.setItem("hubToken",authToken);
     return{agent_name:d.agent_name,role:d.role};
-  }catch(e){console.error("Login error:",e);return null}
+  }catch(e){console.error("Login error:",e);return{error:"Cannot reach server"}}
 }
 
 async function loadRobotConfig(agentName){
@@ -2192,7 +2192,7 @@ async function doGateLogin(){
   if(!pwd)return;
   gst.textContent="Logging in...";gst.style.color="var(--blue)";
   const result=await supaLogin(pwd);
-  if(!result){gst.textContent="Invalid password";gst.style.color="var(--danger)";return}
+  if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
   if(result.role==="admin"){isAdmin=true;loggedInAgent=result.agent_name||"Admin"}
   else{isAdmin=false;loggedInAgent=result.agent_name}
   await loadBaselines();
@@ -2209,7 +2209,7 @@ document.getElementById("adminLoginBtn").addEventListener("click",async()=>{
   if(!pwd)return;
   st.textContent="Logging in...";st.classList.add("missing");
   const result=await supaLogin(pwd);
-  if(!result){st.textContent="Invalid password";st.classList.add("missing");return}
+  if(result.error){st.textContent=result.error;st.classList.add("missing");return}
   if(result.role==="admin"){isAdmin=true;loggedInAgent=result.agent_name||"Admin"}
   else{isAdmin=false;loggedInAgent=result.agent_name}
   await loadBaselines();
