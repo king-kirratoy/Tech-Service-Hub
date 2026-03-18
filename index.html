@@ -60,11 +60,11 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .upload-zone small{font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .upload-info{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--green-glow2);border:1px solid rgba(132,189,0,0.12);border-radius:8px;font-size:11px;color:var(--text-muted);line-height:1.5}
 .upload-status{font-size:11px;color:var(--green);font-weight:600;margin-top:6px;font-family:'IBM Plex Mono',monospace}
-.api-key-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;margin-bottom:20px}
-.api-key-bar label{color:var(--text-muted);font-weight:600;white-space:nowrap;font-size:11px;letter-spacing:.5px;text-transform:uppercase;min-width:52px}
-.api-key-bar input{flex:1;background:rgba(0,149,200,0.06);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none}
-.api-key-bar input:focus{border-color:var(--blue)}
-.api-key-bar .ks{font-size:10px;font-weight:600;white-space:nowrap;min-width:65px;text-align:right}
+.auth-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;margin-bottom:20px}
+.auth-bar label{color:var(--text-muted);font-weight:600;white-space:nowrap;font-size:11px;letter-spacing:.5px;text-transform:uppercase;min-width:52px}
+.auth-bar input{flex:1;background:rgba(0,149,200,0.06);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none}
+.auth-bar input:focus{border-color:var(--blue)}
+.auth-bar .ks{font-size:10px;font-weight:600;white-space:nowrap;min-width:65px;text-align:right}
 .ks.valid{color:var(--green)}.ks.missing{color:var(--warning)}
 /* Calendar */
 .cal-layout{display:flex;gap:16px;margin-bottom:22px}
@@ -167,13 +167,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .qbr-select select{background:rgba(0,149,200,0.06);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-family:var(--font-body);font-size:13px;outline:none;min-width:250px;cursor:pointer}
 .qbr-select select option{background:var(--navy);color:var(--text)}
 /* AI */
-.ai-panel{margin-top:22px;padding:24px;border-color:rgba(132,189,0,0.2);background:linear-gradient(135deg,rgba(0,40,85,0.6),rgba(132,189,0,0.03))}
-.ai-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.ai-label{display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--font-heading);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)}
-.ai-close{background:rgba(0,149,200,0.1);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);cursor:pointer;padding:6px;display:flex;align-items:center}
-.ai-close:hover{background:rgba(0,149,200,0.2);color:var(--text)}
-.ai-content{color:var(--text);font-size:13px;line-height:1.8;white-space:pre-wrap}
-.ai-loading{display:flex;align-items:center;gap:12px;padding:24px 0;justify-content:center;color:var(--text-muted);font-size:13px}
 @keyframes spin{to{transform:rotate(360deg)}}.spinner{animation:spin 1s linear infinite}
 .hidden{display:none!important}
 .data-banner{padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--green)}
@@ -261,7 +254,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace"></span>
     <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
     <button class="btn" id="adminBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> Login</button>
-    <button class="btn" id="apiKeyBtn"><svg style="width:14px;height:14px"><use href="#is"/></svg> API Key</button>
   </div>
 </div>
 <div id="battleSection" class="hidden" style="padding:0">
@@ -280,8 +272,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div id="gateStatus" style="margin-top:12px;font-size:11px;color:var(--text-dim)"></div>
   </div>
   <div id="mainContent" class="hidden">
-  <div class="glass api-key-bar hidden" id="apiKeyPanel"><label>API Key</label><input type="password" id="apiK" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"><span class="ks missing" id="ksT">Not set</span></div>
-  <div class="glass api-key-bar hidden" id="adminPanel"><label>Password</label><input type="password" id="adminPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Not logged in</span></div>
+  <div class="glass auth-bar hidden" id="adminPanel"><label>Password</label><input type="password" id="adminPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="adminLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="adminLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="adminStatus">Not logged in</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>
@@ -366,8 +357,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div style="margin-top:28px;margin-bottom:20px"></div>
     <div class="cal-layout">
       <div class="glass tech-sidebar">
-        <button class="btn-accent" id="estBtn" style="padding:8px 16px;font-size:11px;white-space:nowrap;width:100%;margin-bottom:12px" disabled><svg style="width:14px;height:14px"><use href="#ib"/></svg> Estimate Time</button>
-        <span style="font-size:9px;color:var(--text-dim);display:block;text-align:center;margin-bottom:10px;min-height:12px" id="estSt"></span>
         <h3>Technicians</h3>
         <div id="tl"></div>
       </div>
@@ -392,7 +381,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#0095C8"></span>Top 5 Clients</h3><canvas id="cTopClients"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Top 5 Users</h3><canvas id="cTopUsers"></canvas></div></div>
   </div>
 
-<div class="glass ai-panel hidden" id="aiP"><div class="ai-header"><div class="ai-label"><svg style="width:18px;height:18px;stroke:var(--green)"><use href="#iz"/></svg> AI Analysis</div><button class="ai-close" id="aiX"><svg style="width:14px;height:14px"><use href="#ix"/></svg></button></div><div id="aiB"></div></div>
 </div><!-- /mainContent -->
 </div>
 
@@ -462,7 +450,7 @@ function applyOverrides(){
   actTix.forEach(tk=>{
     const o=ovr[tk.id];
     if(!o)return;
-    if(o.est!=null){tk.est=o.est;tk.aiEst=!!o.aiEst;tk.manualEst=!o.aiEst}
+    if(o.est!=null){tk.est=o.est;tk.manualEst=true}
     if(o.startHour!=null)tk.startHour=o.startHour;
     if(o.dayIdx!=null)tk.dayIdx=o.dayIdx;
   });
@@ -486,9 +474,6 @@ const AGENT_LUNCH={
 };
 let techSched={};
 function getSched(id){if(techSched[id])return techSched[id];return{ss:SHIFTS[1].s,se:SHIFTS[1].e,ls:LUNCHES[1].s,le:LUNCHES[1].e,si:1,li:1}}
-let apiKey="";
-function apiH(){return{"Content-Type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true","x-api-key":apiKey}}
-function hasK(){return apiKey.length>10}
 
 // ═══════════ UTILS ═══════════
 function wkD(b){const d=new Date(b),w=d.getDay(),m=new Date(d);if(w===0)m.setDate(d.getDate()+1);else m.setDate(d.getDate()-((w+6)%7));return Array.from({length:5},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x})}
@@ -582,7 +567,7 @@ function procHist(){
   // Convert clientCatStats to summaries
   Object.keys(clientCatStats).forEach(ck=>{const a=clientCatStats[ck];clientCatStats[ck]={n:a.length,med:med(a),mean:a.reduce((x,y)=>x+y,0)/a.length}});
 
-  buildAgentStats();populateKPIClients();populateCampaignFilters();renderKPI();renderCampaignCharts();teamAiCache={};updateBanner();
+  buildAgentStats();populateKPIClients();populateCampaignFilters();renderKPI();renderCampaignCharts();updateBanner();
 }
 
 // ═══════════ ACTIVE PROCESSING ═══════════
@@ -686,7 +671,7 @@ function procAct(){
       est=Math.round(est*4)/4;
     }
 
-    return{id:r.Ticket_ID||`TK-${i}`,title:r.Summary||"Untitled",recentActions,client:cl,user:r.End_User||"—",category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,aiEst:false,nextResponse:nrd,status,isWaiting,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
+    return{id:r.Ticket_ID||`TK-${i}`,title:r.Summary||"Untitled",recentActions,client:cl,user:r.End_User||"—",category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,isWaiting,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
   });
 
   // Sort by Next Response Date (soonest first), then by status priority
@@ -709,7 +694,6 @@ function procAct(){
     else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
   renderSidebar();renderCal();renderRisk();renderPlayerCards();updateBanner();BF.refresh();
-  document.getElementById("estBtn").disabled=false;
 }
 
 function schedTix(){
@@ -855,53 +839,6 @@ function schedTix(){
 
 function mapP(r){const c=(r.Ticket_Category||"").toLowerCase();if(c.includes("security")||c.includes("threat"))return"High";if(c.includes("network>"))return"High";if(c.includes("password"))return"Low";return"Medium"}
 
-// ═══════════ AI ESTIMATION (context-aware, anonymized) ═══════════
-async function runEst(){
-  const btn=document.getElementById("estBtn"),st=document.getElementById("estSt");
-  btn.disabled=true;
-  if(!hasK()){st.textContent="⚠ Enter API key";btn.disabled=false;return}
-  st.textContent="Estimating...";
-  // Clear all previous estimates so fresh AI estimates take effect
-  clearAllOverrides();
-  // Build baselines from hardcoded data for AI context
-  const catTotals={};
-  Object.entries(BL_CAT).forEach(([cat,med])=>{catTotals[cat]={med}});
-  // Add closure summaries from catStats if historical data is loaded
-  Object.entries(catStats).forEach(([cat,s])=>{if(catTotals[cat]&&s.closures&&s.closures.length)catTotals[cat].closures=s.closures});
-  const topC=Object.entries(catTotals).sort((a,b)=>(b[1].med||0)-(a[1].med||0)).slice(0,40).map(([c,s])=>{
-    let l=`${c}: baseline=${s.med.toFixed(2)}h`;
-    if(s.closures&&s.closures.length)l+=`\n  Typical resolutions: ${s.closures.slice(0,2).join(" | ")}`;
-    return l;
-  }).join("\n");
-  const uest=actTix.filter(t=>t.assignedTo>0);
-  let done=0;
-  const now=new Date();
-  for(let i=0;i<uest.length;i+=12){
-    const batch=uest.slice(i,i+12);
-    const tl=batch.map(t=>{
-      const blKey=t.client+"|||"+t.category;
-      const ccMed=BL_CC[blKey],gcMed=BL_CAT[t.category];
-      let mult="";
-      if(ccMed!=null&&gcMed!=null){const ratio=(ccMed/gcMed).toFixed(2);if(Math.abs(ratio-1)>0.15)mult=` [client-factor:${ratio}x]`}
-      const ageDays=t.dateCreated?Math.floor((now-t.dateCreated)/(1000*60*60*24)):0;
-      const recentAct=san(t.recentActions).substring(0,600);
-      // Find similar closure summaries for this ticket's category
-      const simClosures=(catStats[t.category]&&catStats[t.category].closures||[]).slice(0,2);
-      const closureCtx=simClosures.length?`\n  Similar resolved: ${simClosures.join(" | ")}`:"";
-
-      return`${t.id}|${t.type}|${t.category}|${san(t.title)}|status:${t.status}|worked:${t.timeWorked.toFixed(2)}h|age:${ageDays}d${mult}${recentAct?`\n  Recent actions: ${recentAct}`:""}${closureCtx}`;
-    }).join("\n");
-    const prompt=`IT time estimation engine. Estimate REMAINING hours of work needed per ticket. This is not total time — it's how much MORE work remains.\n\nKey factors to consider:\n- Ticket Type: Incidents typically require faster/more urgent resolution than Service Requests\n- Status: "Pending Reply/Vendor/AM" = waiting, likely just needs a 0.25h follow-up unless the recent actions suggest otherwise\n- Time already worked: subtract from typical category time, but use the recent actions to judge if work is nearly done or just starting\n- Recent actions: shows the last several actions — use them to understand the full progression and judge remaining effort\n- Similar resolved tickets: closure summaries from similar past tickets — use to judge total scope and typical resolution path\n- Ticket age: older tickets with lots of time worked are likely near completion\n- Category historical data (with typical resolutions): use as baseline but adjust based on the above\n\nHISTORICAL BASELINES:\n${topC}\n\nTICKETS (ID|Type|Category|Summary|...):\n${tl}\n\nRespond ONLY JSON: [{"id":"TK-xxx","hours":1.5},...]. Round to 0.25h. Min 0.25h. This is REMAINING time, not total.`;
-    try{
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:apiH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
-      const d=await r.json(),tx=d.content?.map(b=>b.text||"").join("")||"[]";
-      JSON.parse(tx.replace(/```json|```/g,"").trim()).forEach(e=>{const t=actTix.find(x=>x.id===e.id);if(t){t.est=Math.max(0.25,e.hours);t.aiEst=true;setOverride(t.id,{est:t.est,aiEst:true})}});
-      done+=batch.length;st.textContent=`${done}/${uest.length}...`;
-    }catch(e){console.error(e)}
-  }
-  schedTix();st.textContent=`✓ ${done} estimated`;btn.disabled=false;
-  renderSidebar();renderCal();renderPlayerCards();
-}
 
 // ═══════════ KPI DASHBOARD ═══════════
 function renderKPI(){
@@ -1257,7 +1194,7 @@ function renderCal(){
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${tk.category}</span></div>
           <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${tk.type}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${tk.timeWorked.toFixed(1)}h</span></div>
-          <div class="pop-row"><span class="pop-label">Est. Remaining</span><span class="pop-val" style="color:var(--green)">${tk.est}h${tk.aiEst?" (AI)":""}</span></div>
+          <div class="pop-row"><span class="pop-label">Est. Remaining</span><span class="pop-val" style="color:var(--green)">${tk.est}h</span></div>
           <div class="pop-row"><span class="pop-label">Next Response</span><span class="pop-val" style="${nrdColor}">${nrd}</span></div>
           <div class="pop-summary">${tk.title}</div>
           ${recentActSnip?`<div class="pop-detail">${recentActSnip}${tk.recentActions&&tk.recentActions.length>400?"...":""}</div>`:""}
@@ -1539,13 +1476,11 @@ function buildAgentStats(){
   });
 }
 
-let teamAiCache={};
 
 // ═══════════ TEAM VIEW (ALL AGENTS) ═══════════
 let teamAllSortCol="name",teamAllSortDir=1;
 let agentTimeFilter="today";
 function renderTeamAll(){
-  document.getElementById("aiP").classList.add("hidden");
   const container=document.getElementById("teamAllTable");
   if(!Object.keys(agentStats).length){
     container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-dim)">Fetch active tickets to load data</div>';
@@ -1823,82 +1758,6 @@ function renderTeamAll(){
   });
 }
 
-function reqTeam(){
-  const ag=document.getElementById("kpiAgent").value;
-
-  if(!ag){
-    // Team-wide AI review (no specific agent selected)
-    if(!Object.keys(agentStats).length)return;
-
-    if(teamAiCache["__ALL_AGENTS__"]){
-      const p=document.getElementById("aiP"),b=document.getElementById("aiB");
-      p.classList.remove("hidden");
-      b.innerHTML=`<div class="ai-content">${teamAiCache["__ALL_AGENTS__"]}</div>`;
-      p.scrollIntoView({behavior:"smooth",block:"nearest"});
-      return;
-    }
-
-    const agentRows=Object.entries(agentStats).map(([name,s])=>{
-      const months=Object.keys(s.months).sort();
-      const avgTW=s.times.length?(s.times.reduce((a,b)=>a+b,0)/s.times.length*60).toFixed(0):0;
-      const avgResp=s.respTimes.length?(s.respTimes.reduce((a,b)=>a+b,0)/s.respTimes.length*60).toFixed(0):0;
-      const frtPct=s.frtTotal?(s.frtMet/s.frtTotal*100).toFixed(1):100;
-      const slaPct=s.slaTotal?(s.slaMet/s.slaTotal*100).toFixed(1):100;
-      const ftfPct=s.closed?(s.ftf/s.closed*100).toFixed(1):0;
-      const avgCsat=s.csat.length?(s.csat.reduce((a,b)=>a+b,0)/s.csat.length).toFixed(2):"N/A";
-      const topCats=Object.entries(s.cats).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c,n])=>`${c}:${n}`).join(", ");
-      return{name,total:s.total,months:months.length,avgTimeMin:avgTW,avgRespMin:avgResp,respSLA:frtPct+"%",resSLA:slaPct+"%",sameDayPct:ftfPct+"%",csat:avgCsat,csatRatings:s.csat.length,topCategories:topCats};
-    });
-
-    const prompt=`You are an IT Service Manager evaluating your entire team's performance side by side. Compare agents against each other and identify patterns. Be constructive, data-driven, and specific. Plain text only.\n\nBusiness hours: Mon-Fri 7:30AM-5:30PM. Response SLA ≤ 4 biz hours. CSAT is 1-4 scale: 4=Excellent, 3=Good, 2=Okay, 1=Poor.\n\nALL AGENTS (${agentRows.length}):\n${JSON.stringify(agentRows,null,2)}\n\nProvide:\n1. TEAM OVERVIEW (overall health, total output, consistency across agents)\n2. TOP PERFORMERS (who stands out and why, cite specific numbers)\n3. AGENTS NEEDING SUPPORT (who is struggling and in what areas)\n4. SLA COMPARISON (which agents are meeting/missing targets, any patterns)\n5. EFFICIENCY COMPARISON (time-per-ticket differences, what explains them)\n6. WORKLOAD BALANCE (is work evenly distributed? anyone overloaded or underutilized?)\n7. CUSTOMER SATISFACTION (CSAT comparison across agents)\n8. TEAM RECOMMENDATIONS (coaching priorities, training needs, process changes)\n\nBe balanced — recognize strengths before areas for growth. Compare agents directly where useful.`;
-
-    callAICached("__ALL_AGENTS__",prompt);
-    return;
-  }
-
-  // Individual agent AI review
-  if(!agentStats[ag])return;
-
-  if(teamAiCache[ag]){
-    const p=document.getElementById("aiP"),b=document.getElementById("aiB");
-    p.classList.remove("hidden");
-    b.innerHTML=`<div class="ai-content">${teamAiCache[ag]}</div>`;
-    p.scrollIntoView({behavior:"smooth",block:"nearest"});
-    return;
-  }
-
-  const s=agentStats[ag];
-  const avgTW=s.times.length?(s.times.reduce((a,b)=>a+b,0)/s.times.length*60).toFixed(0):0;
-  const avgResp=s.respTimes.length?(s.respTimes.reduce((a,b)=>a+b,0)/s.respTimes.length*60).toFixed(0):0;
-  const frtPct=s.frtTotal?(s.frtMet/s.frtTotal*100).toFixed(1):100;
-  const slaPct=s.slaTotal?(s.slaMet/s.slaTotal*100).toFixed(1):100;
-  const months=Object.keys(s.months).sort();
-  const avgCsatAgent=s.csat.length?(s.csat.reduce((a,b)=>a+b,0)/s.csat.length).toFixed(2):"N/A";
-  const monthData=months.map(mk=>{const m=s.months[mk];return{month:mL(mk),tickets:m.v,avgTimeMin:(m.v?(m.tw/m.v*60):0).toFixed(0),respSLA:(m.ft?(m.fm/m.ft*100):100).toFixed(1)+"%",resSLA:(m.st?(m.sm/m.st*100):100).toFixed(1)+"%",csat:m.csat&&m.csat.length?(m.csat.reduce((a,c)=>a+c,0)/m.csat.length).toFixed(2):"N/A",csatN:m.csat?m.csat.length:0}});
-  const topCats=Object.entries(s.cats).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([c,n])=>`${c}: ${n}`).join(", ");
-  const topRes=Object.entries(s.resCats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,n])=>`${c}: ${n}`).join(", ");
-  const now=new Date(),curMK=mK(now),isP=months.includes(curMK);
-
-  const prompt=`You are an IT Service Manager preparing a performance review for a technician. Be constructive, specific, and data-driven. Plain text only.\n\nBusiness hours: Mon-Fri 7:30AM-5:30PM. Response SLA ≤ 4 biz hours. CSAT is 1-4 scale: 4=Excellent, 3=Good, 2=Okay, 1=Poor.\n${isP?`Current month is partial.\n`:""}\nAGENT SUMMARY:\n- Total tickets: ${s.total} over ${months.length} months\n- Avg time per ticket: ${avgTW} min\n- Avg first response: ${avgResp} biz min\n- Response SLA: ${frtPct}%\n- Resolution SLA: ${slaPct}%\n- CSAT: ${avgCsatAgent} (${s.csat.length} ratings)\n- Top categories: ${topCats}\n- Top resolution types: ${topRes}\n\nMONTHLY TREND:\n${JSON.stringify(monthData,null,2)}\n\nProvide:\n1. PERFORMANCE SUMMARY (2-3 sentences overall assessment)\n2. STRENGTHS (specific things this agent does well, cite numbers)\n3. AREAS FOR IMPROVEMENT (specific, actionable)\n4. EFFICIENCY ANALYSIS (are they fast? thorough? how does their time-per-ticket relate to their categories?)\n5. SLA PERFORMANCE (trends, any months of concern)\n6. CUSTOMER SATISFACTION (CSAT trends and insights)\n7. COACHING TALKING POINTS (for a 1:1 conversation)\n\nBe balanced — highlight positives before areas for growth.`;
-
-  callAICached(ag,prompt);
-}
-
-async function callAICached(agentName,prompt){
-  const p=document.getElementById("aiP"),b=document.getElementById("aiB");p.classList.remove("hidden");
-  if(!hasK()){b.innerHTML=`<div class="ai-content" style="color:var(--warning)">Enter your API key first.</div>`;return}
-  b.innerHTML=`<div class="ai-loading"><svg class="spinner" style="width:20px;height:20px;stroke:var(--green)" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Analyzing ${agentName}...</div>`;
-  p.scrollIntoView({behavior:"smooth",block:"nearest"});
-  try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:apiH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
-    const d=await r.json(),t=d.content?.map(x=>x.text||"").join("\n")||"Error";
-    const escaped=t.replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    teamAiCache[agentName]=escaped;
-    b.innerHTML=`<div class="ai-content">${escaped}</div>`;
-  }catch(e){
-    b.innerHTML=`<div class="ai-content" style="color:var(--danger)">AI unavailable.</div>`;
-  }
-}
 
 // ═══════════ RISK MONITOR ═══════════
 function renderRisk(){
@@ -2086,15 +1945,6 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
 }
 
 
-// ═══════════ ASK AI ═══════════
-// ═══════════ AI ═══════════
-async function callAI(prompt){
-  const p=document.getElementById("aiP"),b=document.getElementById("aiB");p.classList.remove("hidden");
-  if(!hasK()){b.innerHTML=`<div class="ai-content" style="color:var(--warning)">Enter your API key first.</div>`;return}
-  b.innerHTML=`<div class="ai-loading"><svg class="spinner" style="width:20px;height:20px;stroke:var(--green)" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Analyzing...</div>`;
-  p.scrollIntoView({behavior:"smooth",block:"nearest"});
-  try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:apiH(),body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});const d=await r.json(),t=d.content?.map(x=>x.text||"").join("\n")||"Error";b.innerHTML=`<div class="ai-content">${t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`}catch(e){b.innerHTML=`<div class="ai-content" style="color:var(--danger)">AI unavailable.</div>`}
-}
 
 // ═══════════ RESOLUTION ASSIST ═══════════
 
@@ -2102,12 +1952,6 @@ async function callAI(prompt){
 function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateCreated&&wd.some(d=>isSD(d,t.dateCreated))).length+closedTix.length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
 
 // ═══════════ EVENTS ═══════════
-// Toggle buttons with label switching
-document.getElementById("apiKeyBtn").addEventListener("click",()=>{
-  const panel=document.getElementById("apiKeyPanel");const btn=document.getElementById("apiKeyBtn");
-  panel.classList.toggle("hidden");
-  btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#is"/></svg> API Key':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide API Key';
-});
 // Login button toggle
 document.getElementById("adminBtn").addEventListener("click",()=>{
   const panel=document.getElementById("adminPanel");const btn=document.getElementById("adminBtn");
@@ -2240,13 +2084,10 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");document.getElementById("aiP").classList.add("hidden")})});
-document.getElementById("estBtn").addEventListener("click",runEst);
-document.getElementById("aiX").addEventListener("click",()=>document.getElementById("aiP").classList.add("hidden"));
-document.getElementById("apiK").addEventListener("input",e=>{apiKey=e.target.value.trim();const s=document.getElementById("ksT");const inp=document.getElementById("apiK");const lbl=document.getElementById("apiKeyPanel").querySelector("label");if(hasK()){s.textContent="✓ Enabled";s.className="ks valid";inp.style.borderColor="var(--green)";inp.style.color="var(--green)";lbl.style.color="var(--green)"}else{s.textContent="Not set";s.className="ks missing";inp.style.borderColor="";inp.style.color="";lbl.style.color=""}});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden")})});
 
-document.getElementById("kpiClient").addEventListener("change",()=>{renderKPI();document.getElementById("aiP").classList.add("hidden")});
-document.getElementById("kpiAgent").addEventListener("change",()=>{renderKPI();document.getElementById("aiP").classList.add("hidden")});
+document.getElementById("kpiClient").addEventListener("change",()=>{renderKPI()});
+document.getElementById("kpiAgent").addEventListener("change",()=>{renderKPI()});
 document.getElementById("campaignClient").addEventListener("change",()=>{renderCampaignCharts()});
 document.getElementById("campaignAgent").addEventListener("change",()=>{renderCampaignCharts()});
 
