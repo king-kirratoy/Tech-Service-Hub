@@ -239,11 +239,8 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .comms-card-body{padding:0 12px 8px;flex:1;overflow:hidden}
 .comms-card-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-family:var(--font-heading);letter-spacing:0.3px;text-transform:uppercase}
 .comms-card-text{font-size:11px;color:var(--text-muted);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
-.comms-card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .2s;z-index:2}
-.comms-card:hover .comms-card-actions{opacity:1}
-.comms-card-actions button{background:rgba(0,20,40,0.8);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;padding:2px 6px;font-size:10px;transition:all .15s}
-.comms-card-actions button:hover{color:var(--text);border-color:var(--blue)}
-.comms-card-actions button.del-btn:hover{color:var(--danger);border-color:var(--danger)}
+.comms-edit-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0;transition:opacity .2s;flex-shrink:0;margin-left:auto}
+.comms-card:hover .comms-edit-btn{opacity:1}
 .comms-reactions{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;border-top:1px solid rgba(255,255,255,0.06);min-height:30px;align-items:center}
 .comms-react-btn{background:rgba(0,20,40,0.6);border:1px solid rgba(0,149,200,0.12);border-radius:10px;padding:2px 6px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:3px;transition:all .15s;color:var(--text-muted);line-height:1.4}
 .comms-react-btn:hover{border-color:var(--blue);background:rgba(0,149,200,0.1)}
@@ -453,6 +450,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
           <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
             <button class="btn-accent" id="commsSaveBtn" style="padding:8px 16px;font-size:11px;width:fit-content">Deploy Transmission</button>
             <button class="btn" id="commsCancelBtn" style="padding:8px 16px;font-size:11px">Cancel</button>
+            <button class="btn" id="commsDeleteBtn" style="padding:8px 16px;font-size:11px;color:var(--danger);border-color:var(--danger);display:none">Delete</button>
           </div>
           <span id="commsSaveStatus" style="font-size:10px;color:var(--text-muted)"></span>
         </div>
@@ -3605,7 +3603,7 @@ function drawRobotHead(canvas,config){
   const tinted=getTintedHatSprite(hatId,c.hex);
   if(tinted){
     // Crop the head region: roughly top 45% of the 369px sprite
-    const srcY=Math.round(SPRITE_FRAME_H*0.05),srcH=Math.round(SPRITE_FRAME_H*0.50);
+    const srcY=Math.round(SPRITE_FRAME_H*0.02),srcH=Math.round(SPRITE_FRAME_H*0.50);
     const srcX=SPRITE_INSET,srcW=SPRITE_FRAME_W-SPRITE_INSET*2;
     ctx.drawImage(tinted,srcX,srcY,srcW,srcH,0,0,w,h);
   }else{
@@ -3686,13 +3684,8 @@ function buildCommsCard(card){
   // Get robot config for card author
   const rCfg=getRobotConfigForAgent(card.agent_name);
 
-  // Actions (edit/delete for owner, delete for admin)
-  let actionsHtml="";
-  if(loggedInAgent&&(loggedInAgent===card.agent_name)){
-    actionsHtml=`<div class="comms-card-actions"><button onclick="editCommsCard('${card.id}')" title="Edit">✏️</button><button class="del-btn" onclick="deleteCommsCard('${card.id}')" title="Delete">✕</button></div>`;
-  }else if(isAdmin){
-    actionsHtml=`<div class="comms-card-actions"><button class="del-btn" onclick="deleteCommsCard('${card.id}')" title="Delete">✕</button></div>`;
-  }
+  // Edit button for card owner (shown in header)
+  const isOwner=loggedInAgent&&(loggedInAgent===card.agent_name);
 
   // Reactions
   const reactionMap={};
@@ -3712,11 +3705,11 @@ function buildCommsCard(card){
 
   const canvasId="comms-avatar-"+card.id;
   el.innerHTML=`
-    ${actionsHtml}
     <div class="comms-card-header">
       <div class="comms-card-avatar"><canvas id="${canvasId}" width="64" height="64"></canvas></div>
       <span class="comms-card-agent">${esc(card.agent_name)}</span>
       ${iconEmoji?`<span class="comms-card-icon">${iconEmoji}</span>`:""}
+      ${isOwner?`<button class="comms-edit-btn" onclick="editCommsCard('${card.id}')" title="Edit">✏️</button>`:""}
     </div>
     <div class="comms-card-body">
       ${card.title?`<div class="comms-card-title">${esc(card.title)}</div>`:""}
@@ -3797,6 +3790,9 @@ function openCommsCreator(){
   // Restore fields
   document.getElementById("commsCardTitle").value=commsCreatorState.title;
   document.getElementById("commsCardBody").value=commsCreatorState.body;
+  // Show delete button only when editing
+  const delBtn=document.getElementById("commsDeleteBtn");
+  delBtn.style.display=commsEditingId?"":"none";
   updateCommsPreview();
   renderCommsBoard();
 }
@@ -3905,6 +3901,24 @@ document.getElementById("commsCancelBtn").addEventListener("click",()=>{
   renderCommsBoard();
 });
 
+// Delete from creator panel
+document.getElementById("commsDeleteBtn").addEventListener("click",async()=>{
+  if(!commsEditingId)return;
+  if(!confirm("Delete this transmission?"))return;
+  try{
+    const r=await fetch(PROXY_BASE+"/api/comms-cards/"+commsEditingId,{method:"DELETE",headers:authH()});
+    if(r.ok){
+      document.getElementById("commsCreator").classList.add("hidden");
+      commsPlacingMode=false;
+      commsSelectedSlot=null;
+      commsEditingId=null;
+      commsCreatorState={title:"",body:"",icon:"none",bgColor:"navy",borderColor:"blue"};
+      await loadCommsCards();
+      renderCommsBoard();
+    }
+  }catch(e){console.error("Comms delete error:",e)}
+});
+
 // Edit card
 function editCommsCard(cardId){
   const card=commsCards.find(c=>c.id===cardId);
@@ -3919,15 +3933,6 @@ function editCommsCard(cardId){
     borderColor:card.border_color||"blue"
   };
   openCommsCreator();
-}
-
-// Delete card
-async function deleteCommsCard(cardId){
-  if(!confirm("Delete this transmission?"))return;
-  try{
-    const r=await fetch(PROXY_BASE+"/api/comms-cards/"+cardId,{method:"DELETE",headers:authH()});
-    if(r.ok){await loadCommsCards();renderCommsBoard()}
-  }catch(e){console.error("Comms delete error:",e)}
 }
 
 // Load comms on initial data load
