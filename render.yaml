@@ -17,3 +17,5 @@ services:
         generateValue: true
       - key: PROXY_KEY
         sync: false
+      - key: WIDGET_KEY
+        sync: false

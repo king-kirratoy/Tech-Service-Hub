@@ -28,6 +28,7 @@ HALOPSA_BEARER_TOKEN = os.environ.get("HALOPSA_BEARER_TOKEN", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
+WIDGET_KEY = os.environ.get("WIDGET_KEY", "")
 
 # Allowed origins for CORS and X-Frame-Options
 ALLOWED_ORIGINS = [
@@ -159,6 +160,26 @@ def login():
         "token": token,
         "agent_name": agent["agent_name"],
         "role": agent["role"]
+    })
+
+
+@app.route("/api/widget-auth", methods=["POST"])
+def widget_auth():
+    """Auto-login for HaloPSA iframe widget using a shared widget key."""
+    if not WIDGET_KEY:
+        return jsonify({"error": "Widget auth not configured"}), 503
+
+    data = request.get_json(silent=True) or {}
+    key = data.get("key", "").strip()
+    if not key or key != WIDGET_KEY:
+        return jsonify({"error": "Invalid widget key"}), 401
+
+    # Issue a token for a generic widget viewer (agent role, no specific agent)
+    token = create_token("Widget Viewer", "agent")
+    return jsonify({
+        "token": token,
+        "agent_name": "Widget Viewer",
+        "role": "agent"
     })
 
 

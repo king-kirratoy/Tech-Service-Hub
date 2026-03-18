@@ -2298,6 +2298,27 @@ function stopAutoRefresh(){
   autoRefreshOn=false;
 }
 
+// ═══════════ WIDGET AUTO-LOGIN ═══════════
+// If loaded inside an iframe with ?wk= parameter, auto-authenticate via widget key
+(async function widgetAutoLogin(){
+  const params=new URLSearchParams(window.location.search);
+  const wk=params.get("wk");
+  const inIframe=window.self!==window.top;
+  if(!wk||!inIframe)return; // Only auto-login when embedded with widget key
+  try{
+    const r=await fetch(PROXY_BASE+"/api/widget-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:wk})});
+    if(!r.ok)return; // Fall back to normal login gate
+    const d=await r.json();
+    authToken=d.token;
+    sessionStorage.setItem("hubToken",authToken);
+    isAdmin=false;
+    loggedInAgent=d.agent_name||"Widget Viewer";
+    await loadBaselines();
+    applyLoginState();
+    startAutoRefresh();
+  }catch(e){console.error("Widget auto-login failed:",e)}
+})();
+
 // Auto-start on page load only if already authenticated (token in sessionStorage)
 if(authToken){
   loadBaselines().then(()=>{setTimeout(startAutoRefresh,500)});
