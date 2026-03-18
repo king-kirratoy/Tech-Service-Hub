@@ -280,16 +280,16 @@ def save_robot():
     return jsonify({"ok": True})
 
 
-@app.route("/api/admins", methods=["GET"])
+@app.route("/api/commanders", methods=["GET"])
 @require_auth
-def get_admins():
-    """Get list of admin agent names."""
+def get_commanders():
+    """Get list of commander agent names."""
     resp = supabase_request("GET", "agent_logins", params={
         "select": "agent_name",
-        "role": "eq.admin"
+        "role": "eq.commander"
     })
     if resp.status_code != 200:
-        return jsonify({"error": "Failed to load admins"}), 502
+        return jsonify({"error": "Failed to load commanders"}), 502
     return jsonify([r["agent_name"] for r in resp.json() if r.get("agent_name")])
 
 
@@ -429,11 +429,11 @@ def update_comms_card(card_id):
 @app.route("/api/comms-cards/<card_id>", methods=["DELETE"])
 @require_auth
 def delete_comms_card(card_id):
-    """Delete a comms card — author or admin only."""
+    """Delete a comms card — author or commander only."""
     agent_name = request.user.get("agent_name", "")
     role = request.user.get("role", "")
 
-    # Verify ownership or admin
+    # Verify ownership or commander
     check = supabase_request("GET", "comms_cards", params={
         "select": "agent_name",
         "id": f"eq.{card_id}",
@@ -441,7 +441,7 @@ def delete_comms_card(card_id):
     })
     if check.status_code != 200 or not check.json():
         return jsonify({"error": "Card not found"}), 404
-    if check.json()[0]["agent_name"] != agent_name and role != "admin":
+    if check.json()[0]["agent_name"] != agent_name and role != "commander":
         return jsonify({"error": "Not authorized"}), 403
 
     # Delete reactions first
