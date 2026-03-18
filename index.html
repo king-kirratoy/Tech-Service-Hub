@@ -1650,7 +1650,7 @@ function renderTeamAll(){
     // Active Tickets
     if(visCols.has("activeTickets")){
       let atColor="color:#8aa4c4";
-      if(a.activeTickets>0)atColor=a.activeTickets>=16?"color:#fb9e00":a.activeTickets>=8?"color:#fcdc00":"color:#84BD00";
+      if(!weekNeutral&&a.activeTickets>0)atColor=a.activeTickets>=16?"color:#fb9e00":a.activeTickets>=8?"color:#fcdc00":"color:#84BD00";
       h+=`<td style="${atColor}">${a.activeTickets.toLocaleString()}</td>`;
     }
     // Tickets Closed with color logic based on toggle
@@ -1659,10 +1659,9 @@ function renderTeamAll(){
       if(weekNeutral){/* neutral for all values Mon-Thu */}
       else if(agentTimeFilter==="today"){
         if(a.total===0)closedColor="color:#8aa4c4";
-        else if(a.total>=11)closedColor="color:#00E5FF";
-        else if(a.total>=8)closedColor="color:#84BD00";
-        else if(a.total>=4)closedColor="color:#fcdc00";
-        else closedColor="color:#fb9e00";
+        else if(a.total>=16)closedColor="color:#fb9e00";
+        else if(a.total>=8)closedColor="color:#fcdc00";
+        else closedColor="color:#84BD00";
       }else{
         if(a.total===0)closedColor="color:#8aa4c4";
         else if(a.total>=55)closedColor="color:#00E5FF";
@@ -1678,9 +1677,10 @@ function renderTeamAll(){
       if(weekNeutral){/* neutral */}
       else if(agentTimeFilter==="today"){
         if(a.assigned===0)assignedColor="color:#8aa4c4";
-        else if(a.assigned>=16)assignedColor="color:#fb9e00";
-        else if(a.assigned>=8)assignedColor="color:#fcdc00";
-        else assignedColor="color:#84BD00";
+        else if(a.assigned>=11)assignedColor="color:#00E5FF";
+        else if(a.assigned>=8)assignedColor="color:#84BD00";
+        else if(a.assigned>=4)assignedColor="color:#fcdc00";
+        else assignedColor="color:#fb9e00";
       }else{
         if(a.assigned===0)assignedColor="color:#8aa4c4";
         else if(a.assigned>=80)assignedColor="color:#fb9e00";
@@ -1725,12 +1725,12 @@ function renderTeamAll(){
     }
     // Resp SLA %
     if(visCols.has("frtPct")){
-      const frtColor=a.frtPct>=90?"color:#84BD00":a.frtPct>=80?"color:#fcdc00":"color:#fb9e00";
+      const frtColor=weekNeutral?"color:#8aa4c4":a.frtPct>=90?"color:#84BD00":a.frtPct>=80?"color:#fcdc00":"color:#fb9e00";
       h+=`<td style="${frtColor}">${a.frtPct.toFixed(1)}</td>`;
     }
     // Res SLA %
     if(visCols.has("slaPct")){
-      const slaColor=a.slaPct>=90?"color:#84BD00":a.slaPct>=80?"color:#fcdc00":"color:#fb9e00";
+      const slaColor=weekNeutral?"color:#8aa4c4":a.slaPct>=90?"color:#84BD00":a.slaPct>=80?"color:#fcdc00":"color:#fb9e00";
       h+=`<td style="${slaColor}">${a.slaPct.toFixed(1)}</td>`;
     }
     // CSAT Score
