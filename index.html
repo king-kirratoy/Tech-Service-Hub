@@ -389,14 +389,13 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <p style="font-size:12px;color:var(--text-muted)">This weeks capacity and stats.</p>
     </div>
     <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <label>Client:</label>
-      <select id="kpiClient"><option value="">— All Clients —</option></select>
-      <label style="margin-left:16px">Agent:</label>
+      <label>Agent:</label>
       <select id="kpiAgent"><option value="">— All Agents —</option></select>
       <label style="margin-left:16px">Period:</label>
       <select id="agentTimePeriod"><option value="today">Today</option><option value="week">This Week</option></select>
     </div>
-    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px" id="teamAllTable"></div>
+    <select id="kpiClient" style="display:none"><option value="">— All Clients —</option></select>
+    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px;display:none" id="teamAllTable"></div>
     <div class="stat-grid" id="sg"></div>
     <div style="margin-top:28px;margin-bottom:20px"></div>
     <div class="cal-layout">
@@ -469,14 +468,13 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <p style="font-size:12px;color:var(--text-muted)">Ticket volume and SLA performance metrics.</p>
     </div>
     <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <label>Client:</label>
-      <select id="campaignClient"><option value="">— All Clients —</option></select>
-      <label style="margin-left:16px">Agent:</label>
+      <select id="campaignClient" style="display:none"><option value="">— All Clients —</option></select>
+      <label>Agent:</label>
       <select id="campaignAgent"><option value="">— All Agents —</option></select>
     </div>
     <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#0095C8"></span>Top 5 Clients</h3><canvas id="cTopClients"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Top 5 Users</h3><canvas id="cTopUsers"></canvas></div></div>
+    <div class="chart-grid" style="display:none"><div class="glass chart-card"><h3><span class="cdot" style="background:#0095C8"></span>Top 5 Clients</h3><canvas id="cTopClients"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Top 5 Users</h3><canvas id="cTopUsers"></canvas></div></div>
   </div>
 
 </div><!-- /mainContent -->
@@ -484,7 +482,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 
 <script>
 // ═══════════ STATE ═══════════
-let histRaw=[],actRaw=[],kpiM=[],catStats={},clientCatStats={},clientKPI={},actTix=[],closedTix=[],roster=[];
+let histRaw=[],actRaw=[],kpiM=[],catStats={},actTix=[],closedTix=[],roster=[];
 let selTech=null,calV="week",calD=new Date(),charts={};
 let isAdmin=false;
 let loggedInAgent=null;
@@ -569,10 +567,9 @@ function applyOverrides(){
     if(o.dayIdx!=null)tk.dayIdx=o.dayIdx;
   });
 }
-let BL_CC={};
 let BL_CAT={};
 async function loadBaselines(){
-  try{const r=await fetch(PROXY_BASE+"/api/baselines",{headers:authH()});if(!r.ok)return;const d=await r.json();BL_CC=d.BL_CC||{};BL_CAT=d.BL_CAT||{}}catch(e){console.error("Baselines load error:",e)}
+  try{const r=await fetch(PROXY_BASE+"/api/baselines",{headers:authH()});if(!r.ok)return;const d=await r.json();BL_CAT=d.BL_CAT||{}}catch(e){console.error("Baselines load error:",e)}
 }
 
 const SH=7,EH=18,HH=128,BIZ_S=8.5,BIZ_E=16.5,BIZ_D=8,FRT_SLA=4,TU_MIN=5,TU_MAX=6;
@@ -605,11 +602,9 @@ function p90(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[M
 function pD(s){if(!s)return null;s=String(s).trim();if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)&&!/[Z+-]\d{0,4}$/.test(s))s+="Z";const d=new Date(s);return isNaN(d)?null:d}
 function mK(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function mL(k){const[y,m]=k.split("-");return new Date(y,m-1).toLocaleDateString("en-US",{month:"short",year:"2-digit"})}
-function san(s){return(s||"").replace(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+(?:\s*(?:Corp|Inc|LLC|Ltd|Co|Company|YMCA|Networks|Management|Senior|Nutrition|Netting|Fence|Empire|Standard|Dial|Patriot|Nation|IAMS|OPTK))?\.?/g,"[Client]")}
 function esc(s){return(s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
 // CSAT: 4=Excellent, 3=Good, 2=Okay, 1=Poor
-function haloUrl(id){return`https://halo.lutz.us/ticket?id=${String(id).replace(/\D/g,"")}`}
-function haloLink(id){return`<a href="${haloUrl(id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(id)}</a>`}
+function haloLink(id){return esc(id)}
 function csatLabel(v){if(v>=3.5)return"Excellent";if(v>=2.5)return"Good";if(v>=1.5)return"Okay";return"Poor"}
 function csatColor(v){if(v>=3.5)return"var(--green)";if(v>=2.5)return"var(--blue)";if(v>=1.5)return"var(--warning)";return"var(--danger)"}
 function bizH(start,end){if(!start||!end||end<=start)return 0;let t=0;const c=new Date(start);while(c<end){const w=c.getDay();if(w>=1&&w<=5){const ch=c.getHours()+c.getMinutes()/60;const ed=new Date(c);ed.setHours(0,0,0,0);ed.setDate(ed.getDate()+1);const es=Math.max(ch,BIZ_S);let ee;if(end<ed)ee=Math.min(end.getHours()+end.getMinutes()/60,BIZ_E);else ee=BIZ_E;if(ee>es)t+=(ee-es)*60}const n=new Date(c);n.setHours(0,0,0,0);n.setDate(n.getDate()+1);n.setHours(Math.floor(BIZ_S),(BIZ_S%1)*60,0,0);c.setTime(n.getTime())}return t/60}
@@ -620,10 +615,9 @@ function pf(file,cb){const ext=file.name.split(".").pop().toLowerCase();if(ext==
 function procHist(){
   if(!histRaw.length)return;
   const byM={};
-  clientKPI={};clientCatStats={};
   histRaw.forEach(r=>{
     const cr=pD(r.Date_Created);if(!cr)return;
-    const mk=mK(cr),cl=r.Client||"Unknown";
+    const mk=mK(cr);
     // Global monthly
     if(!byM[mk])byM[mk]={rt:[],rd:[],sm:0,st:0,fm:0,ft:0,v:0,tw:[],csat:[],ftf:0,closed:0};
     const b=byM[mk];b.v++;
@@ -634,7 +628,6 @@ function procHist(){
     if(cd){
       b.closed++;
       if(cr){const bd=bizD(cr,cd);if(bd>0&&bd<500)b.rd.push(bd)}
-      // First Time Fix: first response date and close date on same calendar day
       if(frd&&isSD(frd,cd))b.ftf++;
     }
     const sl=pD(r.SLA_Resolution_Target);
@@ -644,42 +637,17 @@ function procHist(){
     const csatMap={excellent:4,good:3,okay:2,poor:1,bad:1};
     const csatVal=csatMap[csatRaw.toLowerCase()];
     if(csatVal){b.csat.push(csatVal)}
-    // Per-client monthly
-    if(!clientKPI[cl])clientKPI[cl]={};
-    if(!clientKPI[cl][mk])clientKPI[cl][mk]={rt:[],rd:[],sm:0,st:0,fm:0,ft:0,v:0,tw:[],csat:[],ftf:0,closed:0};
-    const cb2=clientKPI[cl][mk];cb2.v++;
-    if(!isNaN(frt)&&frt>=0){cb2.rt.push(frt);cb2.ft++;if(frt<=FRT_SLA)cb2.fm++}
-    if(cd){
-      cb2.closed++;
-      if(cr){const bd=bizD(cr,cd);if(bd>0&&bd<500)cb2.rd.push(bd)}
-      if(frd&&isSD(frd,cd))cb2.ftf++;
-    }
-    if(cd&&sl){cb2.st++;if(cd<=sl)cb2.sm++}
-    if(!isNaN(tw)&&tw>0)cb2.tw.push(tw);
-    if(csatVal)cb2.csat.push(csatVal);
   });
   kpiM=Object.keys(byM).sort().map(mk=>{const b=byM[mk];const csatBk={4:0,3:0,2:0,1:0};b.csat.forEach(v=>{if(csatBk[v]!==undefined)csatBk[v]++});return{m:mL(mk),mk,v:b.v,ar:b.rt.length?b.rt.reduce((a,c)=>a+c,0)/b.rt.length:0,ard:b.rd.length?b.rd.reduce((a,c)=>a+c,0)/b.rd.length:0,sc:b.st?(b.sm/b.st*100):100,fc:b.ft?(b.fm/b.ft*100):100,ttw:b.tw.reduce((a,c)=>a+c,0),csat:b.csat.length?b.csat.reduce((a,c)=>a+c,0)/b.csat.length:null,csatN:b.csat.length,ftf:b.closed?(b.ftf/b.closed*100):0,ftfN:b.ftf,closedN:b.closed,csatBk}});
 
-  // Category stats (global + per-client, and type+category combos)
+  // Category stats
   catStats={};
-  const catClosures={};
   histRaw.forEach(r=>{
-    const cat=r.Ticket_Category||"Uncategorized",tw=parseFloat(r.Time_Taken),cl=r.Client||"Unknown";
+    const cat=r.Ticket_Category||"Uncategorized",tw=parseFloat(r.Time_Taken);
     if(isNaN(tw)||tw<=0)return;
     if(!catStats[cat])catStats[cat]=[];catStats[cat].push(tw);
-    // Collect closure summaries per category (up to 5 per category)
-    if(r.Closure_Summary&&r.Closure_Summary.length>20){
-      if(!catClosures[cat])catClosures[cat]=[];
-      if(catClosures[cat].length<5)catClosures[cat].push(san(r.Closure_Summary).substring(0,200));
-    }
-    // Client-category stats for client-aware estimation
-    const ck=cl+"|||"+cat;
-    if(!clientCatStats[ck])clientCatStats[ck]=[];
-    clientCatStats[ck].push(tw);
   });
-  Object.keys(catStats).forEach(c=>{const a=catStats[c];catStats[c]={n:a.length,med:med(a),mean:a.reduce((x,y)=>x+y,0)/a.length,p90:p90(a),closures:catClosures[c]||[]}});
-  // Convert clientCatStats to summaries
-  Object.keys(clientCatStats).forEach(ck=>{const a=clientCatStats[ck];clientCatStats[ck]={n:a.length,med:med(a),mean:a.reduce((x,y)=>x+y,0)/a.length}});
+  Object.keys(catStats).forEach(c=>{const a=catStats[c];catStats[c]={n:a.length,med:med(a),mean:a.reduce((x,y)=>x+y,0)/a.length,p90:p90(a)}});
 
   buildAgentStats();populateKPIClients();populateCampaignFilters();renderKPI();renderCampaignCharts();updateBanner();
 }
@@ -690,24 +658,17 @@ function procAct(){
   // Preserve selected tech by name across roster rebuilds
   const prevSelName=selTech?roster.find(t=>t.id===selTech)?.name:null;
   const ac={};
-  const agentShifts={};
   actRaw.filter(r=>!r.Date_Closed||!r.Date_Closed.trim()).forEach(r=>{
     const a=r.Agent_Assigned||"";
     if(a&&a!=="Unassigned"&&!a.includes("Bot")){
       ac[a]=(ac[a]||0)+1;
-      if(!agentShifts[a]&&r.Shift)agentShifts[a]=r.Shift;
     }
   });
   roster=Object.keys(ac).sort((a,b)=>ac[b]-ac[a]).map((n,i)=>({id:i+1,name:n,color:TCOL[i%TCOL.length]}));
-  function parseShift(s){if(!s)return null;const m=s.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);if(!m)return null;let ss=parseInt(m[1])+parseInt(m[2])/60,se=parseInt(m[3])+parseInt(m[4])/60;if(se<ss)se+=12;return{ss,se}}
   roster.forEach(t=>{
-    const shift=parseShift(agentShifts[t.name]);
-    const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;
-    const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;
-    if(shift){
-      const detectedSi=Math.abs(shift.ss-SHIFTS[0].s)<Math.abs(shift.ss-SHIFTS[1].s)?0:1;
-      techSched[t.id]={ss:shift.ss,se:shift.se,ls:LUNCHES[li].s,le:LUNCHES[li].e,si:detectedSi,li};
-    }else if(!techSched[t.id]){
+    if(!techSched[t.id]){
+      const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;
+      const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;
       techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li};
     }
   });
@@ -724,7 +685,7 @@ function procAct(){
   const weekDays0=wkD(new Date());
   closedTix=closedRaw.map((r,i)=>{
     const agent=r.Agent_Assigned||"Unassigned",tech=roster.find(t=>t.name===agent);
-    const cat=r.Ticket_Category||"Uncategorized",cl=r.Client||"Unknown";
+    const cat=r.Ticket_Category||"Uncategorized";
     const dc=pD(r.Date_Closed);
     const dayIdx=dc?weekDays0.findIndex(d=>isSD(d,dc)):-1;
     const tw=parseFloat(r.Time_Taken||"0");
@@ -735,17 +696,11 @@ function procAct(){
     const dateCreated=pD(r.Date_Created);
     const frd=pD(r.First_Response_Date);
     const status=r.Status||"Closed";
-    return{id:r.Ticket_ID||`CL-${i}`,title:r.Summary||"Untitled",client:cl,user:r.End_User||"—",category:cat,type:r.Ticket_Type||"Service",agent,assignedTo:tech?tech.id:0,dayIdx,timeWorked,status,dateClosed:dc,dateCreated,nextResponse:nrd,slaTgt,frd,frt:!isNaN(frt)?frt:null,isClosed:true,dateAssigned:pD(r.Date_Assigned)};
+    return{id:r.Ticket_ID||`CL-${i}`,category:cat,type:r.Ticket_Type||"Service",agent,assignedTo:tech?tech.id:0,dayIdx,timeWorked,status,dateClosed:dc,dateCreated,nextResponse:nrd,slaTgt,frd,frt:!isNaN(frt)?frt:null,isClosed:true,dateAssigned:pD(r.Date_Assigned)};
   }).filter(t=>t.dayIdx>=0);
 
-  // Feed closed-this-week tickets into KPI data (same structure as histRaw processing)
+  // Merge closed-this-week tickets into histRaw for KPI processing
   if(closedTix.length){
-    closedRaw.forEach(r=>{
-      const cr=pD(r.Date_Created);if(!cr)return;
-      const mk=mK(cr),cl=r.Client||"Unknown";
-      if(!kpiM.find(m=>m.mk===mk)){/* month not in kpiM yet — will be added by procHist if loaded */}
-      // Add to histRaw so procHist can process them
-    });
     // Merge closedRaw into histRaw (avoid duplicates by ID)
     const existingIds=new Set(histRaw.map(r=>r.Ticket_ID));
     closedRaw.forEach(r=>{
@@ -760,12 +715,10 @@ function procAct(){
 
   actTix=activeRaw.map((r,i)=>{
     const agent=r.Agent_Assigned||"Unassigned",tech=roster.find(t=>t.name===agent);
-    const cat=r.Ticket_Category||"Uncategorized",cl=r.Client||"Unknown",tt=r.Ticket_Type||"Service";
-    // Estimation from hardcoded baselines: client+category first, then category only, then 0.5h fallback
-    const blKey=cl+"|||"+cat;
+    const cat=r.Ticket_Category||"Uncategorized",tt=r.Ticket_Type||"Service";
+    // Estimation from baselines: category lookup, then 0.5h fallback
     let totalEst=0.5;
-    if(BL_CC[blKey]!=null)totalEst=BL_CC[blKey];
-    else if(BL_CAT[cat]!=null)totalEst=BL_CAT[cat];
+    if(BL_CAT[cat]!=null)totalEst=BL_CAT[cat];
     totalEst=Math.round(totalEst*4)/4;if(totalEst<0.25)totalEst=0.25;
 
     const nrd=pD(r.Next_Respone_Date);
@@ -785,7 +738,7 @@ function procAct(){
       est=Math.round(est*4)/4;
     }
 
-    return{id:r.Ticket_ID||`TK-${i}`,title:r.Summary||"Untitled",client:cl,user:r.End_User||"—",category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,isWaiting,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
+    return{id:r.Ticket_ID||`TK-${i}`,category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,isWaiting,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
   });
 
   // Sort by Next Response Date (soonest first), then by status priority
@@ -1048,32 +1001,24 @@ function renderCampaignCharts(){
 }
 
 function populateCampaignFilters(){
-  const sel=document.getElementById("campaignClient");
-  const clients=[...new Set(histRaw.map(r=>r.Client).filter(Boolean))].sort();
-  sel.innerHTML=`<option value="">— All Clients (${clients.length}) —</option>`+clients.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
   const aSel=document.getElementById("campaignAgent");
   const agents=[...new Set(histRaw.map(r=>r.Agent_Resolved||r.Agent_Assigned).filter(a=>a&&a!=="Unassigned"&&!a.includes("Bot")))].sort();
   aSel.innerHTML=`<option value="">— All Agents (${agents.length}) —</option>`+agents.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("");
 }
 
-// ═══════════ KPI CLIENT SELECTOR ═══════════
+// ═══════════ KPI AGENT SELECTOR ═══════════
 function populateKPIClients(){
-  const sel=document.getElementById("kpiClient");
-  const prevClient=sel.value;
-  const clients=[...new Set(histRaw.map(r=>r.Client).filter(Boolean))].sort();
-  sel.innerHTML=`<option value="">— All Clients (${clients.length}) —</option>`+clients.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
-  if(prevClient)sel.value=prevClient;
   const aSel=document.getElementById("kpiAgent");
   const prevAgent=aSel.value;
   const agents=[...new Set(histRaw.map(r=>r.Agent_Resolved||r.Agent_Assigned).filter(a=>a&&a!=="Unassigned"&&!a.includes("Bot")))].sort();
   aSel.innerHTML=`<option value="">— All Agents (${agents.length}) —</option>`+agents.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("");
-  if(prevAgent)sel.value=prevAgent;
+  if(prevAgent)aSel.value=prevAgent;
 }
 
 
 
 function getKPIData(overrideCl,overrideAg){
-  const cl=overrideCl!==undefined?overrideCl:document.getElementById("kpiClient").value;
+  const cl="";
   const ag=overrideAg!==undefined?overrideAg:document.getElementById("kpiAgent").value;
   const csatMap2={excellent:4,good:3,okay:2,poor:1,bad:1};
 
@@ -1085,7 +1030,6 @@ function getKPIData(overrideCl,overrideAg){
   const filtered=histRaw.filter(r=>{
     const dc=pD(r.Date_Closed);if(!dc)return false;
     if(!weekDays.some(wd=>isSD(wd,dc)))return false;
-    if(cl&&r.Client!==cl)return false;
     if(ag&&(r.Agent_Resolved||r.Agent_Assigned)!==ag)return false;
     return true;
   });
@@ -1100,8 +1044,7 @@ function getKPIData(overrideCl,overrideAg){
     // Response metrics: tickets assigned on this day
     const assignedDay=actRaw.filter(r=>{
       const da=pD(r.Date_Assigned);if(!da||!isSD(da,wd))return false;
-      if(cl&&r.Client!==cl)return false;
-      if(ag&&(r.Agent_Assigned)!==ag)return false;
+        if(ag&&(r.Agent_Assigned)!==ag)return false;
       return true;
     });
     const rt=[];let fm=0,ft=0;
@@ -1138,7 +1081,6 @@ function getKPIData(overrideCl,overrideAg){
   const assignedFiltered=actRaw.filter(r=>{
     const da=pD(r.Date_Assigned);if(!da)return false;
     if(!weekDays.some(wd=>isSD(wd,da)))return false;
-    if(cl&&r.Client!==cl)return false;
     if(ag&&(r.Agent_Assigned)!==ag)return false;
     return true;
   });
@@ -1155,17 +1097,7 @@ function getKPIData(overrideCl,overrideAg){
   assignedFiltered.forEach(r=>{const cat=r.Ticket_Category||"Uncategorized";catCounts[cat]=(catCounts[cat]||0)+1});
   const topCats=Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
-  // Top 5 clients (from assigned tickets this period)
-  const clientCounts={};
-  assignedFiltered.forEach(r=>{const c=r.Client||"Unknown";clientCounts[c]=(clientCounts[c]||0)+1});
-  const topClients=Object.entries(clientCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-  // Top 5 users (from assigned tickets this period)
-  const userCounts={};
-  assignedFiltered.forEach(r=>{const u=r.End_User||"Unknown";userCounts[u]=(userCounts[u]||0)+1});
-  const topUsers=Object.entries(userCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-  return{data:daily,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther,typeCounts,topCats,topClients,topUsers,source:cl?"client":ag?"agent":"all",clientName:cl,agentName:ag};
+  return{data:daily,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther,typeCounts,topCats,topClients:[],topUsers:[],source:ag?"agent":"all",agentName:ag};
 }
 
 // ═══════════ TECH SIDEBAR ═══════════
@@ -1291,15 +1223,13 @@ function renderCal(){
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
       h+=`<div class="tt ${riskClass}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${esc(tk.client)}</span><span class="ti">${haloLink(tk.id)}</span></div>
-          <div class="tt-row2"><span class="tit">${esc(tk.title)}</span><span class="te">${tk.est}h</span></div>
+          <div class="tt-row1"><span class="tc">${esc(tk.category)}</span><span class="ti">${haloLink(tk.id)}</span></div>
+          <div class="tt-row2"><span class="tit" style="color:${stC}">${esc(tk.status)}</span><span class="te">${tk.est}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
-          <div class="pop-summary">${esc(tk.title)}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}${waitLabel}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${esc(tk.status)}</span></div>
-          <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${esc(tk.client)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(tk.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${esc(tk.type)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${tk.timeWorked.toFixed(1)}h</span></div>
@@ -1336,15 +1266,13 @@ function renderCal(){
         const popSide=(di>=3?"pop-left":"")+" pop-bottom";
         h+=`<div class="tt tt-closed" style="height:${closedHt}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${esc(ct.client)}</span><span class="ti">${haloLink(ct.id)}</span></div>
-          <div class="tt-row2"><span class="tit">${esc(ct.title)}</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
+          <div class="tt-row1"><span class="tc">${esc(ct.category)}</span><span class="ti">${haloLink(ct.id)}</span></div>
+          <div class="tt-row2"><span class="tit" style="color:#999">Closed</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">Closed ${closedDate}</div>
-          <div class="pop-summary">${esc(ct.title)}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(ct.id)}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:#999">Closed</span></div>
-          <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${esc(ct.client)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(ct.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${ct.timeWorked.toFixed(1)}h</span></div>
         </div>
@@ -1553,7 +1481,7 @@ function buildAgentStats(){
   agentStats={};
   histRaw.forEach(r=>{
     const ag=r.Agent_Resolved||r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot"))return;
-    if(!agentStats[ag])agentStats[ag]={months:{},cats:{},clients:{},resCats:{},types:{},times:[],respTimes:[],resDays:[],slaMet:0,slaTotal:0,frtMet:0,frtTotal:0,total:0,csat:[],ftf:0,closed:0};
+    if(!agentStats[ag])agentStats[ag]={months:{},cats:{},resCats:{},types:{},times:[],respTimes:[],resDays:[],slaMet:0,slaTotal:0,frtMet:0,frtTotal:0,total:0,csat:[],ftf:0,closed:0};
     const s=agentStats[ag];s.total++;
     const cr=pD(r.Date_Created);if(!cr)return;
     const mk=mK(cr);
@@ -1563,7 +1491,6 @@ function buildAgentStats(){
     const tw=parseFloat(r.Time_Taken);if(!isNaN(tw)&&tw>0){s.times.push(tw);m.tw+=tw}
     const csatV2=(r.CSAT_Score||r.CSAT_SCORE||"").trim();const csatMap2={excellent:4,good:3,okay:2,poor:1,bad:1};const csatNum=csatMap2[csatV2.toLowerCase()];if(csatNum){s.csat.push(csatNum);m.csat.push(csatNum)}
     const cat=r.Ticket_Category||"Uncategorized";s.cats[cat]=(s.cats[cat]||0)+1;
-    const cl=r.Client||"Unknown";s.clients[cl]=(s.clients[cl]||0)+1;
     const rc=r.Resolution_Category;if(rc)s.resCats[rc]=(s.resCats[rc]||0)+1;
     const tt=r.Ticket_Type||"Service";s.types[tt]=(s.types[tt]||0)+1;
 
@@ -1591,7 +1518,6 @@ function renderTeamAll(){
     container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-dim)">Fetch active tickets to load data</div>';
     return;
   }
-  const selClient=document.getElementById("kpiClient").value;
   const selAgent=document.getElementById("kpiAgent").value;
 
   // Build per-agent data from histRaw, filtered by client and time period
@@ -1600,7 +1526,6 @@ function renderTeamAll(){
   const agentMap={};
   histRaw.forEach(r=>{
     const ag=r.Agent_Resolved||r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot")||ag==="HaloAPI")return;
-    if(selClient&&r.Client!==selClient)return;
     if(selAgent&&ag!==selAgent)return;
     const dc=pD(r.Date_Closed);if(!dc)return;
     const da2=pD(r.Date_Assigned);
@@ -1632,7 +1557,6 @@ function renderTeamAll(){
   // Count tickets assigned per agent (using Agent_Assigned and Date_Assigned)
   actRaw.forEach(r=>{
     const ag=r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot")||ag==="HaloAPI")return;
-    if(selClient&&r.Client!==selClient)return;
     if(selAgent&&ag!==selAgent)return;
     const da=pD(r.Date_Assigned);if(!da)return;
     if(agentTimeFilter==="today"){
@@ -1651,7 +1575,6 @@ function renderTeamAll(){
   const activeMap={};
   actRaw.filter(r=>!r.Date_Closed||!r.Date_Closed.trim()).forEach(r=>{
     const ag=r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot")||ag==="HaloAPI")return;
-    if(selClient&&r.Client!==selClient)return;
     if(selAgent&&ag!==selAgent)return;
     activeMap[ag]=(activeMap[ag]||0)+1;
   });
@@ -1979,29 +1902,10 @@ function renderRisk(){
   });
   const topWorkload=Object.entries(agentWorkload).sort((a,b)=>b[1].tix-a[1].tix||b[1].hrs-a[1].hrs)[0];
 
-  // At-Risk Client: client with most risky tickets, tiebreaker by total overdue hours
-  const clientRiskCount={};
-  allRisky.forEach(tk=>{
-    const c=tk.client||"Unknown";
-    if(!clientRiskCount[c])clientRiskCount[c]={count:0,overdueH:0};
-    clientRiskCount[c].count++;
-    clientRiskCount[c].overdueH+=(tk.overdueH||tk.overdueBizH||0);
-  });
-  const topRiskClient=Object.entries(clientRiskCount).sort((a,b)=>b[1].count-a[1].count||b[1].overdueH-a[1].overdueH)[0];
-
-  // Most Active Client: active + closed this week
-  const clientTicketCount={};
-  const clientActiveCount={};
-  actTix.forEach(tk=>{if(tk.client){clientTicketCount[tk.client]=(clientTicketCount[tk.client]||0)+1;clientActiveCount[tk.client]=(clientActiveCount[tk.client]||0)+1}});
-  closedTix.forEach(tk=>{if(tk.client)clientTicketCount[tk.client]=(clientTicketCount[tk.client]||0)+1});
-  const topClient=Object.entries(clientTicketCount).sort((a,b)=>b[1]-a[1])[0];
-  const topClientActive=topClient?clientActiveCount[topClient[0]]||0:0;
 
   document.getElementById("riskInsights").innerHTML=[
     {l:"At-Risk Agent",v:topRiskAgent?topRiskAgent[0]:"—",sub:topRiskAgent?`${topRiskAgent[1]} flagged ticket${topRiskAgent[1]>1?"s":""}`:"No risks detected",c:topRiskAgent?"var(--danger)":"var(--green)"},
     {l:"Heaviest Workload",v:topWorkload?topWorkload[0]:"—",sub:topWorkload?`${topWorkload[1].tix} active · ${topWorkload[1].hrs.toFixed(1)}h est`:"No data",c:topWorkload?"var(--warning)":"var(--text-dim)"},
-    {l:"At-Risk Client",v:topRiskClient?topRiskClient[0]:"—",sub:topRiskClient?`${topRiskClient[1].count} flagged · ${topRiskClient[1].overdueH.toFixed(1)}h overdue`:"No risks detected",c:topRiskClient?"var(--danger)":"var(--green)"},
-    {l:"Most Active Client",v:topClient?topClient[0]:"—",sub:topClient?`${topClient[1]} total ticket${topClient[1]>1?"s":""} · ${topClientActive} active`:"No data",c:topClient?"var(--blue)":"var(--text-dim)"},
   ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${(i+4)*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c};font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block" title="${c.v}">${c.v}</span></div><div class="stat-trend" style="color:var(--text-dim)">${c.sub}</div></div>`).join("");
 
   // Build sections
@@ -2046,7 +1950,7 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
   tickets.forEach(tk=>{
     const sev=tk.severity==="high"?"sev-high":tk.severity==="med"?"sev-med":"sev-low";
     const dateCreated=tk.dateCreated?tk.dateCreated.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+tk.dateCreated.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"—";
-    h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-client" title="${esc(tk.client)||""}">${esc(tk.client)||"—"}</span><span class="risk-user" title="${esc(tk.user)||""}">${esc(tk.user)||"—"}</span><span class="risk-title" title="${esc(tk.title)}">${esc(tk.title)}</span><span class="risk-agent">${esc(tk.agent)||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
+    h+=`<div class="risk-row ${sev}"><span class="risk-id">${esc(tk.id)}</span><span class="risk-title">${esc(tk.category)}</span><span class="risk-agent">${esc(tk.agent)||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
   });
   h+=`</div></div>`;
   return h;
@@ -2057,7 +1961,7 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
 // ═══════════ RESOLUTION ASSIST ═══════════
 
 // ═══════════ BANNER ═══════════
-function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateCreated&&wd.some(d=>isSD(d,t.dateCreated))).length+closedTix.length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(clientKPI).length}</b> clients`);parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
+function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateCreated&&wd.some(d=>isSD(d,t.dateCreated))).length+closedTix.length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
 
 // ═══════════ EVENTS ═══════════
 // Login button toggle
@@ -3322,8 +3226,7 @@ const BF={
         if(tk){
           const stC=SC[tk.status]||"var(--text-dim)";
           html=`<div style="font-weight:700;font-size:11px;color:var(--blue);margin-bottom:4px">${esc(tk.id)}</div>`;
-          html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">${esc(tk.client)}</div>`;
-          html+=`<div style="font-size:9px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(tk.title)}</div>`;
+          html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">${esc(tk.category)}</div>`;
           html+=`<div style="font-size:9px"><span style="color:${stC}">${esc(tk.status)}</span> \u00b7 ${tk.est}h est</div>`;
         }
       }

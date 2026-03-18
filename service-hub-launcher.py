@@ -230,7 +230,22 @@ def get_active():
     try:
         resp = requests.get(HALOPSA_REPORT_URL, headers=headers, timeout=30)
         resp.raise_for_status()
-        return jsonify(resp.json())
+        data = resp.json()
+        # Strip sensitive fields before sending to client
+        STRIP_FIELDS = {"Client", "End_User", "Summary", "Shift"}
+        if isinstance(data, list):
+            for row in data:
+                for field in STRIP_FIELDS:
+                    row.pop(field, None)
+        elif isinstance(data, dict):
+            # Handle wrapped response formats (e.g. {"report": [...]})
+            for key, val in data.items():
+                if isinstance(val, list):
+                    for row in val:
+                        if isinstance(row, dict):
+                            for field in STRIP_FIELDS:
+                                row.pop(field, None)
+        return jsonify(data)
     except requests.RequestException as e:
         return jsonify({"error": str(e)}), 502
 
