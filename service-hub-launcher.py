@@ -38,7 +38,7 @@ ALLOWED_ORIGINS = [
 ]
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True,
      allow_headers=["Content-Type", "Authorization"],
-     methods=["GET", "POST", "OPTIONS"])
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 # ═══════════════════════════════════════════════════════════
 # PREFLIGHT — Explicit OPTIONS handler for all /api/* routes
@@ -52,7 +52,7 @@ def handle_preflight():
             response = make_response()
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Max-Age"] = "3600"
             return response
@@ -309,6 +309,197 @@ def refresh_token():
         return jsonify({"error": "Session expired. Please log in again."}), 401
     token = create_token(agent_name, role, original_iat=original_iat)
     return jsonify({"token": token})
+
+
+# ═══════════════════════════════════════════════════════════
+# COMMS BOARD — Cards & Reactions
+# ═══════════════════════════════════════════════════════════
+
+@app.route("/api/comms-cards", methods=["GET"])
+@require_auth
+def get_comms_cards():
+    """Get all comms cards with their reactions."""
+    cards_resp = supabase_request("GET", "comms_cards", params={
+        "select": "*",
+        "order": "created_at.asc"
+    })
+    if cards_resp.status_code != 200:
+        return jsonify({"error": "Failed to load cards"}), 502
+    cards = cards_resp.json()
+
+    # Load all reactions
+    reactions_resp = supabase_request("GET", "comms_reactions", params={
+        "select": "id,card_id,agent_name,emoji"
+    })
+    reactions = reactions_resp.json() if reactions_resp.status_code == 200 else []
+
+    # Attach reactions to cards
+    react_map = {}
+    for rx in reactions:
+        cid = rx.get("card_id")
+        if cid not in react_map:
+            react_map[cid] = []
+        react_map[cid].append(rx)
+
+    for card in cards:
+        card["reactions"] = react_map.get(card["id"], [])
+
+    return jsonify(cards)
+
+
+@app.route("/api/comms-cards", methods=["POST"])
+@require_auth
+def create_comms_card():
+    """Create a new comms card."""
+    body = request.get_json(silent=True) or {}
+    agent_name = request.user.get("agent_name", "")
+    if not agent_name or agent_name == "Widget Viewer":
+        return jsonify({"error": "Must be logged in as an agent"}), 403
+
+    grid_row = body.get("grid_row")
+    grid_col = body.get("grid_col")
+    if grid_row is None or grid_col is None:
+        return jsonify({"error": "Grid position required"}), 400
+    if not (0 <= grid_row <= 9 and 0 <= grid_col <= 4):
+        return jsonify({"error": "Invalid grid position"}), 400
+
+    # Check slot is not occupied
+    check = supabase_request("GET", "comms_cards", params={
+        "select": "id",
+        "grid_row": f"eq.{grid_row}",
+        "grid_col": f"eq.{grid_col}",
+        "limit": "1"
+    })
+    if check.status_code == 200 and check.json():
+        return jsonify({"error": "Slot already occupied"}), 409
+
+    card = {
+        "agent_name": agent_name,
+        "grid_row": grid_row,
+        "grid_col": grid_col,
+        "title": (body.get("title") or "")[:80],
+        "body": (body.get("body") or "")[:500],
+        "icon": body.get("icon", "none"),
+        "bg_color": body.get("bg_color", "navy"),
+        "border_color": body.get("border_color", "blue"),
+    }
+    resp = supabase_request("POST", "comms_cards", body=card)
+    if resp.status_code not in (200, 201):
+        return jsonify({"error": "Failed to create card"}), 502
+    return jsonify(resp.json()[0] if resp.json() else {"ok": True}), 201
+
+
+@app.route("/api/comms-cards/<card_id>", methods=["PUT"])
+@require_auth
+def update_comms_card(card_id):
+    """Update a comms card — only the author can edit."""
+    agent_name = request.user.get("agent_name", "")
+    body = request.get_json(silent=True) or {}
+
+    # Verify ownership
+    check = supabase_request("GET", "comms_cards", params={
+        "select": "agent_name",
+        "id": f"eq.{card_id}",
+        "limit": "1"
+    })
+    if check.status_code != 200 or not check.json():
+        return jsonify({"error": "Card not found"}), 404
+    if check.json()[0]["agent_name"] != agent_name:
+        return jsonify({"error": "Not authorized"}), 403
+
+    updates = {}
+    if "title" in body:
+        updates["title"] = (body["title"] or "")[:80]
+    if "body" in body:
+        updates["body"] = (body["body"] or "")[:500]
+    if "icon" in body:
+        updates["icon"] = body["icon"]
+    if "bg_color" in body:
+        updates["bg_color"] = body["bg_color"]
+    if "border_color" in body:
+        updates["border_color"] = body["border_color"]
+
+    if not updates:
+        return jsonify({"error": "Nothing to update"}), 400
+
+    resp = supabase_request("PATCH", "comms_cards", params={
+        "id": f"eq.{card_id}"
+    }, body=updates)
+    if resp.status_code not in (200, 204):
+        return jsonify({"error": "Failed to update card"}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/comms-cards/<card_id>", methods=["DELETE"])
+@require_auth
+def delete_comms_card(card_id):
+    """Delete a comms card — author or admin only."""
+    agent_name = request.user.get("agent_name", "")
+    role = request.user.get("role", "")
+
+    # Verify ownership or admin
+    check = supabase_request("GET", "comms_cards", params={
+        "select": "agent_name",
+        "id": f"eq.{card_id}",
+        "limit": "1"
+    })
+    if check.status_code != 200 or not check.json():
+        return jsonify({"error": "Card not found"}), 404
+    if check.json()[0]["agent_name"] != agent_name and role != "admin":
+        return jsonify({"error": "Not authorized"}), 403
+
+    # Delete reactions first
+    supabase_request("DELETE", "comms_reactions", params={
+        "card_id": f"eq.{card_id}"
+    })
+    # Delete the card
+    resp = supabase_request("DELETE", "comms_cards", params={
+        "id": f"eq.{card_id}"
+    })
+    if resp.status_code not in (200, 204):
+        return jsonify({"error": "Failed to delete card"}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/comms-reactions", methods=["POST"])
+@require_auth
+def toggle_comms_reaction():
+    """Toggle a reaction on a card (add if not exists, remove if exists)."""
+    agent_name = request.user.get("agent_name", "")
+    if not agent_name or agent_name == "Widget Viewer":
+        return jsonify({"error": "Must be logged in as an agent"}), 403
+
+    body = request.get_json(silent=True) or {}
+    card_id = body.get("card_id")
+    emoji = body.get("emoji", "")
+    if not card_id or not emoji:
+        return jsonify({"error": "card_id and emoji required"}), 400
+
+    # Check if reaction already exists
+    check = supabase_request("GET", "comms_reactions", params={
+        "select": "id",
+        "card_id": f"eq.{card_id}",
+        "agent_name": f"eq.{agent_name}",
+        "emoji": f"eq.{emoji}",
+        "limit": "1"
+    })
+    if check.status_code == 200 and check.json():
+        # Remove existing reaction
+        rx_id = check.json()[0]["id"]
+        supabase_request("DELETE", "comms_reactions", params={
+            "id": f"eq.{rx_id}"
+        })
+        return jsonify({"action": "removed"})
+    else:
+        # Add new reaction
+        resp = supabase_request("POST", "comms_reactions", body={
+            "card_id": card_id,
+            "agent_name": agent_name,
+            "emoji": emoji
+        })
+        if resp.status_code not in (200, 201):
+            return jsonify({"error": "Failed to add reaction"}), 502
+        return jsonify({"action": "added"})
 
 
 @app.route("/health", methods=["GET"])
