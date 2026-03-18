@@ -185,28 +185,12 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .risk-row.sev-high{border-left-color:#ff5c5c}
 .risk-row.sev-med{border-left-color:#fb9e00}
 .risk-row.sev-low{border-left-color:#fcdc00}
-.risk-id{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--blue);width:60px;flex-shrink:0}
-.risk-client{font-size:11px;color:var(--text-muted);width:140px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.risk-user{font-size:11px;color:var(--text-dim);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.risk-title{flex:1;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;margin-right:0}
-.risk-agent{font-size:11px;color:var(--text-muted);width:130px;flex-shrink:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:auto}
-.risk-date{font-size:10px;color:var(--text-dim);width:120px;flex-shrink:0;text-align:right;white-space:nowrap}
-.risk-detail{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;width:120px;flex-shrink:0;text-align:right}
+.risk-id{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--blue);width:70px;flex-shrink:0}
+.risk-title{flex:1;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.risk-agent{font-size:11px;color:var(--text-muted);width:150px;flex-shrink:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.risk-date{font-size:10px;color:var(--text-dim);width:140px;flex-shrink:0;text-align:right;white-space:nowrap}
+.risk-detail{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;width:140px;flex-shrink:0;text-align:right}
 /* Agent comparison table */
-.agent-table{width:100%;border-collapse:collapse;font-size:12px}
-.agent-table thead{position:sticky;top:0;z-index:2}
-.agent-table th{background:var(--navy);color:var(--text-dim);font-family:var(--font-heading);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:12px 10px;text-align:left;border-bottom:1px solid var(--border-bright);white-space:nowrap;cursor:pointer;user-select:none;transition:color .2s}
-.agent-table th:first-child{text-align:left;padding-left:18px}
-.agent-table th:hover{color:var(--blue)}
-.agent-table th.sorted{color:var(--green)}
-.agent-table th .sort-arrow{font-size:8px;margin-left:3px;opacity:.5}
-.agent-table th.sorted .sort-arrow{opacity:1}
-.agent-table td{padding:10px 10px;text-align:left;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;white-space:nowrap}
-.agent-table td:first-child{text-align:left;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--text);padding-left:18px}
-.agent-table tbody tr{transition:background .15s}
-.agent-table tbody tr:hover{background:rgba(0,149,200,0.06)}
-.agent-table .best-val{color:var(--green);font-weight:700}
-.agent-table .worst-val{color:var(--danger);font-weight:700}
 .pcard{padding:16px;border-radius:12px;background:linear-gradient(135deg,rgba(0,40,85,0.7),rgba(0,20,50,0.6));border:1px solid var(--border);position:relative;overflow:hidden}
 .pcard::after{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,149,200,0.4),transparent)}
 .pcard-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
@@ -388,16 +372,12 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Workload</h2>
       <p style="font-size:12px;color:var(--text-muted)">This weeks capacity and stats.</p>
     </div>
-    <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <label>Agent:</label>
-      <select id="kpiAgent"><option value="">— All Agents —</option></select>
-      <label style="margin-left:16px">Period:</label>
-      <select id="agentTimePeriod"><option value="today">Today</option><option value="week">This Week</option></select>
-    </div>
-    <select id="kpiClient" style="display:none"><option value="">— All Clients —</option></select>
-    <div class="glass" style="padding:0;overflow-x:auto;margin-bottom:22px;display:none" id="teamAllTable"></div>
-    <div class="stat-grid" id="sg"></div>
-    <div style="margin-top:28px;margin-bottom:20px"></div>
+    <!-- Hidden elements kept for JS compatibility -->
+    <select id="kpiClient" style="display:none"><option value=""></option></select>
+    <select id="kpiAgent" style="display:none"><option value=""></option></select>
+    <select id="agentTimePeriod" style="display:none"><option value="today">Today</option></select>
+    <div style="display:none" id="teamAllTable"></div>
+    <div style="display:none" id="sg"></div>
     <div class="cal-layout">
       <div class="glass tech-sidebar">
         <h3>Technicians</h3>
@@ -468,13 +448,12 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <p style="font-size:12px;color:var(--text-muted)">Ticket volume and SLA performance metrics.</p>
     </div>
     <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <select id="campaignClient" style="display:none"><option value="">— All Clients —</option></select>
+      <select id="campaignClient" style="display:none"><option value=""></option></select>
       <label>Agent:</label>
       <select id="campaignAgent"><option value="">— All Agents —</option></select>
     </div>
     <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
     <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
-    <div class="chart-grid" style="display:none"><div class="glass chart-card"><h3><span class="cdot" style="background:#0095C8"></span>Top 5 Clients</h3><canvas id="cTopClients"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#a29bfe"></span>Top 5 Users</h3><canvas id="cTopUsers"></canvas></div></div>
   </div>
 
 </div><!-- /mainContent -->
@@ -904,48 +883,7 @@ function mapP(r){const c=(r.Ticket_Category||"").toLowerCase();if(c.includes("se
 
 // ═══════════ KPI DASHBOARD ═══════════
 function renderKPI(){
-  const{data:dm}=getKPIData();
-  if(!dm.length){document.getElementById("sg").innerHTML="";return}
-  const ttw=dm.reduce((s,m)=>s+m.ttw,0);
-  const totalTix=dm.reduce((s,m)=>s+m.v,0);
-  const totalCsat=dm.reduce((s,m)=>s+m.csatN,0);
-  const csatRate=totalTix?(totalCsat/totalTix*100):0;
-  const totalClosed=dm.reduce((s,m)=>s+(m.closedN||0),0);
-  const totalFtf=dm.reduce((s,m)=>s+(m.ftfN||0),0);
-  const ftfPct=totalClosed?(totalFtf/totalClosed*100):0;
-
-  // Weighted averages across all months
-  const avgResp=totalTix?dm.reduce((s,m)=>s+(m.ar*m.v),0)/totalTix:0;
-  const avgRes=totalTix?dm.reduce((s,m)=>s+(m.ard*m.v),0)/totalTix:0;
-  // SLA: weighted by ticket count per month
-  const totalFt=dm.reduce((s,m)=>{const r=m.fc/100*m.v;return s+r},0);
-  const totalSt=dm.reduce((s,m)=>{const r=m.sc/100*m.v;return s+r},0);
-  const frtPct=totalTix?(totalFt/totalTix*100):100;
-  const slaPct=totalTix?(totalSt/totalTix*100):100;
-
-  // CSAT aggregate
-  const allCsatScores=[];
-  dm.forEach(m=>{if(m.csatBk){for(let sc=1;sc<=4;sc++)for(let j=0;j<m.csatBk[sc];j++)allCsatScores.push(sc)}});
-  const avgCsat=allCsatScores.length?allCsatScores.reduce((a,b)=>a+b,0)/allCsatScores.length:null;
-  const csatCounts={4:0,3:0,2:0,1:0};
-  allCsatScores.forEach(v=>{if(csatCounts[v]!==undefined)csatCounts[v]++});
-
-  // CSAT label with count breakdown
-  let csatDisplay="\u2014",csatSuffix="",csatCol="var(--text-dim)";
-  if(avgCsat!==null){
-    csatDisplay=csatLabel(avgCsat);
-    csatCol=csatColor(avgCsat);
-    const topScore=avgCsat>=3.5?4:avgCsat>=2.5?3:avgCsat>=1.5?2:1;
-    csatSuffix=`${csatCounts[topScore]}/${allCsatScores.length} ratings`;
-  }
-
-  document.getElementById("sg").innerHTML="";
-  renderCharts();
-  renderTeamAll();
-}
-function killC(){Object.values(charts).forEach(c=>c.destroy());charts={}}
-function renderCharts(){
-  // Charts moved to Campaign tab - renderCampaignCharts() handles them now
+  // KPI stats and agent table removed — kept as no-op for compatibility
 }
 
 let campaignCharts={};
@@ -953,7 +891,7 @@ function killCampaignCharts(){Object.values(campaignCharts).forEach(c=>c.destroy
 function renderCampaignCharts(){
   const cl=document.getElementById("campaignClient").value;
   const ag=document.getElementById("campaignAgent").value;
-  const{data:dm,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther,topClients,topUsers}=getKPIData(cl,ag);
+  const{data:dm,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther}=getKPIData(cl,ag);
   if(!dm.length)return;killCampaignCharts();const lb=dm.map(d=>d.m);
   Chart.defaults.color="#506a8a";Chart.defaults.borderColor="rgba(0,149,200,0.08)";Chart.defaults.font.family="'Calibri','Arial',sans-serif";
   const co={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"}},y:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"}}}};
@@ -988,16 +926,6 @@ function renderCampaignCharts(){
   const dSlaBg=weekResSla>=90?"rgba(132,189,0,0.08)":weekResSla>=80?"rgba(251,158,0,0.08)":"rgba(255,92,92,0.08)";
   campaignCharts.dSla=new Chart(document.getElementById("cResSla"),{type:"line",data:{labels:lb,datasets:[{data:resSlaData,borderColor:dSlaColor,backgroundColor:dSlaBg,tension:.4,pointRadius:4,pointBackgroundColor:dSlaColor,pointBorderColor:"#001a3a",pointBorderWidth:2,borderWidth:2.5,fill:true,spanGaps:true}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,beginAtZero:true,max:105}}}});
 
-  // Top 5 Clients horizontal bar
-  const hBarOpts={responsive:true,maintainAspectRatio:false,indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"},beginAtZero:true},y:{ticks:{color:"#506a8a",font:{size:11}},grid:{display:false}}}};
-  if(topClients.length){
-    campaignCharts.topClients=new Chart(document.getElementById("cTopClients"),{type:"bar",data:{labels:topClients.map(c=>c[0]),datasets:[{data:topClients.map(c=>c[1]),backgroundColor:"rgba(0,149,200,0.5)",borderColor:"#0095C8",borderWidth:1,borderRadius:3}]},options:{...hBarOpts}});
-  }
-
-  // Top 5 Users horizontal bar
-  if(topUsers.length){
-    campaignCharts.topUsers=new Chart(document.getElementById("cTopUsers"),{type:"bar",data:{labels:topUsers.map(u=>u[0]),datasets:[{data:topUsers.map(u=>u[1]),backgroundColor:"rgba(162,155,254,0.5)",borderColor:"#a29bfe",borderWidth:1,borderRadius:3}]},options:{...hBarOpts}});
-  }
 }
 
 function populateCampaignFilters(){
@@ -1097,7 +1025,7 @@ function getKPIData(overrideCl,overrideAg){
   assignedFiltered.forEach(r=>{const cat=r.Ticket_Category||"Uncategorized";catCounts[cat]=(catCounts[cat]||0)+1});
   const topCats=Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
-  return{data:daily,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther,typeCounts,topCats,topClients:[],topUsers:[],source:ag?"agent":"all",agentName:ag};
+  return{data:daily,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther,typeCounts,topCats,source:ag?"agent":"all",agentName:ag};
 }
 
 // ═══════════ TECH SIDEBAR ═══════════
@@ -1513,9 +1441,11 @@ function buildAgentStats(){
 let teamAllSortCol="name",teamAllSortDir=1;
 let agentTimeFilter="today";
 function renderTeamAll(){
+  // Agent data table removed — function kept as no-op for compatibility
+  return;
   const container=document.getElementById("teamAllTable");
   if(!Object.keys(agentStats).length){
-    container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-dim)">Fetch active tickets to load data</div>';
+    container.innerHTML='';
     return;
   }
   const selAgent=document.getElementById("kpiAgent").value;
@@ -2099,16 +2029,7 @@ function updateLastSync(){
 }
 document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","commsTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",comms:"commsTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");if(tg==="comms")renderCommsBoard()})});
 
-document.getElementById("kpiClient").addEventListener("change",()=>{renderKPI()});
-document.getElementById("kpiAgent").addEventListener("change",()=>{renderKPI()});
-document.getElementById("campaignClient").addEventListener("change",()=>{renderCampaignCharts()});
 document.getElementById("campaignAgent").addEventListener("change",()=>{renderCampaignCharts()});
-
-// Agent comparison Today/This Week toggle
-document.getElementById("agentTimePeriod").addEventListener("change",function(){
-  agentTimeFilter=this.value;
-  renderTeamAll();
-});
 
 
 // File upload removed - using live data sync
