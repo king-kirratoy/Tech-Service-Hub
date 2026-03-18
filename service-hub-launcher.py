@@ -103,12 +103,13 @@ def load_baselines():
 # AUTH HELPERS
 # ═══════════════════════════════════════════════════════════
 
-def create_token(agent_name, role):
+def create_token(agent_name, role, original_iat=None):
     payload = {
         "agent_name": agent_name,
         "role": role,
         "iat": int(time.time()),
-        "exp": int(time.time()) + 86400  # 24 hour expiry
+        "exp": int(time.time()) + 86400,  # 24 hour expiry
+        "original_iat": original_iat or int(time.time())
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
@@ -294,6 +295,20 @@ def get_admins():
     if resp.status_code != 200:
         return jsonify({"error": "Failed to load admins"}), 502
     return jsonify([r["agent_name"] for r in resp.json() if r.get("agent_name")])
+
+
+@app.route("/api/refresh", methods=["POST"])
+@require_auth
+def refresh_token():
+    """Issue a fresh JWT if the current one is still valid."""
+    agent_name = request.user.get("agent_name", "")
+    role = request.user.get("role", "")
+    # Cap refresh chains at 7 days from original login
+    original_iat = request.user.get("original_iat", request.user.get("iat", 0))
+    if int(time.time()) - original_iat > 604800:  # 7 days
+        return jsonify({"error": "Session expired. Please log in again."}), 401
+    token = create_token(agent_name, role, original_iat=original_iat)
+    return jsonify({"token": token})
 
 
 @app.route("/health", methods=["GET"])

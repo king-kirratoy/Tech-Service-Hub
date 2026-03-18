@@ -402,6 +402,18 @@ if(authToken&&isTokenExpired(authToken)){authToken="";localStorage.removeItem("h
 
 function authH(){return{"Content-Type":"application/json","Authorization":"Bearer "+authToken}}
 
+async function refreshTokenIfNeeded(){
+  if(!authToken)return;
+  try{
+    const p=JSON.parse(atob(authToken.split(".")[1]));
+    const remaining=p.exp*1000-Date.now();
+    if(remaining>3600000)return; // more than 1 hour left, no refresh needed
+    const r=await fetch(PROXY_BASE+"/api/refresh",{method:"POST",headers:authH()});
+    if(r.ok){const d=await r.json();authToken=d.token;localStorage.setItem("hubToken",authToken)}
+    else if(r.status===401){authToken="";localStorage.removeItem("hubToken");applyLoginState()}
+  }catch(e){console.error("Token refresh error:",e)}
+}
+
 async function supaLogin(password){
   try{
     const r=await fetch(PROXY_BASE+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});
@@ -2155,7 +2167,7 @@ function startAutoRefresh(){
   if(autoRefreshOn)return;
   autoRefreshOn=true;
   fetchActiveNow();
-  autoRefreshTimer=setInterval(fetchActiveNow,60*1000);
+  autoRefreshTimer=setInterval(()=>{refreshTokenIfNeeded();fetchActiveNow()},60*1000);
 }
 function stopAutoRefresh(){
   if(!autoRefreshOn)return;
