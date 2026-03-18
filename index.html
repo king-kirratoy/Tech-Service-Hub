@@ -222,7 +222,53 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .robo-opt:hover{border-color:var(--blue);transform:scale(1.1)}
 .robo-opt.active{border-color:var(--green);box-shadow:0 0 8px rgba(132,189,0,0.4)}
 
-@media(max-width:768px){.chart-grid,.upload-panel{grid-template-columns:1fr}.cal-layout{flex-direction:column}.tech-sidebar{width:100%;position:static}.stat-grid{grid-template-columns:repeat(2,1fr)}}
+/* COMMS Board */
+.comms-board{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+.comms-slot{min-height:200px;border-radius:12px;border:1px dashed rgba(0,149,200,0.15);background:rgba(0,20,40,0.2);transition:all .3s;position:relative}
+.comms-slot.available{cursor:pointer;border-color:rgba(132,189,0,0.3);animation:slotGlow 2s ease-in-out infinite}
+.comms-slot.available:hover{border-color:var(--green);background:rgba(132,189,0,0.06);box-shadow:0 0 20px rgba(132,189,0,0.15)}
+.comms-slot.occupied{border:none;background:none;min-height:auto}
+@keyframes slotGlow{0%,100%{box-shadow:0 0 5px rgba(132,189,0,0.05)}50%{box-shadow:0 0 15px rgba(132,189,0,0.12)}}
+.comms-card{border-radius:12px;position:relative;overflow:hidden;height:100%;display:flex;flex-direction:column}
+.comms-card::after{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)}
+.comms-card-header{display:flex;align-items:center;gap:8px;padding:12px 12px 8px;position:relative}
+.comms-card-avatar{width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;background:rgba(0,15,35,0.6)}
+.comms-card-avatar canvas{width:32px;height:32px;image-rendering:pixelated}
+.comms-card-agent{font-size:11px;font-weight:700;color:var(--text);font-family:var(--font-heading);letter-spacing:0.5px;text-transform:uppercase;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comms-card-icon{font-size:16px;flex-shrink:0}
+.comms-card-body{padding:0 12px 8px;flex:1;overflow:hidden}
+.comms-card-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-family:var(--font-heading);letter-spacing:0.3px;text-transform:uppercase}
+.comms-card-text{font-size:11px;color:var(--text-muted);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+.comms-card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .2s}
+.comms-card:hover .comms-card-actions{opacity:1}
+.comms-card-actions button{background:rgba(0,20,40,0.8);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;padding:2px 6px;font-size:10px;transition:all .15s}
+.comms-card-actions button:hover{color:var(--text);border-color:var(--blue)}
+.comms-card-actions button.del-btn:hover{color:var(--danger);border-color:var(--danger)}
+.comms-reactions{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;border-top:1px solid rgba(255,255,255,0.06);min-height:30px;align-items:center}
+.comms-react-btn{background:rgba(0,20,40,0.6);border:1px solid rgba(0,149,200,0.12);border-radius:10px;padding:2px 6px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:3px;transition:all .15s;color:var(--text-muted);line-height:1.4}
+.comms-react-btn:hover{border-color:var(--blue);background:rgba(0,149,200,0.1)}
+.comms-react-btn.active{border-color:var(--green);background:rgba(132,189,0,0.1);color:var(--text)}
+.comms-react-btn .react-count{font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.comms-react-add{background:rgba(0,20,40,0.4);border:1px dashed rgba(0,149,200,0.15);border-radius:10px;padding:2px 6px;font-size:11px;cursor:pointer;color:var(--text-dim);transition:all .15s;position:relative}
+.comms-react-add:hover{border-color:var(--blue);color:var(--text-muted)}
+.comms-emoji-picker{display:none;position:absolute;bottom:100%;left:0;background:rgba(0,20,50,0.97);border:1px solid var(--border-bright);border-radius:8px;padding:6px;z-index:100;backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,0.5);white-space:nowrap}
+.comms-emoji-picker.open{display:flex;gap:2px}
+.comms-emoji-opt{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;font-size:16px;transition:all .15s;border:none;background:none}
+.comms-emoji-opt:hover{background:rgba(0,149,200,0.15);transform:scale(1.2)}
+/* COMMS card creator panel */
+.comms-creator{margin-bottom:22px}
+.comms-creator .glass{padding:20px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.comms-creator-preview{width:220px;flex-shrink:0}
+.comms-creator-fields{flex:1;min-width:250px;display:flex;flex-direction:column;gap:12px}
+.comms-creator-fields label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;display:block}
+.comms-creator-fields input,.comms-creator-fields textarea{background:rgba(0,20,40,0.8);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;width:100%;font-family:var(--font-body);outline:none}
+.comms-creator-fields input:focus,.comms-creator-fields textarea:focus{border-color:var(--blue)}
+.comms-creator-fields textarea{resize:vertical;min-height:60px;max-height:120px}
+.comms-icon-picker{display:flex;gap:6px;flex-wrap:wrap}
+.comms-icon-opt{width:32px;height:32px;border-radius:6px;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;background:rgba(0,20,40,0.8)}
+.comms-icon-opt:hover{border-color:var(--blue);transform:scale(1.1)}
+.comms-icon-opt.active{border-color:var(--green);box-shadow:0 0 8px rgba(132,189,0,0.4)}
+@media(max-width:768px){.chart-grid,.upload-panel{grid-template-columns:1fr}.cal-layout{flex-direction:column}.tech-sidebar{width:100%;position:static}.stat-grid{grid-template-columns:repeat(2,1fr)}.comms-board{grid-template-columns:repeat(2,1fr)}}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--navy-darker)}::-webkit-scrollbar-thumb{background:var(--navy-light);border-radius:3px}
 </style>
 </head>
@@ -244,6 +290,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 <symbol id="iw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
 <symbol id="iad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
 <symbol id="ibk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/></symbol>
+<symbol id="icomms" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.636 18.364a9 9 0 0 1 0-12.728"/><path d="M18.364 5.636a9 9 0 0 1 0 12.728"/><path d="M8.464 15.536a5 5 0 0 1 0-7.072"/><path d="M15.536 8.464a5 5 0 0 1 0 7.072"/><circle cx="12" cy="12" r="1"/></symbol>
 </defs></svg>
 <div class="ttm" id="dgm"></div></div>
 
@@ -276,6 +323,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>
+    <button class="tab" data-tab="comms"><svg style="width:16px;height:16px"><use href="#icomms"/></svg> Comms</button>
     <button class="tab" data-tab="campaign"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Campaign</button>
     <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Risk Monitor <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
@@ -365,6 +413,59 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       </div>
     </div>
   </div>
+  <!-- COMMS Tab -->
+  <div id="commsTab" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Comms</h2>
+        <p style="font-size:12px;color:var(--text-muted)">Team board — drop transmissions for your squad to see.</p>
+      </div>
+      <button class="btn" id="commsNewBtn" style="display:none;gap:8px"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Transmission</button>
+    </div>
+    <!-- Card Creator Panel -->
+    <div id="commsCreator" class="comms-creator hidden">
+      <div class="glass">
+        <div class="comms-creator-preview">
+          <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:block">Preview</label>
+          <div id="commsPreviewCard" style="width:200px"></div>
+        </div>
+        <div class="comms-creator-fields">
+          <div>
+            <label>Title</label>
+            <input type="text" id="commsCardTitle" placeholder="Transmission title..." maxlength="80">
+          </div>
+          <div>
+            <label>Message</label>
+            <textarea id="commsCardBody" placeholder="What does your squad need to know?" maxlength="500"></textarea>
+          </div>
+          <div>
+            <label>Icon</label>
+            <div id="commsIconPicker" class="comms-icon-picker"></div>
+          </div>
+          <div>
+            <label>Background Color</label>
+            <div id="commsBgColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div>
+            <label>Border Color</label>
+            <div id="commsBorderColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+            <button class="btn-accent" id="commsSaveBtn" style="padding:8px 16px;font-size:11px;width:fit-content">Deploy Transmission</button>
+            <button class="btn" id="commsCancelBtn" style="padding:8px 16px;font-size:11px">Cancel</button>
+          </div>
+          <span id="commsSaveStatus" style="font-size:10px;color:var(--text-muted)"></span>
+        </div>
+      </div>
+    </div>
+    <!-- The Board -->
+    <div id="commsBoard" class="comms-board"></div>
+    <div id="commsBoardEmpty" style="text-align:center;padding:40px 20px;color:var(--text-dim);font-size:13px;display:none">
+      <p style="margin-bottom:8px;font-size:24px;opacity:0.3">📡</p>
+      <p>No transmissions yet. Sign in to deploy the first one.</p>
+    </div>
+  </div>
+
   <div id="campaignTab" class="hidden">
     <div style="margin-bottom:20px">
       <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Campaign</h2>
@@ -2050,6 +2151,7 @@ function applyLoginState(){
     else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
   renderTeamAll();
+  renderCommsBoard();
 }
 // Gate login (main login screen)
 async function doGateLogin(){
@@ -2101,7 +2203,7 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden")})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isAdmin&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","commsTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",comms:"commsTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");if(tg==="comms")renderCommsBoard()})});
 
 document.getElementById("kpiClient").addEventListener("change",()=>{renderKPI()});
 document.getElementById("kpiAgent").addEventListener("change",()=>{renderKPI()});
@@ -2450,11 +2552,12 @@ async function loadAgentRobot(){
 
 
 
-// Load robot configs, admin list, and preview sprite on page load
+// Load robot configs, admin list, comms, and preview sprite on page load
 setTimeout(async()=>{
   allRobotConfigs=await loadAllRobots();
   adminAgentNames=await loadAdminAgents();
   loadAllHatSprites();
+  initComms();
 },1000);
 
 
@@ -3439,6 +3542,396 @@ const BF={
 // Color utility helpers for battlefield
 function darken(hex,amt){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgb(${Math.round(r*(1-amt))},${Math.round(g*(1-amt))},${Math.round(b*(1-amt))})`}
 function lighten(hex,amt){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgb(${Math.min(255,Math.round(r+(255-r)*amt))},${Math.min(255,Math.round(g+(255-g)*amt))},${Math.min(255,Math.round(b+(255-b)*amt))})`}
+
+// ═══════════ COMMS BOARD ═══════════
+const COMMS_ROWS=10,COMMS_COLS=5;
+const COMMS_REACTION_EMOJIS=["👍","🔥","😂","❤️","🎯","🚀","👀","💀","⚡","🙌"];
+const COMMS_ICONS=[
+  {id:"none",emoji:""},
+  {id:"megaphone",emoji:"📢"},{id:"warning",emoji:"⚠️"},{id:"fire",emoji:"🔥"},{id:"star",emoji:"⭐"},
+  {id:"rocket",emoji:"🚀"},{id:"wrench",emoji:"🔧"},{id:"shield",emoji:"🛡️"},{id:"bolt",emoji:"⚡"},
+  {id:"skull",emoji:"💀"},{id:"target",emoji:"🎯"},{id:"clock",emoji:"⏰"},{id:"flag",emoji:"🚩"},
+  {id:"lock",emoji:"🔒"},{id:"eye",emoji:"👁️"},{id:"bug",emoji:"🐛"},{id:"crown",emoji:"👑"},
+  {id:"sword",emoji:"⚔️"},{id:"bomb",emoji:"💣"},{id:"medal",emoji:"🏅"},{id:"ghost",emoji:"👻"},
+  {id:"diamond",emoji:"💎"},{id:"heart",emoji:"❤️"},{id:"pizza",emoji:"🍕"},{id:"coffee",emoji:"☕"},
+  {id:"music",emoji:"🎵"},{id:"thumbsup",emoji:"👍"},{id:"terminal",emoji:"💻"},{id:"wifi",emoji:"📡"},
+  {id:"server",emoji:"🖥️"},{id:"checkmark",emoji:"✅"},{id:"helmet",emoji:"⛑️"},{id:"flash",emoji:"🔦"}
+];
+const COMMS_CARD_COLORS=[
+  {id:"navy",hex:"#0a1e3d",label:"Deep Navy"},
+  {id:"darkblue",hex:"#002855",label:"Navy"},
+  {id:"midnight",hex:"#1a1a3e",label:"Midnight"},
+  {id:"charcoal",hex:"#2d2d3d",label:"Charcoal"},
+  {id:"darkgreen",hex:"#0d2b1a",label:"Forest"},
+  {id:"darkteal",hex:"#0a2a2a",label:"Deep Teal"},
+  {id:"darkpurple",hex:"#1e0a3a",label:"Shadow Purple"},
+  {id:"darkred",hex:"#2a0a0a",label:"Blood Red"},
+  {id:"darkamber",hex:"#2a1f0a",label:"Dark Amber"},
+  {id:"slate",hex:"#1e2a3a",label:"Slate"},
+  {id:"onyx",hex:"#1a1a1a",label:"Onyx"},
+  {id:"steel",hex:"#2a3040",label:"Steel"},
+];
+const COMMS_BORDER_COLORS=[
+  {id:"blue",hex:"#0095C8",label:"Cyber Blue"},
+  {id:"green",hex:"#84BD00",label:"Neon Green"},
+  {id:"red",hex:"#ff5c5c",label:"Blaze Red"},
+  {id:"purple",hex:"#a29bfe",label:"Phantom Purple"},
+  {id:"orange",hex:"#fb9e00",label:"Volt Orange"},
+  {id:"cyan",hex:"#00E5FF",label:"Ice Cyan"},
+  {id:"pink",hex:"#ff6b9d",label:"Plasma Pink"},
+  {id:"gold",hex:"#fcdc00",label:"Solar Gold"},
+  {id:"white",hex:"#e8e8e8",label:"Ghost White"},
+  {id:"teal",hex:"#2aa198",label:"Teal"},
+  {id:"crimson",hex:"#dc143c",label:"Crimson"},
+  {id:"lime",hex:"#32cd32",label:"Acid Lime"},
+];
+
+let commsCards=[];
+let commsPlacingMode=false;
+let commsSelectedSlot=null;
+let commsEditingId=null;
+let commsCreatorState={title:"",body:"",icon:"none",bgColor:"navy",borderColor:"blue"};
+
+// Draw robot head on a small canvas (crop top portion of sprite)
+function drawRobotHead(canvas,config){
+  const ctx=canvas.getContext("2d");
+  const w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const c=ROBOT_COLORS.find(x=>x.id===config.color)||ROBOT_COLORS[0];
+  const hatId=config.accessory||"none";
+  const tinted=getTintedHatSprite(hatId,c.hex);
+  if(tinted){
+    // Crop the head region: roughly top 45% of the 369px sprite
+    const srcY=0,srcH=Math.round(SPRITE_FRAME_H*0.45);
+    const srcX=SPRITE_INSET,srcW=SPRITE_FRAME_W-SPRITE_INSET*2;
+    ctx.drawImage(tinted,srcX,srcY,srcW,srcH,0,0,w,h);
+  }else{
+    ctx.fillStyle=c.hex;
+    ctx.fillRect(w*0.2,h*0.1,w*0.6,h*0.8);
+  }
+}
+
+async function loadCommsCards(){
+  try{
+    const r=await fetchRetry(PROXY_BASE+"/api/comms-cards",{headers:authH()});
+    if(!r||!r.ok){commsCards=[];return}
+    commsCards=await r.json();
+  }catch(e){console.error("Comms load error:",e);commsCards=[]}
+}
+
+function renderCommsBoard(){
+  const board=document.getElementById("commsBoard");
+  const emptyMsg=document.getElementById("commsBoardEmpty");
+  const newBtn=document.getElementById("commsNewBtn");
+  if(!board)return;
+
+  // Show/hide new button based on login
+  if(loggedInAgent)newBtn.style.display="";
+  else newBtn.style.display="none";
+
+  // Build slot map
+  const slotMap={};
+  commsCards.forEach(c=>{slotMap[c.grid_row+","+c.grid_col]=c});
+
+  const hasCards=commsCards.length>0;
+  // If no cards and not placing, show empty state
+  if(!hasCards&&!commsPlacingMode){
+    board.style.display="none";
+    emptyMsg.style.display="";
+    return;
+  }
+  board.style.display="";
+  emptyMsg.style.display="none";
+
+  // Determine how many rows to show (at least enough for all cards + 1 row, max COMMS_ROWS)
+  let maxRow=0;
+  commsCards.forEach(c=>{if(c.grid_row>maxRow)maxRow=c.grid_row});
+  const visibleRows=commsPlacingMode?COMMS_ROWS:Math.min(COMMS_ROWS,Math.max(maxRow+2,2));
+
+  board.innerHTML="";
+  for(let r=0;r<visibleRows;r++){
+    for(let c=0;c<COMMS_COLS;c++){
+      const key=r+","+c;
+      const card=slotMap[key];
+      const slot=document.createElement("div");
+      slot.className="comms-slot"+(card?" occupied":"")+(commsPlacingMode&&!card?" available":"");
+      slot.dataset.row=r;
+      slot.dataset.col=c;
+      if(card){
+        slot.appendChild(buildCommsCard(card));
+      }else if(commsPlacingMode){
+        slot.addEventListener("click",()=>selectCommsSlot(r,c));
+        slot.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;opacity:0.3;font-size:11px;color:var(--green);font-weight:600;letter-spacing:1px">+ PLACE HERE</div>';
+      }
+      board.appendChild(slot);
+    }
+  }
+}
+
+function buildCommsCard(card){
+  const bgHex=(COMMS_CARD_COLORS.find(x=>x.id===card.bg_color)||COMMS_CARD_COLORS[0]).hex;
+  const borderHex=(COMMS_BORDER_COLORS.find(x=>x.id===card.border_color)||COMMS_BORDER_COLORS[0]).hex;
+  const iconObj=COMMS_ICONS.find(x=>x.id===card.icon);
+  const iconEmoji=iconObj?iconObj.emoji:"";
+
+  const el=document.createElement("div");
+  el.className="comms-card";
+  el.style.background=`linear-gradient(135deg,${bgHex},${adjustAlpha(bgHex,0.8)})`;
+  el.style.border=`1px solid ${borderHex}50`;
+  el.style.boxShadow=`0 0 12px ${borderHex}20,inset 0 1px 0 ${borderHex}15`;
+
+  // Get robot config for card author
+  const rCfg=getRobotConfigForAgent(card.agent_name);
+
+  // Actions (edit/delete for owner, delete for admin)
+  let actionsHtml="";
+  if(loggedInAgent&&(loggedInAgent===card.agent_name)){
+    actionsHtml=`<div class="comms-card-actions"><button onclick="editCommsCard('${card.id}')" title="Edit">✏️</button><button class="del-btn" onclick="deleteCommsCard('${card.id}')" title="Delete">✕</button></div>`;
+  }else if(isAdmin){
+    actionsHtml=`<div class="comms-card-actions"><button class="del-btn" onclick="deleteCommsCard('${card.id}')" title="Delete">✕</button></div>`;
+  }
+
+  // Reactions
+  const reactionMap={};
+  (card.reactions||[]).forEach(rx=>{
+    if(!reactionMap[rx.emoji])reactionMap[rx.emoji]={count:0,agents:[],mine:false};
+    reactionMap[rx.emoji].count++;
+    reactionMap[rx.emoji].agents.push(rx.agent_name);
+    if(rx.agent_name===loggedInAgent)reactionMap[rx.emoji].mine=true;
+  });
+  let reactionsHtml="";
+  Object.keys(reactionMap).forEach(emoji=>{
+    const rx=reactionMap[emoji];
+    reactionsHtml+=`<button class="comms-react-btn${rx.mine?" active":""}" onclick="toggleCommsReaction('${card.id}','${emoji}')" title="${rx.agents.join(", ")}">${emoji}<span class="react-count">${rx.count}</span></button>`;
+  });
+  // Add reaction button (only for signed-in)
+  const addReactHtml=loggedInAgent?`<span class="comms-react-add" onclick="toggleEmojiPicker(event,'${card.id}')">+<div class="comms-emoji-picker" id="ep-${card.id}">${COMMS_REACTION_EMOJIS.map(e=>`<button class="comms-emoji-opt" onclick="event.stopPropagation();toggleCommsReaction('${card.id}','${e}')">${e}</button>`).join("")}</div></span>`:"";
+
+  const canvasId="comms-avatar-"+card.id;
+  el.innerHTML=`
+    ${actionsHtml}
+    <div class="comms-card-header">
+      <div class="comms-card-avatar"><canvas id="${canvasId}" width="64" height="64"></canvas></div>
+      <span class="comms-card-agent">${esc(card.agent_name)}</span>
+      ${iconEmoji?`<span class="comms-card-icon">${iconEmoji}</span>`:""}
+    </div>
+    <div class="comms-card-body">
+      ${card.title?`<div class="comms-card-title">${esc(card.title)}</div>`:""}
+      ${card.body?`<div class="comms-card-text">${esc(card.body)}</div>`:""}
+    </div>
+    <div class="comms-reactions">${reactionsHtml}${addReactHtml}</div>
+  `;
+
+  // Draw robot head after DOM insert via microtask
+  setTimeout(()=>{
+    const cvs=document.getElementById(canvasId);
+    if(cvs)drawRobotHead(cvs,rCfg);
+  },0);
+
+  return el;
+}
+
+function adjustAlpha(hex,factor){
+  // Darken a hex color slightly
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return`rgb(${Math.round(r*factor)},${Math.round(g*factor)},${Math.round(b*factor)})`;
+}
+
+function getRobotConfigForAgent(agentName){
+  const cfg=allRobotConfigs.find(r=>r.agent_name===agentName);
+  if(cfg)return{color:cfg.body_color||"blue",eyes:cfg.eye_style||"visor",antenna:cfg.antenna||"none",accessory:cfg.accessory||"none",robot_name:cfg.robot_name||""};
+  return{...DEFAULT_ROBOT};
+}
+
+function toggleEmojiPicker(event,cardId){
+  event.stopPropagation();
+  const picker=document.getElementById("ep-"+cardId);
+  if(!picker)return;
+  // Close all other pickers
+  document.querySelectorAll(".comms-emoji-picker.open").forEach(p=>{if(p!==picker)p.classList.remove("open")});
+  picker.classList.toggle("open");
+}
+
+// Close emoji pickers on outside click
+document.addEventListener("click",()=>{document.querySelectorAll(".comms-emoji-picker.open").forEach(p=>p.classList.remove("open"))});
+
+async function toggleCommsReaction(cardId,emoji){
+  if(!loggedInAgent)return;
+  // Close picker
+  document.querySelectorAll(".comms-emoji-picker.open").forEach(p=>p.classList.remove("open"));
+  try{
+    const r=await fetch(PROXY_BASE+"/api/comms-reactions",{method:"POST",headers:authH(),body:JSON.stringify({card_id:cardId,emoji})});
+    if(r.ok){
+      await loadCommsCards();
+      renderCommsBoard();
+    }
+  }catch(e){console.error("Reaction error:",e)}
+}
+
+// New Transmission flow
+document.getElementById("commsNewBtn").addEventListener("click",()=>{
+  commsEditingId=null;
+  commsCreatorState={title:"",body:"",icon:"none",bgColor:"navy",borderColor:"blue"};
+  commsPlacingMode=true;
+  commsSelectedSlot=null;
+  document.getElementById("commsCreator").classList.add("hidden");
+  renderCommsBoard();
+});
+
+function selectCommsSlot(row,col){
+  commsSelectedSlot={row,col};
+  commsPlacingMode=false;
+  openCommsCreator();
+}
+
+function openCommsCreator(){
+  const panel=document.getElementById("commsCreator");
+  panel.classList.remove("hidden");
+  // Populate pickers
+  buildCommsColorPicker("commsBgColorPicker",COMMS_CARD_COLORS,"bgColor");
+  buildCommsColorPicker("commsBorderColorPicker",COMMS_BORDER_COLORS,"borderColor");
+  buildCommsIconPicker();
+  // Restore fields
+  document.getElementById("commsCardTitle").value=commsCreatorState.title;
+  document.getElementById("commsCardBody").value=commsCreatorState.body;
+  updateCommsPreview();
+  renderCommsBoard();
+}
+
+function buildCommsColorPicker(containerId,colors,field){
+  const container=document.getElementById(containerId);
+  container.innerHTML="";
+  colors.forEach(c=>{
+    const opt=document.createElement("div");
+    opt.className="robo-opt"+(commsCreatorState[field]===c.id?" active":"");
+    opt.style.background=c.hex;
+    opt.title=c.label;
+    opt.addEventListener("click",()=>{
+      commsCreatorState[field]=c.id;
+      container.querySelectorAll(".robo-opt").forEach(o=>o.classList.remove("active"));
+      opt.classList.add("active");
+      updateCommsPreview();
+    });
+    container.appendChild(opt);
+  });
+}
+
+function buildCommsIconPicker(){
+  const container=document.getElementById("commsIconPicker");
+  container.innerHTML="";
+  COMMS_ICONS.forEach(ic=>{
+    const opt=document.createElement("div");
+    opt.className="comms-icon-opt"+(commsCreatorState.icon===ic.id?" active":"");
+    opt.textContent=ic.emoji||"—";
+    opt.title=ic.id;
+    opt.addEventListener("click",()=>{
+      commsCreatorState.icon=ic.id;
+      container.querySelectorAll(".comms-icon-opt").forEach(o=>o.classList.remove("active"));
+      opt.classList.add("active");
+      updateCommsPreview();
+    });
+    container.appendChild(opt);
+  });
+}
+
+function updateCommsPreview(){
+  const preview=document.getElementById("commsPreviewCard");
+  if(!preview)return;
+  const fakeCard={
+    id:"preview",
+    agent_name:loggedInAgent||"Agent",
+    title:document.getElementById("commsCardTitle").value||"",
+    body:document.getElementById("commsCardBody").value||"",
+    icon:commsCreatorState.icon,
+    bg_color:commsCreatorState.bgColor,
+    border_color:commsCreatorState.borderColor,
+    reactions:[]
+  };
+  preview.innerHTML="";
+  preview.appendChild(buildCommsCard(fakeCard));
+}
+
+// Live preview updates
+document.getElementById("commsCardTitle").addEventListener("input",updateCommsPreview);
+document.getElementById("commsCardBody").addEventListener("input",updateCommsPreview);
+
+// Save card
+document.getElementById("commsSaveBtn").addEventListener("click",async()=>{
+  const title=document.getElementById("commsCardTitle").value.trim();
+  const body=document.getElementById("commsCardBody").value.trim();
+  if(!title&&!body){document.getElementById("commsSaveStatus").textContent="Add a title or message.";return}
+  if(!commsSelectedSlot&&!commsEditingId){document.getElementById("commsSaveStatus").textContent="Select a slot first.";return}
+
+  const payload={
+    title,body,
+    icon:commsCreatorState.icon,
+    bg_color:commsCreatorState.bgColor,
+    border_color:commsCreatorState.borderColor
+  };
+
+  try{
+    let r;
+    if(commsEditingId){
+      r=await fetch(PROXY_BASE+"/api/comms-cards/"+commsEditingId,{method:"PUT",headers:authH(),body:JSON.stringify(payload)});
+    }else{
+      payload.grid_row=commsSelectedSlot.row;
+      payload.grid_col=commsSelectedSlot.col;
+      r=await fetch(PROXY_BASE+"/api/comms-cards",{method:"POST",headers:authH(),body:JSON.stringify(payload)});
+    }
+    if(r.ok){
+      document.getElementById("commsCreator").classList.add("hidden");
+      commsSelectedSlot=null;
+      commsEditingId=null;
+      commsCreatorState={title:"",body:"",icon:"none",bgColor:"navy",borderColor:"blue"};
+      await loadCommsCards();
+      renderCommsBoard();
+    }else{
+      const err=await r.json().catch(()=>({}));
+      document.getElementById("commsSaveStatus").textContent=err.error||"Failed to save.";
+    }
+  }catch(e){console.error("Comms save error:",e);document.getElementById("commsSaveStatus").textContent="Network error."}
+});
+
+// Cancel
+document.getElementById("commsCancelBtn").addEventListener("click",()=>{
+  document.getElementById("commsCreator").classList.add("hidden");
+  commsPlacingMode=false;
+  commsSelectedSlot=null;
+  commsEditingId=null;
+  commsCreatorState={title:"",body:"",icon:"none",bgColor:"navy",borderColor:"blue"};
+  renderCommsBoard();
+});
+
+// Edit card
+function editCommsCard(cardId){
+  const card=commsCards.find(c=>c.id===cardId);
+  if(!card||card.agent_name!==loggedInAgent)return;
+  commsEditingId=cardId;
+  commsSelectedSlot={row:card.grid_row,col:card.grid_col};
+  commsCreatorState={
+    title:card.title||"",
+    body:card.body||"",
+    icon:card.icon||"none",
+    bgColor:card.bg_color||"navy",
+    borderColor:card.border_color||"blue"
+  };
+  openCommsCreator();
+}
+
+// Delete card
+async function deleteCommsCard(cardId){
+  if(!confirm("Delete this transmission?"))return;
+  try{
+    const r=await fetch(PROXY_BASE+"/api/comms-cards/"+cardId,{method:"DELETE",headers:authH()});
+    if(r.ok){await loadCommsCards();renderCommsBoard()}
+  }catch(e){console.error("Comms delete error:",e)}
+}
+
+// Load comms on initial data load
+async function initComms(){
+  await loadCommsCards();
+  renderCommsBoard();
+}
 
 </script>
 </body>
