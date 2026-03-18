@@ -581,9 +581,9 @@ const PC={Critical:"#fb9e00",High:"#ffb74d",Medium:"#0095C8",Low:"#6C6C6C"};
 const SC={New:"#88ed61","In Progress":"#f2f400","Pending Reply":"#e27300","Client Update":"#ef0a90","Re-Assigned":"#653294","Pending AM":"#0c797d","Pending Vendor":"#aea1ff","Pending Opportunity":"#194d33","Re-Opened":"#f44e3b",Scheduled:"#999999",Monitoring:"#009ce0","License Update":"#fda1ff",Licensing:"#fda1ff","Pending Followup":"#e27300"};
 const SHIFTS=[{l:"7:30 AM — 4:30 PM",s:7.5,e:16.5},{l:"8:30 AM — 5:30 PM",s:8.5,e:17.5}];
 const LUNCHES=[{l:"11:15 — 12:15",s:11.25,e:12.25},{l:"12:30 — 1:30",s:12.5,e:13.5},{l:"1:45 — 2:45",s:13.75,e:14.75}];
-let AGENT_LUNCH={};
+let AGENT_LUNCH={},AGENT_SHIFT={};
 async function loadAgentSchedules(){
-  try{const r=await fetchRetry(PROXY_BASE+"/api/agent-schedules",{headers:authH()});if(!r||!r.ok)return;const d=await r.json();AGENT_LUNCH={};d.forEach(s=>{AGENT_LUNCH[s.agent_name]=s.lunch_slot!=null?s.lunch_slot:1})}catch(e){console.error("Agent schedules load error:",e)}
+  try{const r=await fetchRetry(PROXY_BASE+"/api/agent-schedules",{headers:authH()});if(!r||!r.ok)return;const d=await r.json();AGENT_LUNCH={};AGENT_SHIFT={};d.forEach(s=>{AGENT_LUNCH[s.agent_name]=s.lunch_slot!=null?s.lunch_slot:1;AGENT_SHIFT[s.agent_name]=s.shift_slot!=null?s.shift_slot:1})}catch(e){console.error("Agent schedules load error:",e)}
 }
 let techSched={};
 function getSched(id){if(techSched[id])return techSched[id];return{ss:SHIFTS[1].s,se:SHIFTS[1].e,ls:LUNCHES[1].s,le:LUNCHES[1].e,si:1,li:1}}
@@ -703,11 +703,12 @@ function procAct(){
   roster.forEach(t=>{
     const shift=parseShift(agentShifts[t.name]);
     const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;
+    const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;
     if(shift){
-      const si=Math.abs(shift.ss-SHIFTS[0].s)<Math.abs(shift.ss-SHIFTS[1].s)?0:1;
-      techSched[t.id]={ss:shift.ss,se:shift.se,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li};
+      const detectedSi=Math.abs(shift.ss-SHIFTS[0].s)<Math.abs(shift.ss-SHIFTS[1].s)?0:1;
+      techSched[t.id]={ss:shift.ss,se:shift.se,ls:LUNCHES[li].s,le:LUNCHES[li].e,si:detectedSi,li};
     }else if(!techSched[t.id]){
-      techSched[t.id]={ss:SHIFTS[1].s,se:SHIFTS[1].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si:1,li};
+      techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li};
     }
   });
   // Restore selection by name
