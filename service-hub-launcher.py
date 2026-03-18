@@ -286,7 +286,7 @@ def get_commanders():
     """Get list of commander agent names."""
     resp = supabase_request("GET", "agent_logins", params={
         "select": "agent_name",
-        "role": "eq.commander"
+        "role": "eq.admin"
     })
     if resp.status_code != 200:
         return jsonify({"error": "Failed to load commanders"}), 502
@@ -441,7 +441,7 @@ def delete_comms_card(card_id):
     })
     if check.status_code != 200 or not check.json():
         return jsonify({"error": "Card not found"}), 404
-    if check.json()[0]["agent_name"] != agent_name and role != "commander":
+    if check.json()[0]["agent_name"] != agent_name and role != "admin":
         return jsonify({"error": "Not authorized"}), 403
 
     # Delete reactions first
