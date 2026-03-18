@@ -2152,15 +2152,10 @@ function applyLoginState(){
   const robotCustomizer=document.getElementById("robotCustomizer");
   if(isAdmin){
     riskTab.style.display="";
-    st.textContent="Admin View";st.classList.remove("missing");st.classList.add("set");
-    loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
-    pwdInput.style.display="none";
     if(agentLabelEl)agentLabelEl.style.display="";
     if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
     if(campAgentLabelEl)campAgentLabelEl.style.display="";
     if(campAgentSelectEl){campAgentSelectEl.style.display="";campAgentSelectEl.value="";}
-    if(loggedInAgent){robotCustomizer.classList.remove("hidden");loadAgentRobot()}
-    else{robotCustomizer.classList.add("hidden")}
   }else{
     riskTab.style.display="none";
     if(riskTab.classList.contains("active")){
@@ -2173,18 +2168,20 @@ function applyLoginState(){
     if(agentSelectEl)agentSelectEl.style.display="none";
     if(campAgentLabelEl)campAgentLabelEl.style.display="none";
     if(campAgentSelectEl)campAgentSelectEl.style.display="none";
-    if(loggedInAgent){
-      st.textContent="Logged in as "+loggedInAgent;st.classList.remove("missing");st.classList.add("set");
-      loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
-      pwdInput.style.display="none";
-      robotCustomizer.classList.remove("hidden");
-      loadAgentRobot();
-    }else{
-      st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
-      loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
-      pwdInput.style.display="";pwdInput.value="";
-      robotCustomizer.classList.add("hidden");
-    }
+  }
+  // Login panel state — always accessible, content changes based on login
+  if(loggedInAgent){
+    const label=isAdmin?"Admin View":"Logged in as "+loggedInAgent;
+    st.textContent=label;st.classList.remove("missing");st.classList.add("set");
+    loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
+    pwdInput.style.display="none";
+    robotCustomizer.classList.remove("hidden");
+    loadAgentRobot();
+  }else{
+    st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
+    loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
+    pwdInput.style.display="";pwdInput.value="";
+    robotCustomizer.classList.add("hidden");
   }
   // Update default workload selection based on login state
   if(roster.length){
