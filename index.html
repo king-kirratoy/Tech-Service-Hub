@@ -509,9 +509,10 @@ function pD(s){if(!s)return null;s=String(s).trim();if(/^\d{4}-\d{2}-\d{2}T\d{2}
 function mK(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function mL(k){const[y,m]=k.split("-");return new Date(y,m-1).toLocaleDateString("en-US",{month:"short",year:"2-digit"})}
 function san(s){return(s||"").replace(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+(?:\s*(?:Corp|Inc|LLC|Ltd|Co|Company|YMCA|Networks|Management|Senior|Nutrition|Netting|Fence|Empire|Standard|Dial|Patriot|Nation|IAMS|OPTK))?\.?/g,"[Client]")}
+function esc(s){return(s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
 // CSAT: 4=Excellent, 3=Good, 2=Okay, 1=Poor
 function haloUrl(id){return`https://halo.lutz.us/ticket?id=${String(id).replace(/\D/g,"")}`}
-function haloLink(id){return`<a href="${haloUrl(id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${id}</a>`}
+function haloLink(id){return`<a href="${haloUrl(id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(id)}</a>`}
 function csatLabel(v){if(v>=3.5)return"Excellent";if(v>=2.5)return"Good";if(v>=1.5)return"Okay";return"Poor"}
 function csatColor(v){if(v>=3.5)return"var(--green)";if(v>=2.5)return"var(--blue)";if(v>=1.5)return"var(--warning)";return"var(--danger)"}
 function bizH(start,end){if(!start||!end||end<=start)return 0;let t=0;const c=new Date(start);while(c<end){const w=c.getDay();if(w>=1&&w<=5){const ch=c.getHours()+c.getMinutes()/60;const ed=new Date(c);ed.setHours(0,0,0,0);ed.setDate(ed.getDate()+1);const es=Math.max(ch,BIZ_S);let ee;if(end<ed)ee=Math.min(end.getHours()+end.getMinutes()/60,BIZ_E);else ee=BIZ_E;if(ee>es)t+=(ee-es)*60}const n=new Date(c);n.setHours(0,0,0,0);n.setDate(n.getDate()+1);n.setHours(Math.floor(BIZ_S),(BIZ_S%1)*60,0,0);c.setTime(n.getTime())}return t/60}
@@ -957,10 +958,10 @@ function renderCampaignCharts(){
 function populateCampaignFilters(){
   const sel=document.getElementById("campaignClient");
   const clients=[...new Set(histRaw.map(r=>r.Client).filter(Boolean))].sort();
-  sel.innerHTML=`<option value="">— All Clients (${clients.length}) —</option>`+clients.map(c=>`<option value="${c}">${c}</option>`).join("");
+  sel.innerHTML=`<option value="">— All Clients (${clients.length}) —</option>`+clients.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
   const aSel=document.getElementById("campaignAgent");
   const agents=[...new Set(histRaw.map(r=>r.Agent_Resolved||r.Agent_Assigned).filter(a=>a&&a!=="Unassigned"&&!a.includes("Bot")))].sort();
-  aSel.innerHTML=`<option value="">— All Agents (${agents.length}) —</option>`+agents.map(a=>`<option value="${a}">${a}</option>`).join("");
+  aSel.innerHTML=`<option value="">— All Agents (${agents.length}) —</option>`+agents.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("");
 }
 
 // ═══════════ KPI CLIENT SELECTOR ═══════════
@@ -968,13 +969,13 @@ function populateKPIClients(){
   const sel=document.getElementById("kpiClient");
   const prevClient=sel.value;
   const clients=[...new Set(histRaw.map(r=>r.Client).filter(Boolean))].sort();
-  sel.innerHTML=`<option value="">— All Clients (${clients.length}) —</option>`+clients.map(c=>`<option value="${c}">${c}</option>`).join("");
+  sel.innerHTML=`<option value="">— All Clients (${clients.length}) —</option>`+clients.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
   if(prevClient)sel.value=prevClient;
   const aSel=document.getElementById("kpiAgent");
   const prevAgent=aSel.value;
   const agents=[...new Set(histRaw.map(r=>r.Agent_Resolved||r.Agent_Assigned).filter(a=>a&&a!=="Unassigned"&&!a.includes("Bot")))].sort();
-  aSel.innerHTML=`<option value="">— All Agents (${agents.length}) —</option>`+agents.map(a=>`<option value="${a}">${a}</option>`).join("");
-  if(prevAgent)aSel.value=prevAgent;
+  aSel.innerHTML=`<option value="">— All Agents (${agents.length}) —</option>`+agents.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("");
+  if(prevAgent)sel.value=prevAgent;
 }
 
 
@@ -1133,7 +1134,7 @@ function renderSidebar(){
     const totalHrs=tt.reduce((s,x)=>s+x.est,0);
     // Total hours color: >=6 red, >=4 orange, <4 green
     const totalHrsColor=totalHrs>=6?"#fb9e00":totalHrs>=4?"#fcdc00":"#84BD00";
-    let html=`<div class="tech-option ${a?"active":""}" data-t="${t.id}"><div class="tech-radio" style="${a?`background:${t.color};border-color:${t.color}`:""}"><div class="tech-radio-inner" style="background:white"></div></div><div style="min-width:0;flex:1"><div class="tname">${t.name}</div><div class="thours"><span style="color:${tixColor}">${totalTix} act</span> · <span style="color:${totalHrsColor}">${totalHrs.toFixed(1)}h est</span></div><div class="thours"><span style="color:${newTodayColor}">${newToday} new</span> · <span style="color:${hoursColor}">${hoursToday.toFixed(1)}h due</span></div></div>${gearBtn}</div>`;
+    let html=`<div class="tech-option ${a?"active":""}" data-t="${t.id}"><div class="tech-radio" style="${a?`background:${t.color};border-color:${t.color}`:""}"><div class="tech-radio-inner" style="background:white"></div></div><div style="min-width:0;flex:1"><div class="tname">${esc(t.name)}</div><div class="thours"><span style="color:${tixColor}">${totalTix} act</span> · <span style="color:${totalHrsColor}">${totalHrs.toFixed(1)}h est</span></div><div class="thours"><span style="color:${newTodayColor}">${newToday} new</span> · <span style="color:${hoursColor}">${hoursToday.toFixed(1)}h due</span></div></div>${gearBtn}</div>`;
     if(isReal&&openSchedTech===t.id){
       const s=getSched(t.id),si=s.si!=null?s.si:1,li=s.li!=null?s.li:1;
       html+=`<div class="tech-sched-panel" data-sp="${t.id}"><label>Shift</label><select data-t="${t.id}" data-f="s">${sO.replace(`value="${si}"`,`value="${si}" selected`)}</select><label>Lunch</label><select data-t="${t.id}" data-f="l">${lO.replace(`value="${li}"`,`value="${li}" selected`)}</select></div>`;
@@ -1197,22 +1198,22 @@ function renderCal(){
       const popSide=(di>=3?"pop-left":"")+" "+(tk.startHour>=14?"pop-bottom":"");
       const riskClass=tk.nrdAtRisk?"nrd-risk":"";
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
-      h+=`<div class="tt ${riskClass}" data-id="${tk.id}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
+      h+=`<div class="tt ${riskClass}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${tk.client}</span><span class="ti">${haloLink(tk.id)}</span></div>
-          <div class="tt-row2"><span class="tit">${tk.title}</span><span class="te">${tk.est}h</span></div>
+          <div class="tt-row1"><span class="tc">${esc(tk.client)}</span><span class="ti">${haloLink(tk.id)}</span></div>
+          <div class="tt-row2"><span class="tit">${esc(tk.title)}</span><span class="te">${tk.est}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
-          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${tk.id}${waitLabel}</span></div>
-          <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${tk.status}</span></div>
-          <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${tk.client}</span></div>
-          <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${tk.category}</span></div>
-          <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${tk.type}</span></div>
+          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}${waitLabel}</span></div>
+          <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${esc(tk.status)}</span></div>
+          <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${esc(tk.client)}</span></div>
+          <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(tk.category)}</span></div>
+          <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${esc(tk.type)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${tk.timeWorked.toFixed(1)}h</span></div>
           <div class="pop-row"><span class="pop-label">Est. Remaining</span><span class="pop-val" style="color:var(--green)">${tk.est}h</span></div>
           <div class="pop-row"><span class="pop-label">Next Response</span><span class="pop-val" style="${nrdColor}">${nrd}</span></div>
-          <div class="pop-summary">${tk.title}</div>
+          <div class="pop-summary">${esc(tk.title)}</div>
           ${recentActSnip?`<div class="pop-detail">${recentActSnip}${tk.recentActions&&tk.recentActions.length>400?"...":""}</div>`:""}
         </div>
       </div>`;
@@ -1246,17 +1247,17 @@ function renderCal(){
         const popSide=(di>=3?"pop-left":"")+" pop-bottom";
         h+=`<div class="tt tt-closed" style="height:${closedHt}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${ct.client}</span><span class="ti">${haloLink(ct.id)}</span></div>
-          <div class="tt-row2"><span class="tit">${ct.title}</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
+          <div class="tt-row1"><span class="tc">${esc(ct.client)}</span><span class="ti">${haloLink(ct.id)}</span></div>
+          <div class="tt-row2"><span class="tit">${esc(ct.title)}</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">Closed ${closedDate}</div>
-          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${ct.id}</span></div>
+          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(ct.id)}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:#999">Closed</span></div>
-          <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${ct.client}</span></div>
-          <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${ct.category}</span></div>
+          <div class="pop-row"><span class="pop-label">Client</span><span class="pop-val">${esc(ct.client)}</span></div>
+          <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(ct.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${ct.timeWorked.toFixed(1)}h</span></div>
-          <div class="pop-summary">${ct.title}</div>
+          <div class="pop-summary">${esc(ct.title)}</div>
           ${recentActSnip?`<div class="pop-detail">${recentActSnip}</div>`:""}
         </div>
       </div>`;
@@ -1358,7 +1359,7 @@ function renderPlayerCards(){
     <div class="pcard">
       <div class="pcard-header">
         <div>
-          <div class="pcard-name">${c.tech.name}</div>
+          <div class="pcard-name">${esc(c.tech.name)}</div>
           <div class="pcard-level">Lvl ${c.level}</div>
         </div>
         <span class="pcard-rank" style="color:${c.rankColor};background:${c.rankBg};border:1px solid ${c.rankColor}30${c.rank==="NIGHTMARE"?";text-shadow:0 0 8px "+c.rankColor+";box-shadow:0 0 12px "+c.rankColor+"40":""}">${c.rank}</span>
@@ -1373,7 +1374,7 @@ function renderPlayerCards(){
       </div>
       <div style="text-align:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
         <canvas id="${canvasId}" width="160" height="120" style="image-rendering:pixelated"></canvas>
-        <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:0">${rName}</div>
+        <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:0">${esc(rName)}</div>
       </div>
     </div>`;
   }).join("");
@@ -1408,7 +1409,7 @@ function renderPlayerCards(){
     <div class="pcard">
       <div class="pcard-header">
         <div>
-          <div class="pcard-name">${name}</div>
+          <div class="pcard-name">${esc(name)}</div>
           <div class="pcard-level">Lvl MAX</div>
         </div>
         <span class="pcard-rank" style="color:${cmdRankColor};background:${cmdRankBg};border:1px solid ${cmdRankColor}30;text-shadow:0 0 8px ${cmdRankColor};box-shadow:0 0 12px ${cmdRankColor}40">COMMANDER</span>
@@ -1423,7 +1424,7 @@ function renderPlayerCards(){
       </div>
       <div style="text-align:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
         <canvas id="${canvasId}" width="160" height="120" style="image-rendering:pixelated"></canvas>
-        <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:0">${rName}</div>
+        <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:0">${esc(rName)}</div>
       </div>
     </div>`;
   }).join("");
@@ -1452,7 +1453,7 @@ function renderCap(){
     const bc=bh>TU_MAX?"var(--danger)":bh>=TU_MIN?"var(--green)":"var(--warning)";
     const tc=bh>TU_MAX?"#fb9e00":bh>=TU_MIN?"#84BD00":"#fcdc00";
     const st=bh>TU_MAX?"Over":bh>=TU_MIN?"On target":"Under";
-    return`<div class="glass cap-card"><div class="cname"><div class="tdot" style="background:${t.color};color:${t.color}"></div><span>${t.name}</span></div><div class="cstats"><span>Today: <b>${tt.length} tix</b></span><span><b>${bh.toFixed(1)}h</b> / ${TU_MAX}h</span></div><div class="cbar"><div class="cbar-fill" style="width:${Math.min(ut,100)}%;background:${bc}"></div></div><div class="cfooter"><span class="mono" style="font-weight:700;color:${tc}">${st}</span><span style="color:var(--text-dim)">${rem.toFixed(1)}h avail</span></div></div>`
+    return`<div class="glass cap-card"><div class="cname"><div class="tdot" style="background:${t.color};color:${t.color}"></div><span>${esc(t.name)}</span></div><div class="cstats"><span>Today: <b>${tt.length} tix</b></span><span><b>${bh.toFixed(1)}h</b> / ${TU_MAX}h</span></div><div class="cbar"><div class="cbar-fill" style="width:${Math.min(ut,100)}%;background:${bc}"></div></div><div class="cfooter"><span class="mono" style="font-weight:700;color:${tc}">${st}</span><span style="color:var(--text-dim)">${rem.toFixed(1)}h avail</span></div></div>`
   }).join("");
 }
 
@@ -1954,7 +1955,7 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
   tickets.forEach(tk=>{
     const sev=tk.severity==="high"?"sev-high":tk.severity==="med"?"sev-med":"sev-low";
     const dateCreated=tk.dateCreated?tk.dateCreated.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+tk.dateCreated.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"—";
-    h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-client" title="${tk.client||""}">${tk.client||"—"}</span><span class="risk-user" title="${tk.user||""}">${tk.user||"—"}</span><span class="risk-title" title="${tk.title}">${tk.title}</span><span class="risk-agent">${tk.agent||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
+    h+=`<div class="risk-row ${sev}"><span class="risk-id">${haloLink(tk.id)}</span><span class="risk-client" title="${esc(tk.client)||""}">${esc(tk.client)||"—"}</span><span class="risk-user" title="${esc(tk.user)||""}">${esc(tk.user)||"—"}</span><span class="risk-title" title="${esc(tk.title)}">${esc(tk.title)}</span><span class="risk-agent">${esc(tk.agent)||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
   });
   h+=`</div></div>`;
   return h;
@@ -2144,7 +2145,7 @@ async function fetchHaloReport(reportName,onSuccess){
       if(e.message==="Failed to fetch"){
         ss2.innerHTML='<span style="color:var(--danger)">✗ Can\'t connect to launcher</span>';
       }else{
-        ss2.innerHTML=`<span style="color:var(--danger)">✗ ${e.message}</span>`;
+        ss2.innerHTML=`<span style="color:var(--danger)">✗ ${esc(e.message)}</span>`;
       }
     }
   }
@@ -3219,7 +3220,7 @@ const BF={
         else if(w.level>=18)rank='<span style="color:#84BD00">ULTRA VIOLENCE</span>';
         else if(w.level>=11)rank='<span style="color:#fcdc00">HURT ME PLENTY</span>';
         else rank='<span style="color:#fcdc00">ASPIRING SLAYER</span>';
-        html=`<div style="font-weight:700;font-size:12px;margin-bottom:4px;color:${w.color}">${w.name}</div>`;
+        html=`<div style="font-weight:700;font-size:12px;margin-bottom:4px;color:${w.color}">${esc(w.name)}</div>`;
         html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:6px">Lvl ${w.level} \u00b7 ${rank}</div>`;
         html+=`<div style="font-size:9px;margin-bottom:2px">HP: <span style="color:${w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00"}">${w.hp}/100</span></div>`;
         html+=`<div style="font-size:9px">Active: ${tt.length} \u00b7 Est: ${tt.reduce((s2,x)=>s2+x.est,0).toFixed(1)}h</div>`;
@@ -3227,10 +3228,10 @@ const BF={
         const tk=found.entity.ticketRef;
         if(tk){
           const stC=SC[tk.status]||"var(--text-dim)";
-          html=`<div style="font-weight:700;font-size:11px;color:var(--blue);margin-bottom:4px">${tk.id}</div>`;
-          html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">${tk.client}</div>`;
-          html+=`<div style="font-size:9px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${tk.title}</div>`;
-          html+=`<div style="font-size:9px"><span style="color:${stC}">${tk.status}</span> \u00b7 ${tk.est}h est</div>`;
+          html=`<div style="font-weight:700;font-size:11px;color:var(--blue);margin-bottom:4px">${esc(tk.id)}</div>`;
+          html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">${esc(tk.client)}</div>`;
+          html+=`<div style="font-size:9px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(tk.title)}</div>`;
+          html+=`<div style="font-size:9px"><span style="color:${stC}">${esc(tk.status)}</span> \u00b7 ${tk.est}h est</div>`;
         }
       }
       tooltip.innerHTML=html;tooltip.style.display="block";
