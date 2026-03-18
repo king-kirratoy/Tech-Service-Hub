@@ -15,7 +15,7 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: PROXY_SECRET
+      - key: ALLOWED_ORIGIN
         sync: false
       - key: WIDGET_KEY
         sync: false

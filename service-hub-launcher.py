@@ -29,10 +29,11 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
 WIDGET_KEY = os.environ.get("WIDGET_KEY", "")
+ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://king-kirratoy.github.io")
 
 # Allowed origins for CORS and X-Frame-Options
 ALLOWED_ORIGINS = [
-    "https://king-kirratoy.github.io",
+    ALLOWED_ORIGIN,
     "https://halo.lutz.us",
 ]
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
