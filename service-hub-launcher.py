@@ -135,7 +135,7 @@ def gotrue_create_user(email, password, agent_name, role):
 
 
 def create_token(agent_name, role, original_iat=None):
-    """Legacy token creation — used only for widget auth fallback."""
+    """Legacy token creation — fallback when GoTrue sign-in is unavailable."""
     secret = JWT_SECRET or SUPABASE_JWT_SECRET
     payload = {
         "agent_name": agent_name,
