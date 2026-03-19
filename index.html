@@ -33,12 +33,14 @@
 
 <div class="header">
   <div class="header-left"><div class="header-icon"><svg style="width:20px;height:20px;stroke:var(--navy-darker);fill:none"><use href="#ic"/></svg></div><div><h1>Tech Service Hub</h1><div class="header-sub"><span class="status-dot"></span>Squad Command Center</div></div></div>
-  <div id="headerStats" style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace"></div>
+  <div style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace">
+    <span id="syncStatus" style="font-size:9px;color:var(--blue)"></span>
+    <span id="lastSync" style="font-size:9px;color:var(--text-dim)"></span>
+    <div id="headerStats" style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-muted)"></div>
+  </div>
   <div style="display:flex;align-items:center;gap:14px">
-    <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace"></span>
-    <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
     <span id="loggedInUser" style="font-size:10px;color:var(--green);font-family:'IBM Plex Mono',monospace;font-weight:600;display:none"></span>
-    <div style="position:relative">
+    <div id="loginBtnWrap" style="position:relative">
       <button class="btn" id="loginBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> <span id="loginBtnLabel">Login</span></button>
       <div id="loginPanel" class="login-dropdown hidden">
         <input type="text" id="loginName" placeholder="Name..." autocomplete="name" spellcheck="false">
@@ -71,18 +73,17 @@
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>
     <button class="tab" data-tab="comms"><svg style="width:16px;height:16px"><use href="#icomms"/></svg> Comms</button>
     <button class="tab" data-tab="campaign"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Campaign</button>
-    <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Risk Monitor <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
+    <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Radar <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
 
-  <!-- Risk Monitor Tab -->
+  <!-- Radar Tab -->
   <div id="riskTab" class="hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div>
-        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Risk Monitor</h2>
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Radar</h2>
         <p style="font-size:12px;color:var(--text-muted)">Active tickets requiring attention. Auto-detected from your data.</p>
       </div>
     </div>
-    <div class="stat-grid" id="riskSummary" style="margin-bottom:20px"></div>
     <div class="stat-grid" id="riskInsights" style="margin-bottom:20px"></div>
     <div id="riskSections"></div>
   </div>
