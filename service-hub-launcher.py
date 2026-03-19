@@ -147,12 +147,56 @@ def create_token(agent_name, role, original_iat=None):
     return jwt.encode(payload, secret, algorithm="HS256")
 
 
+def _fetch_jwks():
+    """Fetch JWKS public keys from Supabase for ES256 verification."""
+    if not SUPABASE_URL:
+        return None
+    try:
+        resp = requests.get(f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json", timeout=10)
+        if resp.status_code == 200:
+            from jwt import PyJWKSet
+            return PyJWKSet.from_dict(resp.json())
+    except Exception as e:
+        log.warning("Failed to fetch JWKS: %s", e)
+    return None
+
+_jwks_cache = {"keys": None, "fetched_at": 0}
+
+def _get_jwks():
+    """Return cached JWKS, refreshing every 5 minutes."""
+    now = time.time()
+    if _jwks_cache["keys"] is None or now - _jwks_cache["fetched_at"] > 300:
+        keys = _fetch_jwks()
+        if keys is not None:
+            _jwks_cache["keys"] = keys
+            _jwks_cache["fetched_at"] = now
+    return _jwks_cache["keys"]
+
+
 def _decode_supabase_jwt(token):
     """Decode a Supabase-issued JWT and return a normalized user dict."""
-    payload = jwt.decode(
-        token, SUPABASE_JWT_SECRET, algorithms=["HS256"],
-        audience="authenticated",
-    )
+    # Peek at the token header to determine algorithm
+    header = jwt.get_unverified_header(token)
+    alg = header.get("alg", "HS256")
+
+    if alg.startswith("ES") or alg.startswith("RS") or alg.startswith("PS"):
+        # Asymmetric algorithm — verify with JWKS public key
+        jwks = _get_jwks()
+        if jwks is None:
+            raise jwt.InvalidTokenError("Could not fetch JWKS for asymmetric token")
+        kid = header.get("kid")
+        jwk = jwks[kid] if kid else jwks.keys[0]
+        payload = jwt.decode(
+            token, jwk.key, algorithms=[alg],
+            audience="authenticated",
+        )
+    else:
+        # Symmetric (HS256) — verify with JWT secret
+        payload = jwt.decode(
+            token, SUPABASE_JWT_SECRET, algorithms=["HS256"],
+            audience="authenticated",
+        )
+
     meta = payload.get("user_metadata", {})
     return {
         "agent_name": meta.get("agent_name", ""),
