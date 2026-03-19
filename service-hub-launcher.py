@@ -137,7 +137,7 @@ def gotrue_create_user(email, password, agent_name, role):
 
 def create_token(agent_name, role, original_iat=None):
     """Legacy token creation — used only for widget auth fallback."""
-    secret = SUPABASE_JWT_SECRET or JWT_SECRET
+    secret = JWT_SECRET or SUPABASE_JWT_SECRET
     payload = {
         "agent_name": agent_name,
         "role": role,
