@@ -467,61 +467,34 @@ async function _initSupabase(){
 // Fire immediately — awaited before first auth use in boot sequence
 const _sbReady=_initSupabase();
 
-function isTokenExpired(token){
-  try{const p=JSON.parse(atob(token.split(".")[1]));return!p.exp||p.exp*1000<Date.now()}catch(e){return true}
-}
+// authToken is a login-state flag only ("1" = logged in, "" = logged out).
+// The actual JWT lives in an HttpOnly cookie set by the backend.
+let authToken="";
 
-let authToken=localStorage.getItem("hubToken")||"";
-if(authToken&&isTokenExpired(authToken)){authToken="";localStorage.removeItem("hubToken")}
-
-function authH(){return{"Content-Type":"application/json","Authorization":"Bearer "+authToken}}
+function authH(){return{"Content-Type":"application/json"}}
 
 async function refreshTokenIfNeeded(){
   if(!authToken)return;
-  // If we have a Supabase client, let it handle refresh
-  if(_sb){
-    try{
-      const{data,error}=await _sb.auth.getSession();
-      if(!error&&data.session){
-        // supabase-js auto-refreshes; just grab the current token
-        authToken=data.session.access_token;
-        localStorage.setItem("hubToken",authToken);
-        return;
-      }
-      // No Supabase session — fall through to legacy refresh
-    }catch(e){console.error("Supabase refresh error:",e)}
-  }
-  // Legacy refresh path
   try{
-    const p=JSON.parse(atob(authToken.split(".")[1]));
-    const remaining=p.exp*1000-Date.now();
-    if(remaining>3600000)return;
-    const r=await fetch(PROXY_BASE+"/api/refresh",{method:"POST",headers:authH()});
-    if(r.ok){const d=await r.json();authToken=d.token||d.access_token;localStorage.setItem("hubToken",authToken)}
-    else if(r.status===401){authToken="";localStorage.removeItem("hubToken");applyLoginState()}
+    const r=await fetch(PROXY_BASE+"/api/refresh",{method:"POST",credentials:"include",headers:authH()});
+    if(r.status===401){authToken="";loggedInAgent=null;isCommander=false;stopAutoRefresh();applyLoginState()}
   }catch(e){console.error("Token refresh error:",e)}
 }
 
 async function supaLogin(agentName,password){
-  await _sbReady;
   try{
-    const r=await fetch(PROXY_BASE+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({agent_name:agentName,password})});
+    const r=await fetch(PROXY_BASE+"/api/login",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({agent_name:agentName,password})});
     if(!r.ok){const err=await r.json().catch(()=>({}));return{error:err.error||"Login failed"}}
     const d=await r.json();
-    // Supabase Auth response (has access_token + refresh_token)
-    if(d.access_token&&d.refresh_token&&_sb){
-      await _sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});
-      authToken=d.access_token;
-    }else{
-      // Legacy response (has token)
-      authToken=d.token||d.access_token;
-    }
-    localStorage.setItem("hubToken",authToken);
+    // Tokens are now in HttpOnly cookies set by the server.
+    // Just record login state and return metadata.
+    authToken="1";
     return{agent_name:d.agent_name,role:d.role};
   }catch(e){console.error("Login error:",e);return{error:"Cannot reach server"}}
 }
 
 async function fetchRetry(url,opts={},retries=3,delay=1500){
+  opts={credentials:"include",...opts};
   for(let i=0;i<=retries;i++){
     try{const r=await fetch(url,opts);if(r.ok)return r;if(r.status===401)return r;if(i<retries)await new Promise(ok=>setTimeout(ok,delay*(i+1)))}catch(e){if(i===retries)throw e;await new Promise(ok=>setTimeout(ok,delay*(i+1)))}
   }
@@ -533,7 +506,7 @@ async function loadRobotConfig(agentName){
 }
 
 async function saveRobotConfig(agentName,config){
-  try{const r=await fetch(PROXY_BASE+"/api/robot",{method:"POST",headers:authH(),body:JSON.stringify(config)});return r.ok}catch(e){console.error("Robot save error:",e);return false}
+  try{const r=await fetch(PROXY_BASE+"/api/robot",{method:"POST",credentials:"include",headers:authH(),body:JSON.stringify(config)});return r.ok}catch(e){console.error("Robot save error:",e);return false}
 }
 
 async function loadAllRobots(){
@@ -1697,8 +1670,8 @@ document.getElementById("commanderPwd").addEventListener("keydown",(e)=>{
 });
 document.getElementById("commanderLogoutBtn").addEventListener("click",async()=>{
   isCommander=false;loggedInAgent=null;
-  if(_sb)await _sb.auth.signOut().catch(()=>{});
-  authToken="";localStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();
+  await fetch(PROXY_BASE+"/api/logout",{method:"POST",credentials:"include"}).catch(()=>{});
+  authToken="";stopAutoRefresh();applyLoginState();
 });
 // Last sync timestamp
 function updateLastSync(){
@@ -1715,9 +1688,9 @@ async function fetchHaloReport(reportName,onSuccess){
   const ss=document.getElementById("syncStatus");
   if(ss){ss.textContent="Fetching data...";ss.style.color="var(--blue)"}
   try{
-    const r=await fetch(PROXY_BASE+"/api/active",{headers:authH()});
+    const r=await fetch(PROXY_BASE+"/api/active",{credentials:"include",headers:authH()});
     if(r.status===401){
-      authToken="";localStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();return;
+      authToken="";loggedInAgent=null;isCommander=false;stopAutoRefresh();applyLoginState();return;
     }
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
@@ -1766,33 +1739,19 @@ function stopAutoRefresh(){
 
 // ═══════════ SESSION RESTORE ═══════════
 (async function restoreSession(){
-  await _sbReady;
-  // Try restoring Supabase session if available
-  if(_sb&&!authToken){
-    try{
-      const{data}=await _sb.auth.getSession();
-      if(data.session){
-        authToken=data.session.access_token;
-        localStorage.setItem("hubToken",authToken);
-        const meta=data.session.user?.user_metadata||{};
-        if(meta.agent_name){
-          loggedInAgent=meta.agent_name;
-          isCommander=meta.role==="admin";
-        }
+  // Check for an existing session via the HttpOnly cookie.
+  // /api/me returns 200+identity if the cookie is valid, 401 otherwise.
+  try{
+    const r=await fetch(PROXY_BASE+"/api/me",{credentials:"include"});
+    if(r.ok){
+      const d=await r.json();
+      if(d.agent_name){
+        authToken="1";
+        loggedInAgent=d.agent_name;
+        isCommander=d.role==="admin";
       }
-    }catch(e){console.error("Session restore error:",e)}
-  }
-  if(authToken){
-    // Validate token with a lightweight API call before loading data
-    try{
-      const test=await fetch(PROXY_BASE+"/api/agent-schedules",{headers:authH()});
-      if(test.status===401){
-        // Token is stale — clear and show login gate
-        authToken="";localStorage.removeItem("hubToken");loggedInAgent=null;isCommander=false;
-        if(_sb)await _sb.auth.signOut().catch(()=>{});
-      }
-    }catch(e){/* network error — keep token, try anyway */}
-  }
+    }
+  }catch(e){/* network error — stay logged out */}
   if(authToken){
     await loadAgentSchedules();
     allRobotConfigs=await loadAllRobots();
@@ -3230,7 +3189,7 @@ async function toggleCommsReaction(cardId,emoji){
   // Close picker
   document.querySelectorAll(".comms-emoji-picker.open").forEach(p=>p.classList.remove("open"));
   try{
-    const r=await fetch(PROXY_BASE+"/api/comms-reactions",{method:"POST",headers:authH(),body:JSON.stringify({card_id:cardId,emoji})});
+    const r=await fetch(PROXY_BASE+"/api/comms-reactions",{method:"POST",credentials:"include",headers:authH(),body:JSON.stringify({card_id:cardId,emoji})});
     if(r.ok){
       await loadCommsCards();
       renderCommsBoard();
@@ -3345,11 +3304,11 @@ document.getElementById("commsSaveBtn").addEventListener("click",async()=>{
   try{
     let r;
     if(commsEditingId){
-      r=await fetch(PROXY_BASE+"/api/comms-cards/"+commsEditingId,{method:"PUT",headers:authH(),body:JSON.stringify(payload)});
+      r=await fetch(PROXY_BASE+"/api/comms-cards/"+commsEditingId,{method:"PUT",credentials:"include",headers:authH(),body:JSON.stringify(payload)});
     }else{
       payload.grid_row=commsSelectedSlot.row;
       payload.grid_col=commsSelectedSlot.col;
-      r=await fetch(PROXY_BASE+"/api/comms-cards",{method:"POST",headers:authH(),body:JSON.stringify(payload)});
+      r=await fetch(PROXY_BASE+"/api/comms-cards",{method:"POST",credentials:"include",headers:authH(),body:JSON.stringify(payload)});
     }
     if(r.ok){
       document.getElementById("commsCreator").classList.add("hidden");
@@ -3380,7 +3339,7 @@ document.getElementById("commsDeleteBtn").addEventListener("click",async()=>{
   if(!commsEditingId)return;
   if(!confirm("Delete this transmission?"))return;
   try{
-    const r=await fetch(PROXY_BASE+"/api/comms-cards/"+commsEditingId,{method:"DELETE",headers:authH()});
+    const r=await fetch(PROXY_BASE+"/api/comms-cards/"+commsEditingId,{method:"DELETE",credentials:"include",headers:authH()});
     if(r.ok){
       document.getElementById("commsCreator").classList.add("hidden");
       commsPlacingMode=false;

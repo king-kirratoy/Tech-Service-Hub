@@ -221,10 +221,21 @@ def _decode_legacy_jwt(token):
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
-            return jsonify({"error": "Missing or invalid Authorization header"}), 401
-        token = auth_header[7:]
+        # CSRF guard: reject state-changing requests from unexpected origins.
+        # Browsers auto-send cookies cross-origin, so we verify the Origin header.
+        if request.method not in ("GET", "OPTIONS"):
+            origin = request.headers.get("Origin", "")
+            if origin and origin not in ALLOWED_ORIGINS:
+                return jsonify({"error": "Forbidden"}), 403
+
+        # Cookie-first; fall back to Authorization header (backwards compat)
+        token = request.cookies.get("hub_token")
+        if not token:
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+        if not token:
+            return jsonify({"error": "Not authenticated"}), 401
         # Supabase JWT only
         user = None
         is_supabase_jwt = False
@@ -248,6 +259,26 @@ def require_auth(f):
         request.auth_token = token if is_supabase_jwt else None
         return f(*args, **kwargs)
     return decorated
+
+
+def _set_auth_cookies(response, session):
+    """Attach HttpOnly auth cookies to a response."""
+    response.set_cookie(
+        "hub_token", session["access_token"],
+        httponly=True, secure=True, samesite="None",
+        max_age=session.get("expires_in", 3600),
+    )
+    response.set_cookie(
+        "hub_refresh", session["refresh_token"],
+        httponly=True, secure=True, samesite="None",
+        max_age=60 * 60 * 24 * 7,  # 7 days
+    )
+
+
+def _clear_auth_cookies(response):
+    """Remove auth cookies from a response."""
+    response.set_cookie("hub_token", "", httponly=True, secure=True, samesite="None", max_age=0)
+    response.set_cookie("hub_refresh", "", httponly=True, secure=True, samesite="None", max_age=0)
 
 
 def supabase_request(method, table, params=None, body=None, auth_token=None):
@@ -331,13 +362,13 @@ def login():
     if auth_resp.status_code == 200:
         session = auth_resp.json()
         log.info("Supabase Auth login: %s", agent["agent_name"])
-        return jsonify({
-            "access_token": session.get("access_token"),
-            "refresh_token": session.get("refresh_token"),
-            "expires_in": session.get("expires_in", 3600),
+        response = make_response(jsonify({
             "agent_name": agent["agent_name"],
             "role": agent["role"],
-        })
+            "expires_in": session.get("expires_in", 3600),
+        }))
+        _set_auth_cookies(response, session)
+        return response
 
     LOGIN_ATTEMPTS[ip].append(time.time())
     log.warning("Failed login for %s from IP %s (GoTrue status %d)",
@@ -435,9 +466,8 @@ def get_commanders():
 @app.route("/api/refresh", methods=["POST"])
 @require_auth
 def refresh_token():
-    """Refresh a Supabase session using a refresh_token, or legacy JWT refresh."""
-    data = request.get_json(silent=True) or {}
-    refresh_tok = data.get("refresh_token", "")
+    """Refresh a Supabase session using the hub_refresh cookie."""
+    refresh_tok = request.cookies.get("hub_refresh")
 
     # Supabase refresh path
     if refresh_tok:
@@ -446,14 +476,12 @@ def refresh_token():
         })
         if resp.status_code == 200:
             session = resp.json()
-            return jsonify({
-                "access_token": session.get("access_token"),
-                "refresh_token": session.get("refresh_token"),
-                "expires_in": session.get("expires_in", 3600),
-            })
+            response = make_response(jsonify({"ok": True}))
+            _set_auth_cookies(response, session)
+            return response
         return jsonify({"error": "Refresh failed — please log in again."}), 401
 
-    # Legacy refresh fallback
+    # Legacy refresh fallback (no refresh cookie present)
     agent_name = request.user.get("agent_name", "")
     role = request.user.get("role", "")
     original_iat = request.user.get("original_iat", request.user.get("iat", 0))
@@ -674,6 +702,24 @@ def get_config():
     return jsonify({
         "supabase_url": SUPABASE_URL,
         "supabase_anon_key": SUPABASE_ANON_KEY,
+    })
+
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    """Clear auth cookies and end the session."""
+    response = make_response(jsonify({"ok": True}))
+    _clear_auth_cookies(response)
+    return response
+
+
+@app.route("/api/me", methods=["GET"])
+@require_auth
+def get_me():
+    """Return the current user's identity (used for session restore)."""
+    return jsonify({
+        "agent_name": request.user.get("agent_name", ""),
+        "role": request.user.get("role", ""),
     })
 
 
