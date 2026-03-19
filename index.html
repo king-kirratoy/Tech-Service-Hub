@@ -487,14 +487,14 @@ async function refreshTokenIfNeeded(){
   if(_sb){
     try{
       const{data,error}=await _sb.auth.getSession();
-      if(error||!data.session){
-        authToken="";localStorage.removeItem("hubToken");applyLoginState();return;
+      if(!error&&data.session){
+        // supabase-js auto-refreshes; just grab the current token
+        authToken=data.session.access_token;
+        localStorage.setItem("hubToken",authToken);
+        return;
       }
-      // supabase-js auto-refreshes; just grab the current token
-      authToken=data.session.access_token;
-      localStorage.setItem("hubToken",authToken);
+      // No Supabase session — fall through to legacy refresh
     }catch(e){console.error("Supabase refresh error:",e)}
-    return;
   }
   // Legacy refresh path
   try{
