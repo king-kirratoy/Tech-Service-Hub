@@ -574,7 +574,6 @@ function pD(s){if(!s)return null;s=String(s).trim();if(/^\d{4}-\d{2}-\d{2}T\d{2}
 function mK(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function mL(k){const[y,m]=k.split("-");return new Date(y,m-1).toLocaleDateString("en-US",{month:"short",year:"2-digit"})}
 function esc(s){return(s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
-function haloLink(id){return esc(id)}
 function bizH(start,end){if(!start||!end||end<=start)return 0;let t=0;const c=new Date(start);while(c<end){const w=c.getDay();if(w>=1&&w<=5){const ch=c.getHours()+c.getMinutes()/60;const ed=new Date(c);ed.setHours(0,0,0,0);ed.setDate(ed.getDate()+1);const es=Math.max(ch,BIZ_S);let ee;if(end<ed)ee=Math.min(end.getHours()+end.getMinutes()/60,BIZ_E);else ee=BIZ_E;if(ee>es)t+=(ee-es)*60}const n=new Date(c);n.setHours(0,0,0,0);n.setDate(n.getDate()+1);n.setHours(Math.floor(BIZ_S),(BIZ_S%1)*60,0,0);c.setTime(n.getTime())}return t/60}
 function bizD(s,e){return bizH(s,e)/BIZ_D}
 // ═══════════ HISTORICAL PROCESSING ═══════════
@@ -1129,7 +1128,7 @@ function renderCal(){
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
       h+=`<div class="tt ${riskClass}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${esc(tk.category)}</span><span class="ti">${haloLink(tk.id)}</span></div>
+          <div class="tt-row1"><span class="tc">${esc(tk.category)}</span><span class="ti">${esc(tk.id)}</span></div>
           <div class="tt-row2"><span class="tit" style="color:${stC}">${esc(tk.status)}</span><span class="te">${tk.est}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
@@ -1172,7 +1171,7 @@ function renderCal(){
         const popSide=(di>=3?"pop-left":"")+" pop-bottom";
         h+=`<div class="tt tt-closed" style="height:${closedHt}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${esc(ct.category)}</span><span class="ti">${haloLink(ct.id)}</span></div>
+          <div class="tt-row1"><span class="tc">${esc(ct.category)}</span><span class="ti">${esc(ct.id)}</span></div>
           <div class="tt-row2"><span class="tit" style="color:#999">Closed</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
@@ -3135,13 +3134,6 @@ function buildCommsCard(card){
     reactionMap[rx.emoji].agents.push(rx.agent_name);
     if(rx.agent_name===loggedInAgent)reactionMap[rx.emoji].mine=true;
   });
-  let reactionsHtml="";
-  Object.keys(reactionMap).forEach(emoji=>{
-    const rx=reactionMap[emoji];
-    reactionsHtml+=`<button class="comms-react-btn${rx.mine?" active":""}" onclick="toggleCommsReaction('${card.id}','${emoji}')" title="${rx.agents.join(", ")}">${emoji}<span class="react-count">${rx.count}</span></button>`;
-  });
-  // Add reaction button (only for signed-in)
-  const addReactHtml=loggedInAgent?`<span class="comms-react-add" onclick="toggleEmojiPicker(event,'${card.id}')">+<div class="comms-emoji-picker" id="ep-${card.id}">${COMMS_REACTION_EMOJIS.map(e=>`<button class="comms-emoji-opt" onclick="event.stopPropagation();toggleCommsReaction('${card.id}','${e}')">${e}</button>`).join("")}</div></span>`:"";
 
   const canvasId="comms-avatar-"+card.id;
   el.innerHTML=`
@@ -3154,8 +3146,51 @@ function buildCommsCard(card){
       ${card.title?`<div class="comms-card-title">${esc(card.title)}</div>`:""}
       ${card.body?`<div class="comms-card-text">${esc(card.body)}</div>`:""}
     </div>
-    <div class="comms-reactions">${reactionsHtml}${addReactHtml}${isOwner?`<button class="comms-edit-btn" onclick="editCommsCard('${card.id}')" title="Edit">✏️</button>`:""}</div>
+    <div class="comms-reactions"></div>
   `;
+
+  // Build reaction buttons via DOM to avoid inline handlers
+  const reactionsEl=el.querySelector(".comms-reactions");
+  Object.keys(reactionMap).forEach(emoji=>{
+    const rx=reactionMap[emoji];
+    const btn=document.createElement("button");
+    btn.className="comms-react-btn"+(rx.mine?" active":"");
+    btn.title=rx.agents.join(", ");
+    btn.innerHTML=emoji+`<span class="react-count">${rx.count}</span>`;
+    btn.addEventListener("click",()=>toggleCommsReaction(card.id,emoji));
+    reactionsEl.appendChild(btn);
+  });
+
+  // Add-reaction picker (signed-in agents only)
+  if(loggedInAgent){
+    const addSpan=document.createElement("span");
+    addSpan.className="comms-react-add";
+    addSpan.textContent="+";
+    addSpan.addEventListener("click",(e)=>toggleEmojiPicker(e,card.id));
+
+    const picker=document.createElement("div");
+    picker.className="comms-emoji-picker";
+    picker.id="ep-"+card.id;
+    COMMS_REACTION_EMOJIS.forEach(emoji=>{
+      const eBtn=document.createElement("button");
+      eBtn.className="comms-emoji-opt";
+      eBtn.textContent=emoji;
+      eBtn.addEventListener("click",(e)=>{e.stopPropagation();toggleCommsReaction(card.id,emoji)});
+      picker.appendChild(eBtn);
+    });
+    addSpan.appendChild(picker);
+    reactionsEl.appendChild(addSpan);
+  }
+
+  // Edit button for card owner
+  if(isOwner){
+    const editBtn=document.createElement("button");
+    editBtn.className="comms-edit-btn";
+    editBtn.title="Edit";
+    editBtn.textContent="✏️";
+    editBtn.addEventListener("click",()=>editCommsCard(card.id));
+    reactionsEl.appendChild(editBtn);
+  }
 
   // Draw robot head after DOM insert via microtask
   setTimeout(()=>{
