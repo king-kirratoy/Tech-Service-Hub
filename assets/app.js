@@ -1257,7 +1257,7 @@ async function fetchHaloReport(reportName,onSuccess){
     onSuccess(rows);
     // Set sync status after banner rebuild
     const ss2=document.getElementById("syncStatus");
-    if(ss2){ss2.innerHTML='<span style="color:var(--green)">✓ Sync Active</span>'}
+    if(ss2){ss2.innerHTML='<b style="color:var(--green)">✓ Sync Active</b>'}
   }catch(e){
     const ss2=document.getElementById("syncStatus");
     if(ss2){
