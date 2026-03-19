@@ -6,6 +6,7 @@
 <title>Tech Service Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{--navy:#002855;--navy-deep:#001a3a;--navy-darker:#00112a;--navy-light:#003670;--green:#84BD00;--green-dim:#6a9700;--green-glow2:rgba(132,189,0,0.06);--lime:#9CE200;--gray:#6C6C6C;--ltgray:#F2F2F2;--medgray:#A7A7A7;--blue:#0095C8;--surface:rgba(0,40,85,0.45);--border:rgba(0,149,200,0.15);--border-bright:rgba(0,149,200,0.3);--text:#eaf2ff;--text-muted:#8aa4c4;--text-dim:#506a8a;--danger:#ff5c5c;--warning:#ffb74d;--font-heading:'Roboto Condensed','Arial Narrow',sans-serif;--font-body:'Calibri','Arial',sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -455,9 +456,26 @@ let isWidgetMode=false;
 
 // ═══════════ AUTH & PROXY ═══════════
 const PROXY_BASE="https://service-hub-launcher.onrender.com";
+let _sb=null; // Supabase client — initialized after config fetch
+
+async function _initSupabase(){
+  if(!window.supabase)return;
+  try{
+    const r=await fetch(PROXY_BASE+"/api/config");
+    if(!r.ok)return;
+    const cfg=await r.json();
+    if(cfg.supabase_url&&cfg.supabase_anon_key){
+      _sb=window.supabase.createClient(cfg.supabase_url,cfg.supabase_anon_key);
+    }
+  }catch(e){console.warn("Supabase config fetch failed, using legacy auth:",e)}
+}
+// Fire immediately — awaited before first auth use in boot sequence
+const _sbReady=_initSupabase();
+
 function isTokenExpired(token){
   try{const p=JSON.parse(atob(token.split(".")[1]));return!p.exp||p.exp*1000<Date.now()}catch(e){return true}
 }
+
 let authToken=localStorage.getItem("hubToken")||"";
 if(authToken&&isTokenExpired(authToken)){authToken="";localStorage.removeItem("hubToken")}
 
@@ -465,22 +483,44 @@ function authH(){return{"Content-Type":"application/json","Authorization":"Beare
 
 async function refreshTokenIfNeeded(){
   if(!authToken)return;
+  // If we have a Supabase client, let it handle refresh
+  if(_sb){
+    try{
+      const{data,error}=await _sb.auth.getSession();
+      if(error||!data.session){
+        authToken="";localStorage.removeItem("hubToken");applyLoginState();return;
+      }
+      // supabase-js auto-refreshes; just grab the current token
+      authToken=data.session.access_token;
+      localStorage.setItem("hubToken",authToken);
+    }catch(e){console.error("Supabase refresh error:",e)}
+    return;
+  }
+  // Legacy refresh path
   try{
     const p=JSON.parse(atob(authToken.split(".")[1]));
     const remaining=p.exp*1000-Date.now();
-    if(remaining>3600000)return; // more than 1 hour left, no refresh needed
+    if(remaining>3600000)return;
     const r=await fetch(PROXY_BASE+"/api/refresh",{method:"POST",headers:authH()});
-    if(r.ok){const d=await r.json();authToken=d.token;localStorage.setItem("hubToken",authToken)}
+    if(r.ok){const d=await r.json();authToken=d.token||d.access_token;localStorage.setItem("hubToken",authToken)}
     else if(r.status===401){authToken="";localStorage.removeItem("hubToken");applyLoginState()}
   }catch(e){console.error("Token refresh error:",e)}
 }
 
 async function supaLogin(password){
+  await _sbReady;
   try{
     const r=await fetch(PROXY_BASE+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});
     if(!r.ok){const err=await r.json().catch(()=>({}));return{error:err.error||"Login failed"}}
     const d=await r.json();
-    authToken=d.token;
+    // Supabase Auth response (has access_token + refresh_token)
+    if(d.access_token&&d.refresh_token&&_sb){
+      await _sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});
+      authToken=d.access_token;
+    }else{
+      // Legacy response (has token)
+      authToken=d.token||d.access_token;
+    }
     localStorage.setItem("hubToken",authToken);
     return{agent_name:d.agent_name,role:d.role};
   }catch(e){console.error("Login error:",e);return{error:"Cannot reach server"}}
@@ -1718,6 +1758,7 @@ document.getElementById("commanderLogoutBtn").addEventListener("click",async()=>
     applyLoginState();
     if(ok)startAutoRefresh();
   }else{
+    if(_sb)await _sb.auth.signOut().catch(()=>{});
     authToken="";localStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();
   }
 });
@@ -1804,7 +1845,12 @@ async function widgetReauth(){
     const r=await fetch(PROXY_BASE+"/api/widget-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:_widgetKey})});
     if(!r.ok)return false;
     const d=await r.json();
-    authToken=d.token;
+    if(d.access_token&&d.refresh_token&&_sb){
+      await _sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});
+      authToken=d.access_token;
+    }else{
+      authToken=d.token||d.access_token;
+    }
     localStorage.setItem("hubToken",authToken);
     isWidgetMode=true;
     return true;
@@ -1812,8 +1858,24 @@ async function widgetReauth(){
 }
 
 (async function widgetAutoLogin(){
+  await _sbReady; // Ensure Supabase client is initialized
   if(!_widgetKey||!_inIframe){
     // Not a widget — use normal auth flow
+    // Try restoring Supabase session if available
+    if(_sb&&!authToken){
+      try{
+        const{data}=await _sb.auth.getSession();
+        if(data.session){
+          authToken=data.session.access_token;
+          localStorage.setItem("hubToken",authToken);
+          const meta=data.session.user?.user_metadata||{};
+          if(meta.agent_name){
+            loggedInAgent=meta.agent_name;
+            isCommander=meta.role==="admin";
+          }
+        }
+      }catch(e){console.error("Session restore error:",e)}
+    }
     if(authToken){loadAgentSchedules().then(()=>{setTimeout(startAutoRefresh,500)})}
     applyLoginState();
     return;

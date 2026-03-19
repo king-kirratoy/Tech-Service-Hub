@@ -3,12 +3,13 @@
 Service Hub Proxy Server (Render-hosted)
 ========================================
 All secrets are stored as environment variables on Render.
-Authenticates users via Supabase, issues JWT tokens,
-and gates all data endpoints behind auth.
+Authenticates users via Supabase Auth (GoTrue), returns real
+Supabase sessions, and gates all data endpoints behind auth.
 """
 
 import logging
 import os
+import re
 import time
 import requests
 from collections import defaultdict
@@ -31,10 +32,12 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 HALOPSA_REPORT_URL = os.environ.get("HALOPSA_REPORT_URL", "")
 HALO_BEARER_TOKEN = os.environ.get("HALO_BEARER_TOKEN", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
-JWT_SECRET = os.environ.get("JWT_SECRET", "")
-if not JWT_SECRET:
-    log.warning("JWT_SECRET is not set — authentication will fail")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")  # service_role key
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "")
+JWT_SECRET = os.environ.get("JWT_SECRET", "")  # legacy — kept for fallback
+if not SUPABASE_JWT_SECRET and not JWT_SECRET:
+    log.warning("No JWT secret configured — authentication will fail")
 WIDGET_KEY = os.environ.get("WIDGET_KEY", "")
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://king-kirratoy.github.io")
 
@@ -89,15 +92,86 @@ LOGIN_WINDOW = 300  # 5 minutes
 # AUTH HELPERS
 # ═══════════════════════════════════════════════════════════
 
+AUTH_EMAIL_DOMAIN = "hub.internal"
+
+
+def agent_email(name):
+    """Convert agent name to a synthetic email for Supabase Auth."""
+    slug = re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
+    return f"{slug}@{AUTH_EMAIL_DOMAIN}"
+
+
+def gotrue_request(method, path, body=None, admin=False):
+    """Make a request to the Supabase GoTrue (Auth) API."""
+    url = f"{SUPABASE_URL}/auth/v1{path}"
+    key = SUPABASE_KEY if admin else (SUPABASE_ANON_KEY or SUPABASE_KEY)
+    headers = {
+        "apikey": SUPABASE_ANON_KEY or SUPABASE_KEY,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+    }
+    resp = requests.request(method, url, headers=headers, json=body, timeout=15)
+    return resp
+
+
+def gotrue_sign_in(email, password):
+    """Sign in a user via Supabase GoTrue and return the session."""
+    return gotrue_request("POST", "/token?grant_type=password", body={
+        "email": email,
+        "password": password,
+    })
+
+
+def gotrue_create_user(email, password, agent_name, role):
+    """Create a Supabase Auth user via the Admin API."""
+    return gotrue_request("POST", "/admin/users", admin=True, body={
+        "email": email,
+        "password": password,
+        "email_confirm": True,
+        "user_metadata": {
+            "agent_name": agent_name,
+            "role": role,
+        },
+    })
+
+
 def create_token(agent_name, role, original_iat=None):
+    """Legacy token creation — used only for widget auth fallback."""
+    secret = SUPABASE_JWT_SECRET or JWT_SECRET
     payload = {
         "agent_name": agent_name,
         "role": role,
         "iat": int(time.time()),
-        "exp": int(time.time()) + 86400,  # 24 hour expiry
+        "exp": int(time.time()) + 86400,
         "original_iat": original_iat or int(time.time())
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return jwt.encode(payload, secret, algorithm="HS256")
+
+
+def _decode_supabase_jwt(token):
+    """Decode a Supabase-issued JWT and return a normalized user dict."""
+    payload = jwt.decode(
+        token, SUPABASE_JWT_SECRET, algorithms=["HS256"],
+        audience="authenticated",
+    )
+    meta = payload.get("user_metadata", {})
+    return {
+        "agent_name": meta.get("agent_name", ""),
+        "role": meta.get("role", ""),
+        "sub": payload.get("sub", ""),
+        "email": payload.get("email", ""),
+    }
+
+
+def _decode_legacy_jwt(token):
+    """Decode a legacy (custom-signed) JWT."""
+    payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    return {
+        "agent_name": payload.get("agent_name", ""),
+        "role": payload.get("role", ""),
+        "original_iat": payload.get("original_iat"),
+        "iat": payload.get("iat"),
+    }
 
 
 def require_auth(f):
@@ -107,13 +181,23 @@ def require_auth(f):
         if not auth_header.startswith("Bearer "):
             return jsonify({"error": "Missing or invalid Authorization header"}), 401
         token = auth_header[7:]
-        try:
-            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-            request.user = payload
-        except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token expired"}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({"error": "Invalid token"}), 401
+        # Try Supabase JWT first, fall back to legacy
+        user = None
+        if SUPABASE_JWT_SECRET:
+            try:
+                user = _decode_supabase_jwt(token)
+            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+                pass
+        if user is None and JWT_SECRET:
+            try:
+                user = _decode_legacy_jwt(token)
+            except jwt.ExpiredSignatureError:
+                return jsonify({"error": "Token expired"}), 401
+            except jwt.InvalidTokenError:
+                pass
+        if user is None:
+            return jsonify({"error": "Invalid or expired token"}), 401
+        request.user = user
         return f(*args, **kwargs)
     return decorated
 
@@ -161,7 +245,7 @@ def login():
     if not password:
         return jsonify({"error": "Password required"}), 400
 
-    # Validate against Supabase agent_logins table
+    # Look up agent by password in agent_logins table
     resp = supabase_request("GET", "agent_logins", params={
         "select": "agent_name,role",
         "password": f"eq.{password}",
@@ -177,12 +261,29 @@ def login():
         return jsonify({"error": "Invalid password"}), 401
 
     agent = rows[0]
-    log.info("Successful login: %s", agent["agent_name"])
+    email = agent_email(agent["agent_name"])
+
+    # Sign in via Supabase GoTrue to get a real session
+    auth_resp = gotrue_sign_in(email, password)
+    if auth_resp.status_code == 200:
+        session = auth_resp.json()
+        log.info("Supabase Auth login: %s", agent["agent_name"])
+        return jsonify({
+            "access_token": session.get("access_token"),
+            "refresh_token": session.get("refresh_token"),
+            "expires_in": session.get("expires_in", 3600),
+            "agent_name": agent["agent_name"],
+            "role": agent["role"],
+        })
+
+    # Fallback: GoTrue user may not exist yet — use legacy token
+    log.warning("GoTrue sign-in failed for %s (status %d), using legacy token",
+                agent["agent_name"], auth_resp.status_code)
     token = create_token(agent["agent_name"], agent["role"])
     return jsonify({
         "token": token,
         "agent_name": agent["agent_name"],
-        "role": agent["role"]
+        "role": agent["role"],
     })
 
 
@@ -197,12 +298,25 @@ def widget_auth():
     if not key or key != WIDGET_KEY:
         return jsonify({"error": "Invalid widget key"}), 401
 
-    # Issue a token for a generic widget viewer (agent role, no specific agent)
+    # Try GoTrue sign-in for the widget viewer account
+    email = agent_email("Widget Viewer")
+    auth_resp = gotrue_sign_in(email, WIDGET_KEY)
+    if auth_resp.status_code == 200:
+        session = auth_resp.json()
+        return jsonify({
+            "access_token": session.get("access_token"),
+            "refresh_token": session.get("refresh_token"),
+            "expires_in": session.get("expires_in", 3600),
+            "agent_name": "Widget Viewer",
+            "role": "agent",
+        })
+
+    # Fallback to legacy token
     token = create_token("Widget Viewer", "agent")
     return jsonify({
         "token": token,
         "agent_name": "Widget Viewer",
-        "role": "agent"
+        "role": "agent",
     })
 
 
@@ -295,15 +409,96 @@ def get_commanders():
 @app.route("/api/refresh", methods=["POST"])
 @require_auth
 def refresh_token():
-    """Issue a fresh JWT if the current one is still valid."""
+    """Refresh a Supabase session using a refresh_token, or legacy JWT refresh."""
+    data = request.get_json(silent=True) or {}
+    refresh_tok = data.get("refresh_token", "")
+
+    # Supabase refresh path
+    if refresh_tok:
+        resp = gotrue_request("POST", "/token?grant_type=refresh_token", body={
+            "refresh_token": refresh_tok,
+        })
+        if resp.status_code == 200:
+            session = resp.json()
+            return jsonify({
+                "access_token": session.get("access_token"),
+                "refresh_token": session.get("refresh_token"),
+                "expires_in": session.get("expires_in", 3600),
+            })
+        return jsonify({"error": "Refresh failed — please log in again."}), 401
+
+    # Legacy refresh fallback
     agent_name = request.user.get("agent_name", "")
     role = request.user.get("role", "")
-    # Cap refresh chains at 7 days from original login
     original_iat = request.user.get("original_iat", request.user.get("iat", 0))
-    if int(time.time()) - original_iat > 604800:  # 7 days
+    if original_iat and int(time.time()) - original_iat > 604800:
         return jsonify({"error": "Session expired. Please log in again."}), 401
     token = create_token(agent_name, role, original_iat=original_iat)
     return jsonify({"token": token})
+
+
+# ═══════════════════════════════════════════════════════════
+# ADMIN — Supabase Auth Migration
+# ═══════════════════════════════════════════════════════════
+
+@app.route("/api/admin/migrate-auth", methods=["POST"])
+@require_auth
+def migrate_auth():
+    """Create Supabase Auth users for all agents in agent_logins.
+    Must be called by a commander (admin role). One-time migration."""
+    if request.user.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    # Read all agents including passwords
+    resp = supabase_request("GET", "agent_logins", params={
+        "select": "agent_name,role,password"
+    })
+    if resp.status_code != 200:
+        return jsonify({"error": "Failed to read agent_logins"}), 502
+
+    agents = resp.json()
+    results = {"created": [], "skipped": [], "errors": []}
+
+    for agent in agents:
+        name = agent.get("agent_name", "")
+        role = agent.get("role", "agent")
+        pwd = agent.get("password", "")
+        if not name or not pwd:
+            results["skipped"].append(name or "(empty)")
+            continue
+
+        email = agent_email(name)
+        create_resp = gotrue_create_user(email, pwd, name, role)
+
+        if create_resp.status_code in (200, 201):
+            results["created"].append(name)
+            log.info("Created Supabase Auth user: %s (%s)", name, email)
+        elif create_resp.status_code == 422:
+            # User already exists
+            results["skipped"].append(name)
+        else:
+            err = create_resp.json() if create_resp.headers.get(
+                "content-type", "").startswith("application/json") else {}
+            results["errors"].append({
+                "agent": name,
+                "status": create_resp.status_code,
+                "detail": err.get("msg", err.get("message", "Unknown error")),
+            })
+            log.error("Failed to create auth user %s: %s", name, err)
+
+    # Also create the Widget Viewer account
+    if WIDGET_KEY:
+        wv_email = agent_email("Widget Viewer")
+        wv_resp = gotrue_create_user(wv_email, WIDGET_KEY, "Widget Viewer", "agent")
+        if wv_resp.status_code in (200, 201):
+            results["created"].append("Widget Viewer")
+        elif wv_resp.status_code == 422:
+            results["skipped"].append("Widget Viewer")
+        else:
+            results["errors"].append({"agent": "Widget Viewer",
+                                      "status": wv_resp.status_code})
+
+    return jsonify(results)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -507,6 +702,15 @@ def get_agent_schedules():
     if resp.status_code != 200:
         return jsonify({"error": "Failed to fetch schedules"}), 502
     return jsonify(resp.json())
+
+
+@app.route("/api/config", methods=["GET"])
+def get_config():
+    """Return public Supabase config for the frontend."""
+    return jsonify({
+        "supabase_url": SUPABASE_URL,
+        "supabase_anon_key": SUPABASE_ANON_KEY,
+    })
 
 
 @app.route("/health", methods=["GET"])
