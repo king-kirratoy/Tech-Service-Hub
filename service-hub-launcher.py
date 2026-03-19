@@ -164,7 +164,8 @@ def _decode_supabase_jwt(token):
 
 def _decode_legacy_jwt(token):
     """Decode a legacy (custom-signed) JWT."""
-    payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    secret = JWT_SECRET or SUPABASE_JWT_SECRET
+    payload = jwt.decode(token, secret, algorithms=["HS256"])
     return {
         "agent_name": payload.get("agent_name", ""),
         "role": payload.get("role", ""),
@@ -187,7 +188,7 @@ def require_auth(f):
                 user = _decode_supabase_jwt(token)
             except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
                 pass
-        if user is None and JWT_SECRET:
+        if user is None and (JWT_SECRET or SUPABASE_JWT_SECRET):
             try:
                 user = _decode_legacy_jwt(token)
             except jwt.ExpiredSignatureError:
