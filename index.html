@@ -280,13 +280,14 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 <div class="container">
   <div id="loginGate" class="glass" style="max-width:400px;margin:60px auto;padding:32px;text-align:center">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">Service Hub Login</h2>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px">Enter your password to access the dashboard.</p>
-    <input type="password" id="gatePwd" placeholder="Password..." autocomplete="off" spellcheck="false" style="width:100%;padding:10px 14px;margin-bottom:12px;background:rgba(0,20,40,0.6);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px">Enter your name and password to access the dashboard.</p>
+    <input type="text" id="gateName" placeholder="Your name..." autocomplete="name" spellcheck="false" style="width:100%;padding:10px 14px;margin-bottom:10px;background:rgba(0,20,40,0.6);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">
+    <input type="password" id="gatePwd" placeholder="Password..." autocomplete="current-password" spellcheck="false" style="width:100%;padding:10px 14px;margin-bottom:12px;background:rgba(0,20,40,0.6);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none">
     <button class="btn-accent" id="gateLoginBtn" style="width:100%;padding:10px;font-size:13px">Login</button>
     <div id="gateStatus" style="margin-top:12px;font-size:11px;color:var(--text-dim)"></div>
   </div>
   <div id="mainContent" class="hidden">
-  <div class="glass auth-bar hidden" id="commanderPanel"><label>Password</label><input type="password" id="commanderPwd" placeholder="Enter your password..." autocomplete="off" spellcheck="false"><button class="btn" id="commanderLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="commanderLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="commanderStatus">Not logged in</span></div>
+  <div class="glass auth-bar hidden" id="commanderPanel"><label>Name</label><input type="text" id="commanderName" placeholder="Your name..." autocomplete="name" spellcheck="false" style="max-width:160px"><label style="margin-left:4px">Password</label><input type="password" id="commanderPwd" placeholder="Password..." autocomplete="current-password" spellcheck="false" style="max-width:160px"><button class="btn" id="commanderLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="commanderLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="commanderStatus">Not logged in</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>
@@ -501,10 +502,10 @@ async function refreshTokenIfNeeded(){
   }catch(e){console.error("Token refresh error:",e)}
 }
 
-async function supaLogin(password){
+async function supaLogin(agentName,password){
   await _sbReady;
   try{
-    const r=await fetch(PROXY_BASE+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});
+    const r=await fetch(PROXY_BASE+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({agent_name:agentName,password})});
     if(!r.ok){const err=await r.json().catch(()=>({}));return{error:err.error||"Login failed"}}
     const d=await r.json();
     // Supabase Auth response (has access_token + refresh_token)
@@ -1602,6 +1603,7 @@ function applyLoginState(){
     if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")campAgentLabelEl=el;
     if(el.id==="campaignAgent")campAgentSelectEl=el;
   });
+  const nameInput=document.getElementById("commanderName");
   const robotCustomizer=document.getElementById("robotCustomizer");
   if(isCommander){
     riskTab.style.display="";
@@ -1627,12 +1629,14 @@ function applyLoginState(){
     const label=isCommander?"Commander View":"Logged in as "+loggedInAgent;
     st.textContent=label;st.classList.remove("missing");st.classList.add("set");
     loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
+    nameInput.style.display="none";
     pwdInput.style.display="none";
     robotCustomizer.classList.remove("hidden");
     loadAgentRobot();
   }else{
     st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
     loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
+    nameInput.style.display="";nameInput.value="";
     pwdInput.style.display="";pwdInput.value="";
     robotCustomizer.classList.add("hidden");
   }
@@ -1645,11 +1649,12 @@ function applyLoginState(){
 }
 // Gate login (main login screen)
 async function doGateLogin(){
+  const name=document.getElementById("gateName").value.trim();
   const pwd=document.getElementById("gatePwd").value.trim();
   const gst=document.getElementById("gateStatus");
-  if(!pwd)return;
+  if(!name||!pwd){gst.textContent="Enter your name and password.";gst.style.color="var(--warning)";return}
   gst.textContent="Logging in...";gst.style.color="var(--blue)";
-  const result=await supaLogin(pwd);
+  const result=await supaLogin(name,pwd);
   if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
@@ -1662,15 +1667,17 @@ async function doGateLogin(){
   startAutoRefresh();
 }
 document.getElementById("gateLoginBtn").addEventListener("click",doGateLogin);
+document.getElementById("gateName").addEventListener("keydown",(e)=>{if(e.key==="Enter")document.getElementById("gatePwd").focus()});
 document.getElementById("gatePwd").addEventListener("keydown",(e)=>{if(e.key==="Enter")doGateLogin()});
 
 // In-app login (commander panel)
 document.getElementById("commanderLoginBtn").addEventListener("click",async()=>{
+  const name=document.getElementById("commanderName").value.trim();
   const pwd=document.getElementById("commanderPwd").value.trim();
   const st=document.getElementById("commanderStatus");
-  if(!pwd)return;
+  if(!name||!pwd){st.textContent="Enter name and password";st.classList.add("missing");return}
   st.textContent="Logging in...";st.classList.add("missing");
-  const result=await supaLogin(pwd);
+  const result=await supaLogin(name,pwd);
   if(result.error){st.textContent=result.error;st.classList.add("missing");return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
@@ -1681,6 +1688,9 @@ document.getElementById("commanderLoginBtn").addEventListener("click",async()=>{
   initComms();
   applyLoginState();
   startAutoRefresh();
+});
+document.getElementById("commanderName").addEventListener("keydown",(e)=>{
+  if(e.key==="Enter")document.getElementById("commanderPwd").focus();
 });
 document.getElementById("commanderPwd").addEventListener("keydown",(e)=>{
   if(e.key==="Enter")document.getElementById("commanderLoginBtn").click();
