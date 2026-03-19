@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Time Estimates — Comparison</title>
+  <style>
+    /* ============================================================
+       VARIABLES & RESET
+       ============================================================ */
+    :root {
+      /* ── Colors ── */
+      --navy:           #002855;
+      --navy-mid:       #003d7a;
+      --blue:           #0095C8;
+      --blue-dim:       rgba(0, 149, 200, 0.10);
+      --green:          #84BD00;
+
+      /* ── Surfaces & Borders ── */
+      --bg:             #f4f6fa;
+      --surface:        #ffffff;
+      --surface-alt:    #f0f4f8;
+      --border:         rgba(0, 40, 85, 0.10);
+      --border-mid:     rgba(0, 40, 85, 0.18);
+
+      /* ── Text ── */
+      --text:           #102040;
+      --text-muted:     #5a7290;
+      --text-dim:       #8fa5be;
+
+      /* ── Estimate column accent colors ── */
+      --col-combo-bg:   #e6f1fb;
+      --col-combo-fg:   #185fa5;
+      --col-combo-bar:  #378add;
+      --col-type-bg:    #eaf3de;
+      --col-type-fg:    #3b6d11;
+      --col-type-bar:   #639922;
+      --col-cat-bg:     #faeeda;
+      --col-cat-fg:     #854f0b;
+      --col-cat-bar:    #ba7517;
+      --col-blend-bg:   #eeedfe;
+      --col-blend-fg:   #534ab7;
+      --col-blend-bar:  #7f77dd;
+
+      /* ── Badge colors ── */
+      --badge-service-bg:   #e6f1fb;
+      --badge-service-fg:   #185fa5;
+      --badge-request-bg:   #e1f5ee;
+      --badge-request-fg:   #0f6e56;
+      --badge-nus-bg:       #eaf3de;
+      --badge-nus-fg:       #3b6d11;
+      --badge-term-bg:      #faece7;
+      --badge-term-fg:      #993c1d;
+      --badge-license-bg:   #eeedfe;
+      --badge-license-fg:   #534ab7;
+      --badge-amber-bg:     #faeeda;
+      --badge-amber-fg:     #854f0b;
+      --badge-other-bg:     #f1efe8;
+      --badge-other-fg:     #5f5e5a;
+
+      /* ── Spacing & Layout ── */
+      --radius:         12px;
+      --radius-sm:      8px;
+      --radius-xs:      5px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Calibri', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+
+    /* --- Header --- */
+    header {
+      background: var(--navy);
+      color: #fff;
+      padding: 18px 32px;
+    }
+
+    .header-inner {
+      align-items: center;
+      display: flex;
+      gap: 16px;
+      margin: 0 auto;
+      max-width: 1500px;
+    }
+
+    .header-logo {
+      background: var(--blue);
+      border-radius: var(--radius-xs);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 5px 10px;
+      text-transform: uppercase;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .header-sub {
+      color: rgba(255, 255, 255, 0.50);
+      font-size: 13px;
+      margin-left: auto;
+    }
+
+    /* --- Page container --- */
+    .container {
+      margin: 0 auto;
+      max-width: 1500px;
+      padding: 24px 32px 48px;
+    }
+
+    /* ============================================================
+       TABS
+       ============================================================ */
+    .tab-bar {
+      border-bottom: 1px solid var(--border-mid);
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: -1px;
+      padding: 10px 18px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn:hover { color: var(--navy); }
+
+    .tab-btn.active {
+      border-bottom-color: var(--blue);
+      color: var(--navy);
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ============================================================
+       LEGEND STRIP
+       ============================================================ */
+    .legend-strip {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+
+    .legend-item {
+      align-items: center;
+      display: flex;
+      gap: 7px;
+      font-size: 12px;
+    }
+
+    .legend-dot {
+      border-radius: 3px;
+      height: 10px;
+      width: 10px;
+    }
+
+    .legend-label { color: var(--text-muted); }
+    .legend-value { color: var(--text); font-weight: 600; }
+
+    /* ============================================================
+       CONTROLS
+       ============================================================ */
+    .controls-bar {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .controls-bar label {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .controls-bar select,
+    .controls-bar input[type='text'] {
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      padding: 6px 10px;
+      transition: border-color 0.15s;
+    }
+
+    .controls-bar select:focus,
+    .controls-bar input[type='text']:focus {
+      border-color: var(--blue);
+    }
+
+    .controls-bar select { min-width: 160px; }
+    .controls-bar input[type='text'] { width: 220px; }
+
+    .row-count {
+      color: var(--text-dim);
+      font-size: 12px;
+      margin-left: auto;
+    }
+
+    /* ============================================================
+       TABLE — shared
+       ============================================================ */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    thead th {
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border-mid);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      padding: 10px 14px;
+      text-align: left;
+      text-transform: uppercase;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    thead th:hover { color: var(--navy); }
+    thead th.sorted { color: var(--navy); }
+
+    .sort-arrow {
+      margin-left: 4px;
+      opacity: 0.3;
+    }
+
+    .sort-arrow.active { opacity: 1; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--blue-dim); }
+
+    td {
+      color: var(--text);
+      padding: 8px 14px;
+      vertical-align: middle;
+    }
+
+    td.num {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    td.num-muted {
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .no-results {
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 2.5rem;
+      text-align: center;
+    }
+
+    /* ============================================================
+       TABLE — comparison tab columns
+       ============================================================ */
+
+    /* --- Column group headers --- */
+    .col-group-combo { background: var(--col-combo-bg); color: var(--col-combo-fg); }
+    .col-group-type  { background: var(--col-type-bg);  color: var(--col-type-fg); }
+    .col-group-cat   { background: var(--col-cat-bg);   color: var(--col-cat-fg); }
+    .col-group-blend { background: var(--col-blend-bg); color: var(--col-blend-fg); }
+
+    thead th.col-combo { border-top: 3px solid var(--col-combo-bar); }
+    thead th.col-type  { border-top: 3px solid var(--col-type-bar); }
+    thead th.col-cat   { border-top: 3px solid var(--col-cat-bar); }
+    thead th.col-blend { border-top: 3px solid var(--col-blend-bar); }
+
+    /* --- Divider between column groups --- */
+    td.divider, th.divider {
+      border-left: 2px solid var(--border-mid);
+    }
+
+    /* --- Median emphasis --- */
+    td.median-combo { color: var(--col-combo-fg); font-weight: 600; }
+    td.median-type  { color: var(--col-type-fg);  font-weight: 600; }
+    td.median-cat   { color: var(--col-cat-fg);   font-weight: 600; }
+    td.median-blend { color: var(--col-blend-fg); font-weight: 700; font-size: 13px; }
+
+    /* --- Delta pill --- */
+    .delta {
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+    }
+
+    .delta-up   { background: #fce8e8; color: #a32d2d; }
+    .delta-down { background: #e8f5e9; color: #2e7d32; }
+    .delta-same { background: var(--surface-alt); color: var(--text-dim); }
+
+    /* ============================================================
+       BADGES
+       ============================================================ */
+    .badge {
+      border-radius: var(--radius-xs);
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      white-space: nowrap;
+    }
+
+    .badge-service  { background: var(--badge-service-bg);  color: var(--badge-service-fg); }
+    .badge-request  { background: var(--badge-request-bg);  color: var(--badge-request-fg); }
+    .badge-nus      { background: var(--badge-nus-bg);      color: var(--badge-nus-fg); }
+    .badge-term     { background: var(--badge-term-bg);     color: var(--badge-term-fg); }
+    .badge-license  { background: var(--badge-license-bg);  color: var(--badge-license-fg); }
+    .badge-amber    { background: var(--badge-amber-bg);    color: var(--badge-amber-fg); }
+    .badge-other    { background: var(--badge-other-bg);    color: var(--badge-other-fg); }
+
+    /* ============================================================
+       CATEGORY CELL
+       ============================================================ */
+    .cat-group { color: var(--text-dim); font-size: 11px; }
+    .cat-name  { color: var(--text); }
+
+    /* ============================================================
+       SECTION LABEL
+       ============================================================ */
+    .section-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    /* ============================================================
+       TABLE NOTE
+       ============================================================ */
+    .table-note {
+      color: var(--text-dim);
+      font-size: 11px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ Header ═══ -->
+  <header>
+    <div class="header-inner">
+      <span class="header-logo">Lutz Tech</span>
+      <span class="header-title">Ticket Time Estimates — 3-Dimension Comparison</span>
+      <span class="header-sub">Last 3 months &mdash; 15,886 closed tickets</span>
+    </div>
+  </header>
+
+  <!-- ═══ Main Content ═══ -->
+  <main class="container">
+
+    <!-- ═══ Tab Bar ═══ -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="comparison">Type + Category vs. Each Alone</button>
+      <button class="tab-btn" data-tab="byType">By Ticket Type</button>
+      <button class="tab-btn" data-tab="byCategory">By Ticket Category</button>
+    </nav>
+
+    <!-- ═══ Comparison Tab ═══ -->
+    <section class="tab-pane active" id="tab-comparison">
+
+      <div class="legend-strip">
+        <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Median columns:</span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:var(--col-combo-bar)"></span>
+          <span class="legend-label">Type + Category (specific)</span>
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:var(--col-type-bar)"></span>
+          <span class="legend-label">Ticket Type only (broad)</span>
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:var(--col-cat-bar)"></span>
+          <span class="legend-label">Category only (broad)</span>
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:var(--col-blend-bar)"></span>
+          <span class="legend-label">Blended (recommended for app)</span>
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#a32d2d; border-radius:2px;"></span>
+          <span class="legend-label">Delta = combo is higher than type-only median</span>
+        </span>
+      </div>
+
+      <div class="controls-bar">
+        <label for="cmpTypeFilter">Type</label>
+        <select id="cmpTypeFilter"><option value="">All ticket types</option></select>
+
+        <label for="cmpCatGroupFilter">Category group</label>
+        <select id="cmpCatGroupFilter"><option value="">All categories</option></select>
+
+        <input type="text" id="cmpSearch" placeholder="Search category…" />
+        <span class="row-count" id="cmpRowCount"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2" onclick="onCmpSort('type')" style="vertical-align:bottom">
+                Type <span class="sort-arrow" id="cmp-arr-type">▼</span>
+              </th>
+              <th rowspan="2" onclick="onCmpSort('category')" style="vertical-align:bottom">
+                Category <span class="sort-arrow" id="cmp-arr-category">▼</span>
+              </th>
+              <th rowspan="2" onclick="onCmpSort('comboCount')" style="text-align:right; vertical-align:bottom">
+                Count <span class="sort-arrow" id="cmp-arr-comboCount">▼</span>
+              </th>
+              <!-- Combo group -->
+              <th colspan="2" class="col-group-combo" style="text-align:center; border-left:2px solid var(--border-mid)">Type + Category</th>
+              <!-- Type group -->
+              <th colspan="2" class="col-group-type" style="text-align:center; border-left:2px solid var(--border-mid)">Type Only</th>
+              <!-- Category group -->
+              <th colspan="2" class="col-group-cat" style="text-align:center; border-left:2px solid var(--border-mid)">Category Only</th>
+              <!-- Blended group -->
+              <th colspan="1" class="col-group-blend" style="text-align:center; border-left:2px solid var(--border-mid)">Blended</th>
+            </tr>
+            <tr>
+              <th class="col-combo divider" onclick="onCmpSort('comboMedian')" style="text-align:right">Median <span class="sort-arrow" id="cmp-arr-comboMedian">▼</span></th>
+              <th class="col-combo" onclick="onCmpSort('comboP90')" style="text-align:right">P90 <span class="sort-arrow" id="cmp-arr-comboP90">▼</span></th>
+              <th class="col-type divider" onclick="onCmpSort('typeMedian')" style="text-align:right">Median <span class="sort-arrow" id="cmp-arr-typeMedian">▼</span></th>
+              <th class="col-type" onclick="onCmpSort('typeDelta')" style="text-align:right">Delta <span class="sort-arrow" id="cmp-arr-typeDelta">▼</span></th>
+              <th class="col-cat divider" onclick="onCmpSort('catMedian')" style="text-align:right">Median <span class="sort-arrow" id="cmp-arr-catMedian">▼</span></th>
+              <th class="col-cat" onclick="onCmpSort('catDelta')" style="text-align:right">Delta <span class="sort-arrow" id="cmp-arr-catDelta">▼</span></th>
+              <th class="col-blend divider" onclick="onCmpSort('blended')" style="text-align:right">Estimate <span class="sort-arrow" id="cmp-arr-blended">▼</span></th>
+            </tr>
+          </thead>
+          <tbody id="cmpTableBody"></tbody>
+        </table>
+      </div>
+      <p class="table-note">
+        Times in hours (h) or minutes (m). Delta = combo median minus the type-only or category-only median — green means combo is faster, red means slower.
+        <strong>Blended</strong> = recommended estimate for your app: 100% combo when count ≥ 30; 70/15/15 combo/type/cat blend for count 10–29; 40/30/30 blend for count &lt; 10. Missing category weight redistributes to type.
+      </p>
+    </section>
+
+    <!-- ═══ By Type Tab ═══ -->
+    <section class="tab-pane" id="tab-byType">
+      <p class="section-label">Time estimates — by ticket type only</p>
+
+      <div class="controls-bar">
+        <input type="text" id="typeSearch" placeholder="Search ticket type…" />
+        <span class="row-count" id="typeRowCount"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="onTypeSort('type')">Ticket Type <span class="sort-arrow" id="type-arr-type">▼</span></th>
+              <th onclick="onTypeSort('count')" style="text-align:right">Count <span class="sort-arrow" id="type-arr-count">▼</span></th>
+              <th onclick="onTypeSort('median')" style="text-align:right">Median <span class="sort-arrow" id="type-arr-median">▼</span></th>
+              <th onclick="onTypeSort('mean')" style="text-align:right">Mean <span class="sort-arrow" id="type-arr-mean">▼</span></th>
+              <th onclick="onTypeSort('p75')" style="text-align:right">P75 <span class="sort-arrow" id="type-arr-p75">▼</span></th>
+              <th onclick="onTypeSort('p90')" style="text-align:right">P90 <span class="sort-arrow" id="type-arr-p90">▼</span></th>
+            </tr>
+          </thead>
+          <tbody id="typeTableBody"></tbody>
+        </table>
+      </div>
+      <p class="table-note">
+        Times in hours (h) or minutes (m). Median is the recommended planning estimate.
+      </p>
+    </section>
+
+    <!-- ═══ By Category Tab ═══ -->
+    <section class="tab-pane" id="tab-byCategory">
+      <p class="section-label">Time estimates — by ticket category only</p>
+
+      <div class="controls-bar">
+        <label for="catGroupOnlyFilter">Category group</label>
+        <select id="catGroupOnlyFilter"><option value="">All groups</option></select>
+
+        <input type="text" id="catSearch" placeholder="Search category…" />
+        <span class="row-count" id="catRowCount"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="onCatSort('category')">Category <span class="sort-arrow" id="cat-arr-category">▼</span></th>
+              <th onclick="onCatSort('count')" style="text-align:right">Count <span class="sort-arrow" id="cat-arr-count">▼</span></th>
+              <th onclick="onCatSort('median')" style="text-align:right">Median <span class="sort-arrow" id="cat-arr-median">▼</span></th>
+              <th onclick="onCatSort('mean')" style="text-align:right">Mean <span class="sort-arrow" id="cat-arr-mean">▼</span></th>
+              <th onclick="onCatSort('p75')" style="text-align:right">P75 <span class="sort-arrow" id="cat-arr-p75">▼</span></th>
+              <th onclick="onCatSort('p90')" style="text-align:right">P90 <span class="sort-arrow" id="cat-arr-p90">▼</span></th>
+            </tr>
+          </thead>
+          <tbody id="catTableBody"></tbody>
+        </table>
+      </div>
+      <p class="table-note">
+        Times in hours (h) or minutes (m). Median is the recommended planning estimate.
+      </p>
+    </section>
+
+  </main>
+
+  <script>
+    // ═══════════ CONSTANTS ═══════════
+
+    // ── Type + Category combo data ─────────────────────────────────────────
+    const DATA_COMBO = [
+      {type:'License Change',   category:'End User>License Change',             count:157, mean:0.10, median:0.08, p75:0.10, p90:0.12},
+      {type:'New User Setup',   category:'End User>New User Setup',             count:611, mean:0.74, median:0.48, p75:0.90, p90:1.55},
+      {type:'New User Setup',   category:'End User>Access Change',              count:13,  mean:0.40, median:0.32, p75:0.55, p90:0.58},
+      {type:'User Termination', category:'End User>User Termination',           count:333, mean:0.70, median:0.53, p75:0.85, p90:1.42},
+      {type:'User Termination', category:'End User>Email Forwarding',           count:10,  mean:0.41, median:0.31, p75:0.40, p90:1.20},
+      {type:'User Termination', category:'End User>Access Change',              count:6,   mean:0.42, median:0.28, p75:0.43, p90:1.30},
+      {type:'User Termination', category:'End User>Mailbox Access',             count:6,   mean:0.34, median:0.23, p75:0.43, p90:1.00},
+      {type:'User Termination', category:'End User>License Change',             count:3,   mean:0.14, median:0.13, p75:0.22, p90:0.22},
+      {type:'User Termination', category:'End User>Automatic Reply',            count:3,   mean:0.13, median:0.12, p75:0.18, p90:0.18},
+      {type:'User Termination', category:'End User>Inactive Account Removal',   count:3,   mean:0.22, median:0.13, p75:0.42, p90:0.42},
+      {type:'Avanan',           category:'Security>Restore Request',            count:42,  mean:0.15, median:0.08, p75:0.08, p90:0.33},
+      {type:'NOC',              category:'Software>Datto',                      count:26,  mean:0.74, median:0.53, p75:1.03, p90:1.93},
+      {type:'Project Task',     category:'',                                    count:39,  mean:8.57, median:3.02, p75:8.52, p90:25.35},
+      {type:'Quick Time',       category:'',                                    count:225, mean:1.59, median:0.58, p75:1.00, p90:4.00},
+      {type:'Request',          category:'End User>Group Management',           count:160, mean:0.32, median:0.18, p75:0.33, p90:0.65},
+      {type:'Request',          category:'End User>Shared Mailbox',             count:79,  mean:0.29, median:0.18, p75:0.40, p90:0.75},
+      {type:'Request',          category:'End User>Mailbox Access',             count:121, mean:0.23, median:0.17, p75:0.27, p90:0.50},
+      {type:'Request',          category:'Security>Threatlocker',               count:167, mean:0.27, median:0.13, p75:0.32, p90:0.60},
+      {type:'Request',          category:'End User>General Inquiry',            count:57,  mean:0.30, median:0.15, p75:0.27, p90:0.87},
+      {type:'Request',          category:'End User>License Change',             count:104, mean:0.47, median:0.26, p75:0.52, p90:0.98},
+      {type:'Request',          category:'Security>MFA/2FA',                    count:90,  mean:0.36, median:0.23, p75:0.35, p90:0.75},
+      {type:'Request',          category:'End User>Admin Permissions',          count:59,  mean:0.41, median:0.28, p75:0.62, p90:0.97},
+      {type:'Request',          category:'End User>Access Change',              count:117, mean:0.63, median:0.35, p75:0.67, p90:1.48},
+      {type:'Request',          category:'End User>Email Alias',                count:66,  mean:0.57, median:0.24, p75:0.87, p90:1.50},
+      {type:'Request',          category:'Hardware>Printer/Scanner',            count:259, mean:0.57, median:0.33, p75:0.60, p90:1.30},
+      {type:'Request',          category:'End User>Computer Setup',             count:172, mean:0.93, median:0.52, p75:1.17, p90:1.97},
+      {type:'Request',          category:'End User>New User Setup',             count:85,  mean:0.89, median:0.48, p75:1.07, p90:2.00},
+      {type:'Request',          category:'Network>VPN',                         count:119, mean:0.61, median:0.28, p75:0.62, p90:1.17},
+      {type:'Request',          category:'Software>Other Application',          count:190, mean:0.64, median:0.35, p75:0.73, p90:1.42},
+      {type:'Request',          category:'Software>Adobe',                      count:68,  mean:0.70, median:0.43, p75:0.87, p90:1.42},
+      {type:'Request',          category:'End User>File Share',                 count:90,  mean:0.60, median:0.29, p75:0.67, p90:1.28},
+      {type:'Request',          category:'End User>File Access Issue',          count:41,  mean:0.71, median:0.45, p75:0.88, p90:1.52},
+      {type:'Request',          category:'End User>Name Change',                count:37,  mean:0.68, median:0.47, p75:0.85, p90:1.53},
+      {type:'Request',          category:'Software>QuickBooks',                 count:44,  mean:0.69, median:0.46, p75:1.08, p90:1.58},
+      {type:'Request',          category:'End User>Calendar',                   count:56,  mean:0.69, median:0.37, p75:0.85, p90:1.72},
+      {type:'Request',          category:'Network>DNS/Domain Management',       count:51,  mean:0.82, median:0.45, p75:0.87, p90:1.90},
+      {type:'Request',          category:'Software>Microsoft Outlook',          count:49,  mean:0.61, median:0.27, p75:0.63, p90:1.10},
+      {type:'Request',          category:'Software>Microsoft SharePoint',       count:29,  mean:1.15, median:0.60, p75:1.28, p90:2.67},
+      {type:'Request',          category:'End User>Mobile Phone Setup',         count:42,  mean:0.49, median:0.27, p75:0.45, p90:1.17},
+      {type:'Request',          category:'Software>Sage',                       count:18,  mean:1.43, median:0.63, p75:1.70, p90:3.45},
+      {type:'Request',          category:'Software>Windows OS',                 count:25,  mean:1.21, median:0.68, p75:1.72, p90:2.82},
+      {type:'Request',          category:'Software>RDP',                        count:19,  mean:1.06, median:0.37, p75:1.08, p90:4.40},
+      {type:'Request',          category:'End User>Password Reset',             count:27,  mean:0.68, median:0.25, p75:0.47, p90:1.27},
+      {type:'Request',          category:'End User>Archive Mailbox',            count:15,  mean:0.56, median:0.25, p75:0.55, p90:1.02},
+      {type:'Request',          category:'Software>Microsoft Teams',            count:41,  mean:0.59, median:0.32, p75:0.63, p90:1.33},
+      {type:'Request',          category:'Network>ISP/LTE',                     count:11,  mean:3.07, median:2.05, p75:6.12, p90:6.28},
+      {type:'Request',          category:'End User>User Termination',           count:8,   mean:1.17, median:0.80, p75:2.42, p90:2.67},
+      {type:'Request',          category:'Software>Citrix/VDI',                 count:14,  mean:0.94, median:0.53, p75:1.55, p90:2.37},
+      {type:'Request',          category:'Software>Microsoft Azure/Entra',      count:23,  mean:0.65, median:0.55, p75:0.97, p90:1.43},
+      {type:'Request',          category:'Hardware>Office Move/Setup',          count:13,  mean:1.42, median:1.00, p75:1.25, p90:2.25},
+      {type:'Request',          category:'Software>CCH ProSystem/Axcess',       count:8,   mean:0.93, median:0.57, p75:2.00, p90:2.05},
+      {type:'Request',          category:'Client>Consulting/Research',          count:30,  mean:0.49, median:0.28, p75:0.60, p90:1.45},
+      {type:'Request',          category:'Client>Infrastructure',               count:23,  mean:0.70, median:0.38, p75:0.97, p90:1.60},
+      {type:'Request',          category:'Client>Purchase Request',             count:30,  mean:0.42, median:0.21, p75:0.52, p90:0.90},
+      {type:'Request',          category:'Hardware>Laptop',                     count:21,  mean:0.76, median:0.60, p75:1.10, p90:1.90},
+      {type:'Request',          category:'Software>Datto',                      count:17,  mean:0.65, median:0.45, p75:0.85, p90:1.50},
+      {type:'Request',          category:'End User>Mapped Drive Issue',         count:32,  mean:0.34, median:0.18, p75:0.57, p90:0.92},
+      {type:'Request',          category:'End User>Email Forwarding',           count:29,  mean:0.68, median:0.28, p75:0.48, p90:1.48},
+      {type:'Request',          category:'End User>SharePoint Access',          count:28,  mean:0.48, median:0.35, p75:0.57, p90:0.98},
+      {type:'Request',          category:'Software>Microsoft OneDrive',         count:17,  mean:0.49, median:0.35, p75:0.62, p90:1.37},
+      {type:'Request',          category:'End User>Account Info Update',        count:28,  mean:0.47, median:0.31, p75:0.63, p90:1.12},
+      {type:'Request',          category:'Software>Bluebeam',                   count:18,  mean:0.59, median:0.35, p75:0.58, p90:1.20},
+      {type:'Request',          category:'Security>Compliance/Audit',           count:6,   mean:0.87, median:0.50, p75:1.42, p90:2.13},
+      {type:'Request',          category:'Security>SPF/DKIM/DMARC',             count:6,   mean:1.19, median:0.81, p75:2.03, p90:2.88},
+      {type:'Request',          category:'Hardware>Disk Usage',                 count:8,   mean:0.78, median:0.72, p75:1.03, p90:2.02},
+      {type:'Request',          category:'Hardware>Server',                     count:9,   mean:1.11, median:0.67, p75:1.78, p90:3.00},
+      {type:'Request',          category:'Client>Service Documentation',        count:19,  mean:0.24, median:0.17, p75:0.35, p90:0.63},
+      {type:'Request',          category:'End User>File Relocation',            count:13,  mean:0.40, median:0.23, p75:0.33, p90:1.02},
+      {type:'Request',          category:'End User>Windows Settings',           count:25,  mean:0.64, median:0.17, p75:0.27, p90:1.48},
+      {type:'Request',          category:'End User>Email Signature',            count:17,  mean:0.49, median:0.33, p75:0.52, p90:1.25},
+      {type:'Request',          category:'End User>Email Delivery Issue',       count:11,  mean:0.47, median:0.18, p75:0.52, p90:1.27},
+      {type:'Request',          category:'End User>Automatic Reply',            count:12,  mean:0.35, median:0.29, p75:0.52, p90:0.62},
+      {type:'Request',          category:'Software>Microsoft Excel',            count:12,  mean:0.34, median:0.22, p75:0.48, p90:0.55},
+      {type:'Request',          category:'Software>Microsoft OneNote',          count:11,  mean:0.33, median:0.25, p75:0.58, p90:0.65},
+      {type:'Request',          category:'Software>Microsoft Power BI',         count:11,  mean:0.56, median:0.33, p75:0.70, p90:1.05},
+      {type:'Request',          category:'Hardware>Driver/Firmware Update',     count:16,  mean:0.49, median:0.24, p75:0.58, p90:1.45},
+      {type:'Request',          category:'Client>Renewal',                      count:15,  mean:0.48, median:0.12, p75:0.35, p90:0.98},
+      {type:'Request',          category:'Hardware>Docking Station',            count:8,   mean:0.37, median:0.23, p75:0.72, p90:1.25},
+      {type:'Request',          category:'Software>Software Removal',           count:20,  mean:0.68, median:0.38, p75:0.72, p90:2.12},
+      {type:'Request',          category:'Security>Avanan',                     count:15,  mean:0.24, median:0.15, p75:0.35, p90:0.50},
+      {type:'Request',          category:'Network>DHCP/IP Management',          count:9,   mean:0.50, median:0.42, p75:0.47, p90:1.55},
+      {type:'Request',          category:'Software>Splashtop',                  count:10,  mean:0.52, median:0.38, p75:0.70, p90:1.72},
+      {type:'Request',          category:'End User>Email Rule',                 count:10,  mean:0.42, median:0.38, p75:0.50, p90:1.45},
+      {type:'Request',          category:'End User>Mailbox Capacity',           count:8,   mean:0.92, median:0.77, p75:1.47, p90:1.97},
+      {type:'Request',          category:'Software>SMTP2GO',                    count:7,   mean:1.10, median:0.53, p75:2.32, p90:3.28},
+      {type:'Request',          category:'Network>Phone System',                count:13,  mean:0.33, median:0.08, p75:0.68, p90:0.72},
+      {type:'Request',          category:'Software>Microsoft 365 Apps Install', count:14,  mean:0.65, median:0.23, p75:0.38, p90:0.97},
+      {type:'Request',          category:'Software>Zoom',                       count:7,   mean:0.38, median:0.13, p75:0.83, p90:0.90},
+      {type:'Request',          category:'Network>Wireless Configuration',      count:7,   mean:0.43, median:0.33, p75:0.55, p90:1.18},
+      {type:'Request',          category:'End User>Inactive Account Removal',   count:6,   mean:0.51, median:0.43, p75:0.75, p90:0.95},
+      {type:'Request',          category:'Security>Phishing/Spam',              count:10,  mean:0.23, median:0.11, p75:0.20, p90:1.27},
+      {type:'Request',          category:'Client>Business Meeting',             count:4,   mean:1.07, median:1.04, p75:2.18, p90:2.18},
+      {type:'Service',          category:'End User>Account Login Issue',        count:811, mean:0.37, median:0.17, p75:0.38, p90:0.83},
+      {type:'Service',          category:'End User>Password Reset',             count:495, mean:0.28, median:0.18, p75:0.32, p90:0.48},
+      {type:'Service',          category:'Software>Other Application',          count:516, mean:0.77, median:0.33, p75:0.77, p90:1.63},
+      {type:'Service',          category:'Hardware>Printer/Scanner',            count:762, mean:0.79, median:0.38, p75:0.78, p90:1.52},
+      {type:'Service',          category:'End User>Email Delivery Issue',       count:413, mean:0.62, median:0.30, p75:0.62, p90:1.47},
+      {type:'Service',          category:'Software>Microsoft Outlook',          count:391, mean:0.56, median:0.30, p75:0.58, p90:1.18},
+      {type:'Service',          category:'Software>Citrix/VDI',                 count:362, mean:0.60, median:0.35, p75:0.58, p90:1.02},
+      {type:'Service',          category:'Security>MFA/2FA',                    count:278, mean:0.41, median:0.23, p75:0.43, p90:0.82},
+      {type:'Service',          category:'Security>Threatlocker',               count:271, mean:0.40, median:0.20, p75:0.42, p90:0.85},
+      {type:'Service',          category:'Software>Adobe',                      count:273, mean:0.56, median:0.33, p75:0.72, p90:1.18},
+      {type:'Service',          category:'Network>VPN',                         count:240, mean:0.67, median:0.30, p75:0.75, p90:1.70},
+      {type:'Service',          category:'Hardware>Server',                     count:233, mean:0.38, median:0.15, p75:0.32, p90:0.63},
+      {type:'Service',          category:'Software>Microsoft Teams',            count:182, mean:0.62, median:0.33, p75:0.68, p90:1.22},
+      {type:'Service',          category:'Network>Network Connectivity',        count:182, mean:0.84, median:0.41, p75:0.87, p90:1.98},
+      {type:'Service',          category:'End User>Windows Settings',           count:162, mean:0.36, median:0.15, p75:0.38, p90:0.77},
+      {type:'Service',          category:'Hardware>PC Performance Issue',       count:162, mean:0.76, median:0.38, p75:0.68, p90:1.68},
+      {type:'Service',          category:'End User>File Access Issue',          count:159, mean:0.55, median:0.30, p75:0.63, p90:1.20},
+      {type:'Service',          category:'End User>Mapped Drive Issue',         count:159, mean:0.53, median:0.27, p75:0.52, p90:1.20},
+      {type:'Service',          category:'End User>General Inquiry',            count:161, mean:0.34, median:0.13, p75:0.32, p90:0.68},
+      {type:'Service',          category:'Software>Microsoft OneDrive',         count:129, mean:0.73, median:0.38, p75:0.70, p90:1.78},
+      {type:'Service',          category:'Software>Microsoft Excel',            count:126, mean:0.66, median:0.37, p75:0.72, p90:1.30},
+      {type:'Service',          category:'Software>QuickBooks',                 count:135, mean:0.71, median:0.38, p75:0.85, p90:1.70},
+      {type:'Service',          category:'Software>RDP',                        count:129, mean:0.49, median:0.27, p75:0.50, p90:1.38},
+      {type:'Service',          category:'Network>Website Access',              count:95,  mean:0.56, median:0.23, p75:0.55, p90:1.32},
+      {type:'Service',          category:'Software>Web Browser',                count:94,  mean:0.35, median:0.17, p75:0.37, p90:0.72},
+      {type:'Service',          category:'End User>Computer Setup',             count:97,  mean:1.14, median:0.50, p75:1.33, p90:2.70},
+      {type:'Service',          category:'Software>Sage',                       count:69,  mean:1.23, median:0.53, p75:1.35, p90:3.27},
+      {type:'Service',          category:'End User>Email Signature',            count:79,  mean:0.54, median:0.33, p75:0.55, p90:1.03},
+      {type:'Service',          category:'End User>New User Setup',             count:79,  mean:0.53, median:0.27, p75:0.68, p90:1.17},
+      {type:'Service',          category:'Hardware>Monitor',                    count:155, mean:0.40, median:0.28, p75:0.48, p90:0.83},
+      {type:'Service',          category:'Hardware>Mouse/Keyboard',             count:99,  mean:0.50, median:0.27, p75:0.55, p90:0.83},
+      {type:'Service',          category:'Hardware>Docking Station',            count:115, mean:0.54, median:0.38, p75:0.67, p90:1.18},
+      {type:'Service',          category:'Software>Windows OS',                 count:72,  mean:0.90, median:0.43, p75:1.00, p90:2.32},
+      {type:'Service',          category:'End User>Calendar',                   count:81,  mean:0.72, median:0.30, p75:0.53, p90:1.43},
+      {type:'Service',          category:'Security>Virus/Malware',              count:64,  mean:0.20, median:0.12, p75:0.27, p90:0.38},
+      {type:'Service',          category:'Software>CCH ProSystem/Axcess',       count:68,  mean:0.66, median:0.50, p75:0.87, p90:1.40},
+      {type:'Service',          category:'Software>Microsoft SharePoint',       count:68,  mean:0.80, median:0.36, p75:1.10, p90:1.68},
+      {type:'Service',          category:'Hardware>Desktop',                    count:66,  mean:0.66, median:0.33, p75:0.78, p90:1.98},
+      {type:'Service',          category:'Software>Microsoft Word',             count:55,  mean:0.79, median:0.42, p75:0.75, p90:1.55},
+      {type:'Service',          category:'Security>Encryption',                 count:55,  mean:0.37, median:0.23, p75:0.43, p90:0.88},
+      {type:'Service',          category:'Software>Bluebeam',                   count:55,  mean:0.48, median:0.32, p75:0.55, p90:1.20},
+      {type:'Service',          category:'Security>Suspicious Activity',        count:53,  mean:0.34, median:0.18, p75:0.48, p90:0.67},
+      {type:'Service',          category:'End User>Mailbox Access',             count:53,  mean:0.82, median:0.38, p75:0.98, p90:2.13},
+      {type:'Service',          category:'End User>Access Change',              count:72,  mean:0.37, median:0.21, p75:0.45, p90:0.82},
+      {type:'Service',          category:'End User>Mobile Phone Setup',         count:63,  mean:0.54, median:0.32, p75:0.70, p90:1.08},
+      {type:'Service',          category:'Hardware>Headset/Headphone',          count:48,  mean:0.52, median:0.33, p75:0.62, p90:1.12},
+      {type:'Service',          category:'Software>Applied Epic',               count:35,  mean:0.53, median:0.23, p75:0.82, p90:1.50},
+      {type:'Service',          category:'Security>Account Compromise',         count:28,  mean:0.68, median:0.46, p75:0.93, p90:1.60},
+      {type:'Service',          category:'Software>Caseware',                   count:46,  mean:0.72, median:0.51, p75:0.78, p90:1.55},
+      {type:'Service',          category:'Software>Zoom',                       count:49,  mean:0.49, median:0.37, p75:0.53, p90:1.17},
+      {type:'Service',          category:'Network>Phone System',                count:102, mean:0.49, median:0.18, p75:0.43, p90:0.83},
+      {type:'Service',          category:'Hardware>Disk Usage',                 count:98,  mean:0.59, median:0.47, p75:0.70, p90:1.55},
+      {type:'Service',          category:'Hardware>Driver/Firmware Update',     count:80,  mean:0.53, median:0.32, p75:0.63, p90:1.30},
+      {type:'Service',          category:'Hardware>Audio Issue',                count:61,  mean:0.52, median:0.28, p75:0.53, p90:1.15},
+      {type:'Service',          category:'Security>Phishing/Spam',              count:105, mean:0.31, median:0.22, p75:0.35, p90:0.60},
+      {type:'Service',          category:'End User>License Change',             count:47,  mean:0.64, median:0.33, p75:0.90, p90:1.72},
+      {type:'Service',          category:'End User>Email Recovery',             count:41,  mean:0.61, median:0.37, p75:0.68, p90:1.70},
+      {type:'Service',          category:'End User>File Recovery',              count:74,  mean:0.66, median:0.31, p75:0.57, p90:1.95},
+      {type:'Service',          category:'End User>File Share',                 count:73,  mean:0.61, median:0.37, p75:0.80, p90:1.50},
+      {type:'Service',          category:'End User>File Relocation',            count:38,  mean:0.73, median:0.32, p75:0.82, p90:1.60},
+      {type:'Service',          category:'Security>Avanan',                     count:70,  mean:0.42, median:0.27, p75:0.52, p90:0.95},
+      {type:'Service',          category:'Software>Cloud Drive Mapper (CDM)',   count:51,  mean:0.59, median:0.22, p75:0.57, p90:0.72},
+      {type:'Service',          category:'End User>Shared Mailbox',             count:40,  mean:0.85, median:0.47, p75:1.13, p90:2.43},
+      {type:'Service',          category:'End User>Faxing Issue',               count:22,  mean:0.98, median:0.74, p75:0.97, p90:1.68},
+      {type:'Service',          category:'Hardware>Firewall',                   count:19,  mean:1.32, median:0.63, p75:1.48, p90:5.28},
+      {type:'Service',          category:'Hardware>Laptop',                     count:101, mean:0.84, median:0.38, p75:1.00, p90:2.12},
+      {type:'Service',          category:'Software>Microsoft Azure/Entra',      count:31,  mean:0.91, median:0.30, p75:1.22, p90:2.47},
+      {type:'Service',          category:'Network>Wireless Configuration',      count:36,  mean:1.19, median:0.55, p75:1.17, p90:2.15},
+      {type:'Service',          category:'Network>DNS/Domain Management',       count:53,  mean:1.14, median:0.65, p75:1.72, p90:2.55},
+      {type:'Service',          category:'Network>ISP/LTE',                     count:24,  mean:1.05, median:0.62, p75:1.28, p90:1.78},
+      {type:'Service',          category:'Software>Microsoft 365 Apps Install', count:22,  mean:1.01, median:0.65, p75:1.27, p90:2.58},
+      {type:'Service',          category:'End User>Archive Mailbox',            count:14,  mean:0.74, median:0.23, p75:0.92, p90:1.82},
+      {type:'Service',          category:'Client>Consulting/Research',          count:30,  mean:1.66, median:0.33, p75:1.28, p90:4.65},
+      {type:'Service',          category:'End User>Admin Permissions',          count:49,  mean:0.43, median:0.23, p75:0.53, p90:1.03},
+      {type:'Service',          category:'End User>User Termination',           count:32,  mean:0.44, median:0.24, p75:0.52, p90:1.18},
+      {type:'Service',          category:'Software>McLeod',                     count:20,  mean:1.18, median:0.68, p75:2.10, p90:3.78},
+      {type:'Service',          category:'Hardware>UPS/APC',                    count:23,  mean:0.70, median:0.28, p75:0.70, p90:1.40},
+      {type:'Service',          category:'Network>DHCP/IP Management',          count:13,  mean:1.08, median:0.70, p75:1.67, p90:2.83},
+      {type:'Service',          category:'Software>Splashtop',                  count:32,  mean:0.39, median:0.13, p75:0.35, p90:1.22},
+      {type:'Service',          category:'End User>Email Forwarding',           count:16,  mean:0.82, median:0.52, p75:1.10, p90:1.40},
+      {type:'Service',          category:'Security>Proofpoint',                 count:27,  mean:0.40, median:0.25, p75:0.57, p90:1.25},
+      {type:'Service',          category:'Software>Zee Drive',                  count:40,  mean:0.54, median:0.30, p75:0.50, p90:1.02},
+      {type:'Service',          category:'Software>Printix',                    count:16,  mean:0.69, median:0.49, p75:0.87, p90:1.62},
+      {type:'Service',          category:'Network>Security Camera/Door Access', count:19,  mean:1.37, median:0.72, p75:1.32, p90:3.73},
+      {type:'Service',          category:'Hardware>Webcam',                     count:24,  mean:0.29, median:0.23, p75:0.42, p90:0.65},
+      {type:'Service',          category:'End User>Automatic Reply',            count:19,  mean:0.52, median:0.27, p75:0.45, p90:1.82},
+      {type:'Service',          category:'End User>Mailbox Capacity',           count:38,  mean:0.66, median:0.43, p75:0.88, p90:1.58},
+      {type:'Service',          category:'Software>Locator',                    count:17,  mean:0.45, median:0.45, p75:0.50, p90:1.13},
+      {type:'Service',          category:'Software>Threadworks',                count:15,  mean:0.32, median:0.18, p75:0.50, p90:0.67},
+      {type:'Service',          category:'Software>AutoCAD',                    count:15,  mean:0.73, median:0.53, p75:0.93, p90:1.48},
+      {type:'Service',          category:'Security>Compliance/Audit',           count:20,  mean:0.72, median:0.38, p75:0.97, p90:1.47},
+      {type:'Service',          category:'End User>SharePoint Access',          count:23,  mean:0.39, median:0.25, p75:0.63, p90:0.75},
+      {type:'Service',          category:'Security>Restore Request',            count:25,  mean:0.54, median:0.37, p75:0.83, p90:1.27},
+      {type:'Service',          category:'Software>Google Chrome',              count:20,  mean:0.46, median:0.21, p75:0.53, p90:1.62},
+      {type:'Service',          category:'Security>Certificate',                count:10,  mean:0.97, median:0.73, p75:1.43, p90:2.63},
+      {type:'Service',          category:'Hardware>Conference Room Equipment',  count:13,  mean:0.68, median:0.52, p75:0.83, p90:1.08},
+      {type:'Service',          category:'Software>Dialpad',                    count:8,   mean:0.74, median:0.59, p75:0.95, p90:2.25},
+      {type:'Service',          category:'Client>Infrastructure',               count:74,  mean:0.57, median:0.23, p75:0.50, p90:1.47},
+      {type:'Service',          category:'Client>Business Meeting',             count:24,  mean:0.39, median:0.12, p75:0.50, p90:1.08},
+      {type:'Service',          category:'Software>Smokeball',                  count:23,  mean:0.55, median:0.32, p75:0.67, p90:0.78},
+      {type:'Service',          category:'End User>Email Contacts',             count:12,  mean:0.72, median:0.49, p75:0.92, p90:1.12},
+      {type:'Service',          category:'Hardware>Wireless Access Point',      count:8,   mean:0.76, median:0.48, p75:1.85, p90:1.88},
+      {type:'Service',          category:'Hardware>Microphone',                 count:15,  mean:0.51, median:0.33, p75:0.77, p90:1.18},
+      {type:'Service',          category:'Software>Microsoft Power BI',         count:12,  mean:0.73, median:0.47, p75:1.32, p90:1.77},
+      {type:'Service',          category:'Hardware>Speaker',                    count:11,  mean:0.53, median:0.17, p75:0.67, p90:1.82},
+      {type:'Service',          category:'Hardware>Cable/Adapter',              count:11,  mean:0.77, median:0.68, p75:0.98, p90:1.60},
+      {type:'Service',          category:'End User>Group Management',           count:17,  mean:0.54, median:0.38, p75:0.53, p90:1.47},
+      {type:'Service',          category:'Hardware>iPad',                       count:12,  mean:0.62, median:0.41, p75:1.00, p90:1.33},
+      {type:'Service',          category:'End User>Account Info Update',        count:9,   mean:0.29, median:0.15, p75:0.30, p90:1.02},
+      {type:'Service',          category:'Client>Service Documentation',        count:15,  mean:0.47, median:0.25, p75:0.67, p90:1.43},
+      {type:'Service',          category:'Software>Software Removal',           count:19,  mean:0.84, median:0.45, p75:0.67, p90:3.10},
+      {type:'Service',          category:'Network>Switch Configuration',        count:6,   mean:0.99, median:0.90, p75:1.55, p90:2.25},
+      {type:'Service',          category:'Software>Microsoft OneNote',          count:28,  mean:0.78, median:0.38, p75:1.07, p90:1.43},
+      {type:'Service',          category:'Client>Purchase Request',             count:9,   mean:0.31, median:0.33, p75:0.33, p90:0.88},
+      {type:'Service',          category:'Network>Power Outage',                count:8,   mean:0.21, median:0.14, p75:0.30, p90:0.53},
+      {type:'Service',          category:'Software>PerfectLaw/AIM',             count:18,  mean:0.36, median:0.14, p75:0.67, p90:1.20},
+      {type:'Service',          category:'End User>Training',                   count:14,  mean:0.51, median:0.12, p75:0.45, p90:1.42},
+      {type:'Service',          category:'Hardware>Asset Shipping & Receiving', count:6,   mean:0.60, median:0.45, p75:0.75, p90:1.43},
+      {type:'Service',          category:'Hardware>Desk Phone',                 count:10,  mean:0.59, median:0.39, p75:0.50, p90:2.75},
+      {type:'Service',          category:'Client>Renewal',                      count:6,   mean:0.55, median:0.32, p75:0.75, p90:1.82},
+      {type:'Service',          category:'Security>SPF/DKIM/DMARC',             count:4,   mean:3.04, median:2.24, p75:6.78, p90:6.78},
+      {type:'Service',          category:'Network>VLAN Configuration',          count:3,   mean:1.17, median:1.22, p75:1.77, p90:1.77},
+    ];
+
+    // ── Ticket Type only data ──────────────────────────────────────────────
+    const DATA_BY_TYPE = [
+      {type:'Avanan',           count:42,   mean:0.1488, median:0.0833, p75:0.0833, p90:0.3333},
+      {type:'License Change',   count:157,  mean:0.1021, median:0.0833, p75:0.1000, p90:0.1167},
+      {type:'NOC',              count:26,   mean:0.7378, median:0.5333, p75:1.0333, p90:1.9333},
+      {type:'New User Setup',   count:647,  mean:0.7578, median:0.4667, p75:0.8833, p90:1.5500},
+      {type:'Project Task',     count:39,   mean:8.5744, median:3.0167, p75:8.5167, p90:25.3500},
+      {type:'Quick Time',       count:226,  mean:1.5822, median:0.5833, p75:1.0000, p90:4.0000},
+      {type:'Request',          count:3420, mean:0.5792, median:0.3000, p75:0.6333, p90:1.3333},
+      {type:'Service',          count:10915,mean:0.5886, median:0.2833, p75:0.6000, p90:1.2833},
+      {type:'User Termination', count:378,  mean:0.6631, median:0.5000, p75:0.8333, p90:1.3667},
+    ];
+
+    // ── Ticket Category only data ──────────────────────────────────────────
+    const DATA_BY_CAT = [
+      {category:'Client>Business Meeting',              count:28,  mean:0.4845, median:0.1167, p75:0.9833, p90:2.0333},
+      {category:'Client>Consulting/Research',           count:60,  mean:1.0750, median:0.3167, p75:0.7500, p90:3.1833},
+      {category:'Client>Infrastructure',                count:97,  mean:0.6031, median:0.2500, p75:0.6333, p90:1.6000},
+      {category:'Client>MSP Offboarding',               count:6,   mean:0.3444, median:0.3583, p75:0.4667, p90:0.6167},
+      {category:'Client>Purchase Request',              count:39,  mean:0.3957, median:0.2167, p75:0.4333, p90:0.8833},
+      {category:'Client>Renewal',                       count:21,  mean:0.4976, median:0.1500, p75:0.3833, p90:0.9833},
+      {category:'Client>Service Documentation',         count:36,  mean:0.3472, median:0.1750, p75:0.5500, p90:0.9167},
+      {category:'End User>Access Change',               count:208, mean:0.5204, median:0.3000, p75:0.5667, p90:1.1333},
+      {category:'End User>Account Info Update',         count:41,  mean:0.4154, median:0.2833, p75:0.5333, p90:0.9000},
+      {category:'End User>Account Login Issue',         count:822, mean:0.3735, median:0.1833, p75:0.4000, p90:0.8500},
+      {category:'End User>Admin Permissions',           count:109, mean:0.4292, median:0.2667, p75:0.6167, p90:1.0333},
+      {category:'End User>Archive Mailbox',             count:29,  mean:0.6448, median:0.2500, p75:0.8667, p90:1.8167},
+      {category:'End User>Automatic Reply',             count:34,  mean:0.4260, median:0.2250, p75:0.4000, p90:1.1333},
+      {category:'End User>Calendar',                    count:138, mean:0.7008, median:0.3167, p75:0.6833, p90:1.6000},
+      {category:'End User>Computer Setup',              count:269, mean:1.0050, median:0.5167, p75:1.2167, p90:2.2333},
+      {category:'End User>Email Alias',                 count:73,  mean:0.6799, median:0.2500, p75:0.9333, p90:1.5000},
+      {category:'End User>Email Contacts',              count:19,  mean:0.7246, median:0.3667, p75:0.8833, p90:3.0000},
+      {category:'End User>Email Delivery Issue',        count:424, mean:0.6129, median:0.3000, p75:0.6167, p90:1.4667},
+      {category:'End User>Email Forwarding',            count:55,  mean:0.6688, median:0.3000, p75:0.6833, p90:1.3667},
+      {category:'End User>Email Recovery',              count:42,  mean:0.6310, median:0.3667, p75:0.7500, p90:1.7000},
+      {category:'End User>Email Rule',                  count:17,  mean:0.5912, median:0.2500, p75:0.5000, p90:2.0333},
+      {category:'End User>Email Signature',             count:96,  mean:0.5316, median:0.3333, p75:0.5333, p90:1.0333},
+      {category:'End User>Faxing Issue',                count:25,  mean:0.8973, median:0.6667, p75:0.9500, p90:1.6833},
+      {category:'End User>File Access Issue',           count:201, mean:0.5902, median:0.3167, p75:0.6667, p90:1.3000},
+      {category:'End User>File Recovery',               count:74,  mean:0.6617, median:0.3083, p75:0.5667, p90:1.9500},
+      {category:'End User>File Relocation',             count:51,  mean:0.6444, median:0.2667, p75:0.6500, p90:1.2333},
+      {category:'End User>File Share',                  count:164, mean:0.6032, median:0.3417, p75:0.7667, p90:1.4500},
+      {category:'End User>General Inquiry',             count:218, mean:0.3278, median:0.1333, p75:0.3167, p90:0.6833},
+      {category:'End User>Group Management',            count:180, mean:0.3445, median:0.1917, p75:0.3500, p90:0.7167},
+      {category:'End User>Inactive Account Removal',    count:14,  mean:0.5845, median:0.4417, p75:0.6500, p90:0.9500},
+      {category:'End User>License Change',              count:312, mean:0.3085, median:0.1167, p75:0.3167, p90:0.6500},
+      {category:'End User>Mailbox Access',              count:181, mean:0.4100, median:0.2167, p75:0.4333, p90:0.8500},
+      {category:'End User>Mailbox Capacity',            count:46,  mean:0.7058, median:0.5000, p75:0.9667, p90:1.5833},
+      {category:'End User>Mapped Drive Issue',          count:191, mean:0.4994, median:0.2667, p75:0.5167, p90:1.1167},
+      {category:'End User>Mobile Phone Setup',          count:105, mean:0.5181, median:0.3000, p75:0.5500, p90:1.1667},
+      {category:'End User>Name Change',                 count:39,  mean:0.6850, median:0.4667, p75:0.9000, p90:1.5333},
+      {category:'End User>New User Setup',              count:775, mean:0.7317, median:0.4667, p75:0.8833, p90:1.6000},
+      {category:'End User>Password Reset',              count:523, mean:0.3055, median:0.1833, p75:0.3167, p90:0.5167},
+      {category:'End User>SharePoint Access',           count:52,  mean:0.4295, median:0.3333, p75:0.5667, p90:0.8500},
+      {category:'End User>Shared Mailbox',              count:122, mean:0.4736, median:0.2417, p75:0.5167, p90:0.8833},
+      {category:'End User>Training',                    count:18,  mean:0.4259, median:0.1333, p75:0.2167, p90:1.4167},
+      {category:'End User>User Termination',            count:375, mean:0.6962, median:0.5167, p75:0.8500, p90:1.4500},
+      {category:'End User>Windows Settings',            count:187, mean:0.3971, median:0.1500, p75:0.3833, p90:0.7667},
+      {category:'Hardware>Asset Shipping & Receiving',  count:10,  mean:0.4533, median:0.3500, p75:0.4667, p90:1.4333},
+      {category:'Hardware>Audio Issue',                 count:62,  mean:0.5164, median:0.2750, p75:0.5333, p90:1.1500},
+      {category:'Hardware>Cable/Adapter',               count:15,  mean:0.6744, median:0.6667, p75:0.8333, p90:1.6000},
+      {category:'Hardware>Conference Room Equipment',   count:16,  mean:0.6010, median:0.4417, p75:0.8333, p90:1.0833},
+      {category:'Hardware>Desk Phone',                  count:10,  mean:0.5883, median:0.3917, p75:0.5000, p90:2.7500},
+      {category:'Hardware>Desktop',                     count:70,  mean:0.6443, median:0.3167, p75:0.7833, p90:1.9833},
+      {category:'Hardware>Disk Usage',                  count:106, mean:0.6083, median:0.4750, p75:0.7667, p90:1.5500},
+      {category:'Hardware>Docking Station',             count:123, mean:0.5313, median:0.3667, p75:0.6667, p90:1.1833},
+      {category:'Hardware>Driver/Firmware Update',      count:96,  mean:0.5250, median:0.2917, p75:0.5833, p90:1.3000},
+      {category:'Hardware>Firewall',                    count:20,  mean:1.2608, median:0.5500, p75:1.4833, p90:5.2833},
+      {category:'Hardware>Headset/Headphone',           count:56,  mean:0.4807, median:0.3333, p75:0.5167, p90:1.0500},
+      {category:'Hardware>Laptop',                      count:123, mean:0.8256, median:0.3833, p75:1.0333, p90:2.0000},
+      {category:'Hardware>Microphone',                  count:15,  mean:0.5078, median:0.3333, p75:0.7667, p90:1.1833},
+      {category:'Hardware>Monitor',                     count:167, mean:0.3986, median:0.2667, p75:0.4833, p90:0.8333},
+      {category:'Hardware>Mouse/Keyboard',              count:102, mean:0.4956, median:0.2667, p75:0.5500, p90:0.7833},
+      {category:'Hardware>NAS/SAN',                     count:6,   mean:0.7944, median:0.6250, p75:1.1833, p90:2.0500},
+      {category:'Hardware>Office Move/Setup',           count:14,  mean:1.3405, median:0.9750, p75:1.2500, p90:2.2500},
+      {category:'Hardware>PC Performance Issue',        count:163, mean:0.7537, median:0.3833, p75:0.6833, p90:1.6833},
+      {category:'Hardware>Printer/Scanner',             count:1021,mean:0.7355, median:0.3667, p75:0.7500, p90:1.4500},
+      {category:'Hardware>Server',                      count:242, mean:0.4118, median:0.1667, p75:0.3500, p90:0.6667},
+      {category:'Hardware>UPS/APC',                     count:25,  mean:0.6473, median:0.2667, p75:0.6500, p90:1.4000},
+      {category:'Hardware>Webcam',                      count:26,  mean:0.2769, median:0.2083, p75:0.4000, p90:0.6500},
+      {category:'Hardware>Wireless Access Point',       count:10,  mean:0.6333, median:0.4000, p75:0.7833, p90:1.8833},
+      {category:'Hardware>iPad',                        count:20,  mean:0.4725, median:0.2833, p75:0.6667, p90:1.3333},
+      {category:'Network>DHCP/IP Management',           count:22,  mean:0.8417, median:0.4583, p75:1.4000, p90:1.9000},
+      {category:'Network>DNS/Domain Management',        count:104, mean:0.9835, median:0.4917, p75:1.3833, p90:2.5167},
+      {category:'Network>ISP/LTE',                      count:35,  mean:1.6824, median:0.7500, p75:1.9333, p90:6.1167},
+      {category:'Network>Meraki Licensing',             count:10,  mean:0.3483, median:0.1333, p75:0.3333, p90:1.8500},
+      {category:'Network>Network Connectivity',         count:185, mean:0.8440, median:0.4000, p75:0.8667, p90:2.0000},
+      {category:'Network>Phone System',                 count:115, mean:0.4738, median:0.1833, p75:0.4667, p90:0.8333},
+      {category:'Network>Security Camera/Door Access',  count:24,  mean:1.3590, median:0.6917, p75:1.3167, p90:3.7333},
+      {category:'Network>Switch Configuration',         count:10,  mean:0.8550, median:0.7583, p75:1.5000, p90:2.2500},
+      {category:'Network>VLAN Configuration',           count:5,   mean:0.9300, median:0.7833, p75:1.2167, p90:1.7667},
+      {category:'Network>VPN',                          count:360, mean:0.6549, median:0.3000, p75:0.7000, p90:1.5000},
+      {category:'Network>Website Access',               count:101, mean:0.5462, median:0.2333, p75:0.5500, p90:1.3000},
+      {category:'Network>Wireless Configuration',       count:43,  mean:1.0686, median:0.5333, p75:1.0167, p90:1.9667},
+      {category:'Security>Account Compromise',          count:29,  mean:0.6557, median:0.4333, p75:0.9167, p90:1.6000},
+      {category:'Security>Avanan',                      count:85,  mean:0.3876, median:0.2667, p75:0.5000, p90:0.8667},
+      {category:'Security>Certificate',                 count:15,  mean:0.6878, median:0.2833, p75:0.9167, p90:2.1000},
+      {category:'Security>Compliance/Audit',            count:26,  mean:0.7590, median:0.4000, p75:0.9667, p90:1.4667},
+      {category:'Security>Encryption',                  count:61,  mean:0.4260, median:0.2333, p75:0.4500, p90:0.9000},
+      {category:'Security>MFA/2FA',                     count:369, mean:0.3990, median:0.2333, p75:0.4167, p90:0.8000},
+      {category:'Security>Phishing/Spam',               count:116, mean:0.3056, median:0.2000, p75:0.3500, p90:0.6000},
+      {category:'Security>Proofpoint',                  count:32,  mean:0.3755, median:0.2167, p75:0.5167, p90:1.1833},
+      {category:'Security>Restore Request',             count:67,  mean:0.2965, median:0.0833, p75:0.3667, p90:0.8333},
+      {category:'Security>SPF/DKIM/DMARC',              count:10,  mean:1.9267, median:1.5083, p75:2.4667, p90:6.7833},
+      {category:'Security>Suspicious Activity',         count:54,  mean:0.3336, median:0.1833, p75:0.4833, p90:0.6667},
+      {category:'Security>Threatlocker',                count:438, mean:0.3464, median:0.1833, p75:0.3667, p90:0.7167},
+      {category:'Security>Virus/Malware',               count:64,  mean:0.1977, median:0.1167, p75:0.2667, p90:0.3833},
+      {category:'Software>Adobe',                       count:341, mean:0.5921, median:0.3500, p75:0.7333, p90:1.2167},
+      {category:'Software>Applied Epic',                count:39,  mean:0.4991, median:0.2333, p75:0.5667, p90:1.5000},
+      {category:'Software>AutoCAD',                     count:23,  mean:0.5188, median:0.3333, p75:0.6667, p90:1.3667},
+      {category:'Software>Bluebeam',                    count:73,  mean:0.5110, median:0.3333, p75:0.5500, p90:1.2000},
+      {category:'Software>CCH ProSystem/Axcess',        count:76,  mean:0.6884, median:0.5083, p75:0.9500, p90:1.5000},
+      {category:'Software>Caseware',                    count:50,  mean:0.7193, median:0.5250, p75:0.8167, p90:1.5500},
+      {category:'Software>Citrix/VDI',                  count:376, mean:0.6098, median:0.3500, p75:0.6000, p90:1.0667},
+      {category:'Software>Cloud Drive Mapper (CDM)',    count:55,  mean:0.5921, median:0.3000, p75:0.5667, p90:0.7500},
+      {category:'Software>Datto',                       count:66,  mean:0.6508, median:0.4250, p75:0.8667, p90:1.5000},
+      {category:'Software>Dialpad',                     count:13,  mean:0.5385, median:0.3167, p75:0.6167, p90:0.9500},
+      {category:'Software>Google Chrome',               count:21,  mean:0.4460, median:0.2167, p75:0.4667, p90:0.9500},
+      {category:'Software>Locator',                     count:20,  mean:0.4692, median:0.4750, p75:0.5833, p90:1.1333},
+      {category:'Software>McLeod',                      count:26,  mean:1.0423, median:0.5333, p75:1.5333, p90:2.4667},
+      {category:'Software>Microsoft 365 Apps Install',  count:36,  mean:0.8694, median:0.3833, p75:0.9667, p90:2.5833},
+      {category:'Software>Microsoft Azure/Entra',       count:54,  mean:0.8006, median:0.3667, p75:1.0000, p90:1.7167},
+      {category:'Software>Microsoft Excel',             count:138, mean:0.6360, median:0.3667, p75:0.6833, p90:1.3000},
+      {category:'Software>Microsoft OneDrive',          count:146, mean:0.6997, median:0.3750, p75:0.6833, p90:1.4500},
+      {category:'Software>Microsoft OneNote',           count:39,  mean:0.6560, median:0.3167, p75:0.8333, p90:1.3167},
+      {category:'Software>Microsoft Outlook',           count:442, mean:0.5654, median:0.3000, p75:0.5833, p90:1.1667},
+      {category:'Software>Microsoft Power BI',          count:25,  mean:0.6400, median:0.3667, p75:0.7167, p90:1.7667},
+      {category:'Software>Microsoft SharePoint',        count:98,  mean:0.9022, median:0.4417, p75:1.1500, p90:1.7500},
+      {category:'Software>Microsoft Teams',             count:224, mean:0.6114, median:0.3333, p75:0.6667, p90:1.2333},
+      {category:'Software>Microsoft Word',              count:56,  mean:0.7836, median:0.4167, p75:0.7500, p90:1.5500},
+      {category:'Software>Nitro',                       count:15,  mean:0.6711, median:0.3500, p75:0.5833, p90:2.0000},
+      {category:'Software>Other Application',           count:706, mean:0.7376, median:0.3333, p75:0.7667, p90:1.5667},
+      {category:'Software>PerfectLaw/AIM',              count:19,  mean:0.3798, median:0.1500, p75:0.6667, p90:1.2000},
+      {category:'Software>Printix',                     count:21,  mean:0.6389, median:0.4333, p75:0.7833, p90:1.3833},
+      {category:'Software>QuickBooks',                  count:179, mean:0.7054, median:0.4167, p75:0.9167, p90:1.6833},
+      {category:'Software>RDP',                         count:148, mean:0.5650, median:0.2667, p75:0.6333, p90:1.4667},
+      {category:'Software>SMTP2GO',                     count:16,  mean:0.7958, median:0.4583, p75:1.0000, p90:2.3167},
+      {category:'Software>Sage',                        count:87,  mean:1.2688, median:0.5667, p75:1.4833, p90:3.2667},
+      {category:'Software>Smokeball',                   count:23,  mean:0.5457, median:0.3167, p75:0.6667, p90:0.7833},
+      {category:'Software>Software Removal',            count:40,  mean:0.7429, median:0.4000, p75:0.6833, p90:2.1167},
+      {category:'Software>Splashtop',                   count:43,  mean:0.4213, median:0.2500, p75:0.5000, p90:1.2167},
+      {category:'Software>Threadworks',                 count:17,  mean:0.3049, median:0.1833, p75:0.4000, p90:0.6667},
+      {category:'Software>Web Browser',                 count:99,  mean:0.3689, median:0.1667, p75:0.4167, p90:0.8833},
+      {category:'Software>Windows OS',                  count:97,  mean:0.9804, median:0.5000, p75:1.1333, p90:2.5333},
+      {category:'Software>Zee Drive',                   count:48,  mean:0.5556, median:0.3000, p75:0.5667, p90:1.1333},
+      {category:'Software>Zoom',                        count:56,  mean:0.4774, median:0.3667, p75:0.5833, p90:1.0000},
+      {category:'Triage>Call Transfer',                 count:6,   mean:0.0639, median:0.0583, p75:0.0667, p90:0.1000},
+    ];
+
+    // Badge class by ticket type
+    const TYPE_BADGE = {
+      'Service':          'badge-service',
+      'Request':          'badge-request',
+      'New User Setup':   'badge-nus',
+      'User Termination': 'badge-term',
+      'License Change':   'badge-license',
+      'Avanan':           'badge-amber',
+      'NOC':              'badge-amber',
+      'Quick Time':       'badge-other',
+      'Project Task':     'badge-other',
+    };
+
+    // Lookup maps built from the by-type and by-category datasets
+    const TYPE_MEDIAN_MAP  = Object.fromEntries(DATA_BY_TYPE.map(r => [r.type, r.median]));
+    const CAT_MEDIAN_MAP   = Object.fromEntries(DATA_BY_CAT.map(r => [r.category, r.median]));
+
+
+    // ═══════════ STATE ═══════════
+
+    let cmpSortCol  = 'comboCount';
+    let cmpSortDir  = -1;
+    let typeSortCol = 'count';
+    let typeSortDir = -1;
+    let catSortCol  = 'count';
+    let catSortDir  = -1;
+
+
+    // ═══════════ UTILS ═══════════
+
+    /**
+     * Format hours as "Xh" if >= 1h, otherwise "Xm".
+     * @param {number} h
+     * @returns {string}
+     */
+    function formatHours(h) {
+      const totalMins  = h * 60;
+      const roundedMin = Math.ceil(totalMins / 15) * 15;
+      const hrs        = Math.floor(roundedMin / 60);
+      const mins       = roundedMin % 60;
+      if (hrs === 0) return `${mins}m`;
+      if (mins === 0) return `${hrs}h`;
+      return `${hrs}h ${mins}m`;
+    }
+
+    /**
+     * Return badge CSS class for a ticket type string.
+     * @param {string} type
+     * @returns {string}
+     */
+    function getBadgeClass(type) {
+      return TYPE_BADGE[type] || 'badge-other';
+    }
+
+    /**
+     * Split a "Group>Name" category into its parts.
+     * @param {string} category
+     * @returns {{group: string, name: string}}
+     */
+    function splitCategory(category) {
+      if (!category || !category.includes('>')) {
+        return { group: '', name: category || '—' };
+      }
+      const idx = category.indexOf('>');
+      return { group: category.slice(0, idx), name: category.slice(idx + 1) };
+    }
+
+    /**
+     * Build an HTML delta pill showing difference from a reference median.
+     * @param {number} comboMedian
+     * @param {number|undefined} refMedian
+     * @returns {string} HTML string
+     */
+    function buildDeltaPill(comboMedian, refMedian) {
+      if (refMedian === undefined || refMedian === null) {
+        return '<span class="delta delta-same">—</span>';
+      }
+      const diff = comboMedian - refMedian;
+      const sign = diff > 0 ? '+' : '';
+      const cls  = diff > 0.005 ? 'delta-up' : diff < -0.005 ? 'delta-down' : 'delta-same';
+      const label = Math.abs(diff) < 0.005 ? '±0' : sign + formatHours(diff);
+      return `<span class="delta ${cls}">${label}</span>`;
+    }
+
+    /**
+     * Sort an array of objects by a given key and direction.
+     * @param {Array} arr
+     * @param {string} key
+     * @param {number} dir - 1 or -1
+     * @returns {Array}
+     */
+    function sortRows(arr, key, dir) {
+      return arr.slice().sort((a, b) => {
+        const av = a[key] ?? '';
+        const bv = b[key] ?? '';
+        return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
+      });
+    }
+
+    /**
+     * Update sort arrow indicators for a given table prefix.
+     * @param {string} prefix - e.g. 'cmp', 'type', 'cat'
+     * @param {string} col
+     * @param {number} dir
+     */
+    function updateSortArrows(prefix, col, dir) {
+      document.querySelectorAll(`[id^="${prefix}-arr-"]`).forEach(el => {
+        el.classList.remove('active');
+        el.textContent = '▼';
+      });
+      const arrow = document.getElementById(`${prefix}-arr-${col}`);
+      if (arrow) {
+        arrow.classList.add('active');
+        arrow.textContent = dir === -1 ? '▼' : '▲';
+      }
+    }
+
+
+    // ═══════════ COMPARISON TABLE ═══════════
+
+    /**
+     * Populate the type and category-group filter dropdowns for the comparison tab.
+     */
+    function buildCmpFilters() {
+      const types = [...new Set(DATA_COMBO.map(r => r.type))].sort();
+      const catGroups = [...new Set(
+        DATA_COMBO.map(r => r.category.split('>')[0]).filter(Boolean)
+      )].sort();
+
+      const typeEl = document.getElementById('cmpTypeFilter');
+      types.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        typeEl.appendChild(opt);
+      });
+
+      const catEl = document.getElementById('cmpCatGroupFilter');
+      catGroups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        catEl.appendChild(opt);
+      });
+    }
+
+    /**
+     * Tiered blended estimate using combo, type-only, and category-only medians.
+     * Weights scale with combo sample size — more data = more trust in the specific combo.
+     *   >= 30 tickets : 100% combo (fully reliable)
+     *   10–29 tickets : 70% combo, 15% type, 15% category
+     *   < 10 tickets  : 40% combo, 30% type, 30% category
+     * If category is missing, its weight redistributes to type.
+     * @param {number} comboMedian
+     * @param {number} comboCount
+     * @param {number} typeMedian
+     * @param {number|null} catMedian
+     * @returns {number}
+     */
+    function calcBlended(comboMedian, comboCount, typeMedian, catMedian) {
+      const hasCat = catMedian !== null && catMedian !== undefined;
+
+      if (comboCount >= 30) return comboMedian;
+
+      let wCombo, wType, wCat;
+
+      if (comboCount >= 10) {
+        wCombo = 0.70;
+        wType  = hasCat ? 0.15 : 0.30;
+        wCat   = hasCat ? 0.15 : 0.00;
+      } else {
+        wCombo = 0.40;
+        wType  = hasCat ? 0.30 : 0.60;
+        wCat   = hasCat ? 0.30 : 0.00;
+      }
+
+      return (wCombo * comboMedian) + (wType * typeMedian) + (hasCat ? wCat * catMedian : 0);
+    }
+
+    /**
+     * Enrich combo rows with their type-only and category-only median lookups.
+     * @returns {Array}
+     */
+    function buildCmpRows() {
+      return DATA_COMBO.map(r => {
+        const typeMedian = TYPE_MEDIAN_MAP[r.type];
+        const catMedian  = CAT_MEDIAN_MAP[r.category] ?? null;
+        return {
+          type:         r.type,
+          category:     r.category,
+          comboCount:   r.count,
+          comboMedian:  r.median,
+          comboP90:     r.p90,
+          typeMedian,
+          catMedian,
+          typeDelta:    r.median - (typeMedian ?? r.median),
+          catDelta:     r.median - (catMedian  ?? r.median),
+          blended:      calcBlended(r.median, r.count, typeMedian, catMedian),
+        };
+      });
+    }
+
+    /**
+     * Filter and render the comparison table.
+     */
+    function renderCmpTable() {
+      const typeVal  = document.getElementById('cmpTypeFilter').value;
+      const catGrp   = document.getElementById('cmpCatGroupFilter').value;
+      const searchVal = document.getElementById('cmpSearch').value.toLowerCase();
+
+      let rows = buildCmpRows().filter(r => {
+        if (typeVal && r.type !== typeVal) return false;
+        if (catGrp && !r.category.startsWith(catGrp + '>')) return false;
+        if (searchVal) {
+          const hay = (r.type + ' ' + r.category).toLowerCase();
+          if (!hay.includes(searchVal)) return false;
+        }
+        return true;
+      });
+
+      rows = sortRows(rows, cmpSortCol, cmpSortDir);
+      document.getElementById('cmpRowCount').textContent = `${rows.length.toLocaleString()} rows`;
+
+      const tbody = document.getElementById('cmpTableBody');
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="no-results">No results match the current filters.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => {
+        const { group, name } = splitCategory(r.category);
+        const groupHtml = group ? `<span class="cat-group">${group} &rsaquo; </span>` : '';
+
+        return `
+          <tr>
+            <td><span class="badge ${getBadgeClass(r.type)}">${r.type}</span></td>
+            <td>${groupHtml}<span class="cat-name">${name}</span></td>
+            <td class="num">${r.comboCount.toLocaleString()}</td>
+            <td class="num median-combo" style="border-left:2px solid var(--border-mid)">${formatHours(r.comboMedian)}</td>
+            <td class="num-muted">${formatHours(r.comboP90)}</td>
+            <td class="num median-type" style="border-left:2px solid var(--border-mid)">${r.typeMedian !== undefined ? formatHours(r.typeMedian) : '—'}</td>
+            <td class="num" style="text-align:right">${buildDeltaPill(r.comboMedian, r.typeMedian)}</td>
+            <td class="num median-cat" style="border-left:2px solid var(--border-mid)">${r.catMedian !== undefined ? formatHours(r.catMedian) : '—'}</td>
+            <td class="num" style="text-align:right">${buildDeltaPill(r.comboMedian, r.catMedian)}</td>
+            <td class="num median-blend" style="border-left:2px solid var(--border-mid)">${formatHours(r.blended)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Handle sort click on comparison table.
+     * @param {string} col
+     */
+    function onCmpSort(col) {
+      if (cmpSortCol === col) cmpSortDir *= -1;
+      else { cmpSortCol = col; cmpSortDir = -1; }
+      updateSortArrows('cmp', col, cmpSortDir);
+      renderCmpTable();
+    }
+
+
+    // ═══════════ BY TYPE TABLE ═══════════
+
+    /**
+     * Render the by-ticket-type table.
+     */
+    function renderTypeTable() {
+      const searchVal = document.getElementById('typeSearch').value.toLowerCase();
+
+      let rows = DATA_BY_TYPE.filter(r =>
+        !searchVal || r.type.toLowerCase().includes(searchVal)
+      );
+      rows = sortRows(rows, typeSortCol, typeSortDir);
+
+      document.getElementById('typeRowCount').textContent = `${rows.length} rows`;
+
+      const tbody = document.getElementById('typeTableBody');
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td><span class="badge ${getBadgeClass(r.type)}">${r.type}</span></td>
+          <td class="num">${r.count.toLocaleString()}</td>
+          <td class="num" style="font-weight:600; color:var(--col-type-fg)">${formatHours(r.median)}</td>
+          <td class="num-muted">${formatHours(r.mean)}</td>
+          <td class="num-muted">${formatHours(r.p75)}</td>
+          <td class="num-muted">${formatHours(r.p90)}</td>
+        </tr>
+      `).join('');
+    }
+
+    /**
+     * Handle sort click on the by-type table.
+     * @param {string} col
+     */
+    function onTypeSort(col) {
+      if (typeSortCol === col) typeSortDir *= -1;
+      else { typeSortCol = col; typeSortDir = -1; }
+      updateSortArrows('type', col, typeSortDir);
+      renderTypeTable();
+    }
+
+
+    // ═══════════ BY CATEGORY TABLE ═══════════
+
+    /**
+     * Populate the category group filter for the by-category tab.
+     */
+    function buildCatFilters() {
+      const groups = [...new Set(
+        DATA_BY_CAT.map(r => r.category.split('>')[0]).filter(Boolean)
+      )].sort();
+
+      const el = document.getElementById('catGroupOnlyFilter');
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        el.appendChild(opt);
+      });
+    }
+
+    /**
+     * Render the by-category table.
+     */
+    function renderCatTable() {
+      const groupVal  = document.getElementById('catGroupOnlyFilter').value;
+      const searchVal = document.getElementById('catSearch').value.toLowerCase();
+
+      let rows = DATA_BY_CAT.filter(r => {
+        if (groupVal && !r.category.startsWith(groupVal + '>')) return false;
+        if (searchVal && !r.category.toLowerCase().includes(searchVal)) return false;
+        return true;
+      });
+      rows = sortRows(rows, catSortCol, catSortDir);
+
+      document.getElementById('catRowCount').textContent = `${rows.length} rows`;
+
+      const tbody = document.getElementById('catTableBody');
+      tbody.innerHTML = rows.map(r => {
+        const { group, name } = splitCategory(r.category);
+        const groupHtml = group ? `<span class="cat-group">${group} &rsaquo; </span>` : '';
+
+        return `
+          <tr>
+            <td>${groupHtml}<span class="cat-name">${name}</span></td>
+            <td class="num">${r.count.toLocaleString()}</td>
+            <td class="num" style="font-weight:600; color:var(--col-cat-fg)">${formatHours(r.median)}</td>
+            <td class="num-muted">${formatHours(r.mean)}</td>
+            <td class="num-muted">${formatHours(r.p75)}</td>
+            <td class="num-muted">${formatHours(r.p90)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Handle sort click on the by-category table.
+     * @param {string} col
+     */
+    function onCatSort(col) {
+      if (catSortCol === col) catSortDir *= -1;
+      else { catSortCol = col; catSortDir = -1; }
+      updateSortArrows('cat', col, catSortDir);
+      renderCatTable();
+    }
+
+
+    // ═══════════ TABS ═══════════
+
+    /**
+     * Handle tab button clicks, switching the active pane.
+     * @param {string} tabId
+     */
+    function onTabClick(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.toggle('active', pane.id === `tab-${tabId}`);
+      });
+    }
+
+
+    // ═══════════ EVENTS ═══════════
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => onTabClick(btn.dataset.tab));
+    });
+
+    document.getElementById('cmpTypeFilter').addEventListener('change', renderCmpTable);
+    document.getElementById('cmpCatGroupFilter').addEventListener('change', renderCmpTable);
+    document.getElementById('cmpSearch').addEventListener('input', renderCmpTable);
+
+    document.getElementById('typeSearch').addEventListener('input', renderTypeTable);
+
+    document.getElementById('catGroupOnlyFilter').addEventListener('change', renderCatTable);
+    document.getElementById('catSearch').addEventListener('input', renderCatTable);
+
+
+    // ═══════════ INIT ═══════════
+
+    buildCmpFilters();
+    buildCatFilters();
+
+    // Initial renders with default sort
+    onCmpSort('comboCount');
+    onTypeSort('count');
+    onCatSort('count');
+  </script>
+</body>
+</html>
