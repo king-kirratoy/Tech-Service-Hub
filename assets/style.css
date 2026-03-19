@@ -45,6 +45,9 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .auth-bar input:focus{border-color:var(--blue)}
 .auth-bar .ks{font-size:10px;font-weight:600;white-space:nowrap;min-width:65px;text-align:right}
 .ks.valid{color:var(--green)}.ks.missing{color:var(--warning)}
+.login-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:220px;background:linear-gradient(135deg,rgba(0,40,85,0.97),rgba(0,22,50,0.97));backdrop-filter:blur(16px);border:1px solid var(--border-bright);border-radius:12px;padding:16px;z-index:200;box-shadow:0 8px 30px rgba(0,0,0,0.5);display:flex;flex-direction:column;gap:10px}
+.login-dropdown input{background:rgba(0,149,200,0.06);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;width:100%}
+.login-dropdown input:focus{border-color:var(--blue)}
 /* Calendar */
 .cal-layout{display:flex;gap:16px;margin-bottom:22px}
 .tech-sidebar{width:175px;flex-shrink:0;padding:14px 10px;align-self:stretch;overflow-y:auto}

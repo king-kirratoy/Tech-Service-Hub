@@ -37,7 +37,16 @@
   <div style="display:flex;align-items:center;gap:14px">
     <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace"></span>
     <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
-    <button class="btn" id="commanderBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> Login</button>
+    <span id="loggedInUser" style="font-size:10px;color:var(--green);font-family:'IBM Plex Mono',monospace;font-weight:600;display:none"></span>
+    <div style="position:relative">
+      <button class="btn" id="commanderBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> <span id="commanderBtnLabel">Login</span></button>
+      <div id="commanderPanel" class="login-dropdown hidden">
+        <input type="text" id="commanderName" placeholder="Name..." autocomplete="name" spellcheck="false">
+        <input type="password" id="commanderPwd" placeholder="Password..." autocomplete="current-password" spellcheck="false">
+        <button class="btn-accent" id="commanderLoginBtn" style="padding:8px;font-size:12px">Login</button>
+        <span id="commanderStatus" style="font-size:10px;color:var(--warning);display:none"></span>
+      </div>
+    </div>
   </div>
 </div>
 <div id="battleSection" class="hidden" style="padding:0">
@@ -57,7 +66,6 @@
     <div id="gateStatus" style="margin-top:12px;font-size:11px;color:var(--text-dim)"></div>
   </div>
   <div id="mainContent" class="hidden">
-  <div class="glass auth-bar hidden" id="commanderPanel"><label>Name</label><input type="text" id="commanderName" placeholder="Your name..." autocomplete="name" spellcheck="false" style="max-width:160px"><label style="margin-left:4px">Password</label><input type="password" id="commanderPwd" placeholder="Password..." autocomplete="current-password" spellcheck="false" style="max-width:160px"><button class="btn" id="commanderLoginBtn" style="padding:4px 12px;font-size:11px">Login</button><button class="btn hidden" id="commanderLogoutBtn" style="padding:4px 12px;font-size:11px;border-color:var(--danger);color:var(--danger)">Logout</button><span class="ks missing" id="commanderStatus">Not logged in</span></div>
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>

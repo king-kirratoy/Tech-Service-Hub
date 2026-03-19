@@ -1089,11 +1089,23 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
 function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateCreated&&wd.some(d=>isSD(d,t.dateCreated))).length+closedTix.length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
 
 // ═══════════ EVENTS ═══════════
-// Login button toggle
-document.getElementById("commanderBtn").addEventListener("click",()=>{
-  const panel=document.getElementById("commanderPanel");const btn=document.getElementById("commanderBtn");
-  panel.classList.toggle("hidden");
-  btn.innerHTML=panel.classList.contains("hidden")?'<svg style="width:14px;height:14px"><use href="#iad"/></svg> Login':'<svg style="width:14px;height:14px"><use href="#ix"/></svg> Hide Login';
+// Login/logout button
+document.getElementById("commanderBtn").addEventListener("click",async()=>{
+  if(loggedInAgent){
+    isCommander=false;loggedInAgent=null;
+    await fetch(PROXY_BASE+"/api/logout",{method:"POST",credentials:"include"}).catch(()=>{});
+    authToken="";stopAutoRefresh();applyLoginState();
+  }else{
+    document.getElementById("commanderPanel").classList.toggle("hidden");
+  }
+});
+// Close dropdown when clicking outside
+document.addEventListener("click",(e)=>{
+  const panel=document.getElementById("commanderPanel");
+  const btn=document.getElementById("commanderBtn");
+  if(panel&&!panel.classList.contains("hidden")&&!panel.contains(e.target)&&!btn.contains(e.target)){
+    panel.classList.add("hidden");
+  }
 });
 function applyLoginState(){
   const mainContent=document.getElementById("mainContent");
@@ -1111,9 +1123,8 @@ function applyLoginState(){
   }
   const riskTab=document.querySelector('.tab[data-tab="risk"]');
   const st=document.getElementById("commanderStatus");
-  const loginBtn=document.getElementById("commanderLoginBtn");
-  const logoutBtn=document.getElementById("commanderLogoutBtn");
-  const pwdInput=document.getElementById("commanderPwd");
+  const btnLabel=document.getElementById("commanderBtnLabel");
+  const loggedInUserEl=document.getElementById("loggedInUser");
   const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#capTab .qbr-select label:nth-of-type(2)');
   const agentSelect=document.getElementById("kpiAgent");
   // Find the agent filter label+select wrapper elements (Workload tab)
@@ -1130,7 +1141,6 @@ function applyLoginState(){
     if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")campAgentLabelEl=el;
     if(el.id==="campaignAgent")campAgentSelectEl=el;
   });
-  const nameInput=document.getElementById("commanderName");
   const robotCustomizer=document.getElementById("robotCustomizer");
   if(isCommander){
     riskTab.style.display="";
@@ -1151,20 +1161,25 @@ function applyLoginState(){
     if(campAgentLabelEl)campAgentLabelEl.style.display="none";
     if(campAgentSelectEl)campAgentSelectEl.style.display="none";
   }
-  // Login panel state — always accessible, content changes based on login
+  // Login button and user display state
   if(loggedInAgent){
-    const label=isCommander?"Commander View":"Logged in as "+loggedInAgent;
-    st.textContent=label;st.classList.remove("missing");st.classList.add("set");
-    loginBtn.classList.add("hidden");logoutBtn.classList.remove("hidden");
-    nameInput.style.display="none";
-    pwdInput.style.display="none";
+    if(commanderPanel)commanderPanel.classList.add("hidden");
+    if(btnLabel)btnLabel.textContent="Logout";
+    if(loggedInUserEl){
+      loggedInUserEl.textContent=isCommander?"Commander View":"Logged in as "+loggedInAgent;
+      loggedInUserEl.style.display="";
+    }
+    if(st){st.textContent="";st.style.display="none";}
     robotCustomizer.classList.remove("hidden");
     loadAgentRobot();
   }else{
-    st.textContent="Not logged in";st.classList.add("missing");st.classList.remove("set");
-    loginBtn.classList.remove("hidden");logoutBtn.classList.add("hidden");
-    nameInput.style.display="";nameInput.value="";
-    pwdInput.style.display="";pwdInput.value="";
+    if(btnLabel)btnLabel.textContent="Login";
+    if(loggedInUserEl){loggedInUserEl.textContent="";loggedInUserEl.style.display="none";}
+    if(st){st.textContent="";st.style.display="none";}
+    const nameInput=document.getElementById("commanderName");
+    const pwdInput=document.getElementById("commanderPwd");
+    if(nameInput)nameInput.value="";
+    if(pwdInput)pwdInput.value="";
     robotCustomizer.classList.add("hidden");
   }
   // Update default workload selection based on login state
@@ -1197,15 +1212,15 @@ document.getElementById("gateLoginBtn").addEventListener("click",doGateLogin);
 document.getElementById("gateName").addEventListener("keydown",(e)=>{if(e.key==="Enter")document.getElementById("gatePwd").focus()});
 document.getElementById("gatePwd").addEventListener("keydown",(e)=>{if(e.key==="Enter")doGateLogin()});
 
-// In-app login (commander panel)
+// In-app login (commander panel dropdown)
 document.getElementById("commanderLoginBtn").addEventListener("click",async()=>{
   const name=document.getElementById("commanderName").value.trim();
   const pwd=document.getElementById("commanderPwd").value.trim();
   const st=document.getElementById("commanderStatus");
-  if(!name||!pwd){st.textContent="Enter name and password";st.classList.add("missing");return}
-  st.textContent="Logging in...";st.classList.add("missing");
+  if(!name||!pwd){st.textContent="Enter name and password";st.style.display="";return}
+  st.textContent="Logging in...";st.style.display="";st.style.color="var(--blue)";
   const result=await supaLogin(name,pwd);
-  if(result.error){st.textContent=result.error;st.classList.add("missing");return}
+  if(result.error){st.textContent=result.error;st.style.color="var(--danger)";st.style.display="";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
   await loadAgentSchedules();
@@ -1221,11 +1236,6 @@ document.getElementById("commanderName").addEventListener("keydown",(e)=>{
 });
 document.getElementById("commanderPwd").addEventListener("keydown",(e)=>{
   if(e.key==="Enter")document.getElementById("commanderLoginBtn").click();
-});
-document.getElementById("commanderLogoutBtn").addEventListener("click",async()=>{
-  isCommander=false;loggedInAgent=null;
-  await fetch(PROXY_BASE+"/api/logout",{method:"POST",credentials:"include"}).catch(()=>{});
-  authToken="";stopAutoRefresh();applyLoginState();
 });
 // Last sync timestamp
 function updateLastSync(){
