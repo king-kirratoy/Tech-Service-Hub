@@ -527,7 +527,7 @@ async function supaLogin(password){
 
 async function fetchRetry(url,opts={},retries=3,delay=1500){
   for(let i=0;i<=retries;i++){
-    try{const r=await fetch(url,opts);if(r.ok)return r;if(i<retries)await new Promise(ok=>setTimeout(ok,delay*(i+1)))}catch(e){if(i===retries)throw e;await new Promise(ok=>setTimeout(ok,delay*(i+1)))}
+    try{const r=await fetch(url,opts);if(r.ok)return r;if(r.status===401)return r;if(i<retries)await new Promise(ok=>setTimeout(ok,delay*(i+1)))}catch(e){if(i===retries)throw e;await new Promise(ok=>setTimeout(ok,delay*(i+1)))}
   }
   return null;
 }
@@ -1847,6 +1847,17 @@ function stopAutoRefresh(){
     }catch(e){console.error("Session restore error:",e)}
   }
   if(authToken){
+    // Validate token with a lightweight API call before loading data
+    try{
+      const test=await fetch(PROXY_BASE+"/api/agent-schedules",{headers:authH()});
+      if(test.status===401){
+        // Token is stale — clear and show login gate
+        authToken="";localStorage.removeItem("hubToken");loggedInAgent=null;isCommander=false;
+        if(_sb)await _sb.auth.signOut().catch(()=>{});
+      }
+    }catch(e){/* network error — keep token, try anyway */}
+  }
+  if(authToken){
     await loadAgentSchedules();
     allRobotConfigs=await loadAllRobots();
     commanderAgentNames=await loadCommanderAgents();
@@ -2094,14 +2105,6 @@ async function loadAgentRobot(){
 
 
 
-// Load robot configs, commander list, comms, and preview sprite on page load
-setTimeout(async()=>{
-  if(!authToken)return; // Not logged in yet — skip API calls
-  allRobotConfigs=await loadAllRobots();
-  commanderAgentNames=await loadCommanderAgents();
-  loadAllHatSprites();
-  initComms();
-},1000);
 
 
 // ═══════════ BATTLEFIELD ENGINE ═══════════
