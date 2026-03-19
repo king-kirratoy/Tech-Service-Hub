@@ -289,14 +289,15 @@ def login():
         return jsonify({"error": "Too many login attempts. Try again in a few minutes."}), 429
 
     data = request.get_json(silent=True) or {}
+    agent_name = data.get("agent_name", "").strip()
     password = data.get("password", "").strip()
-    if not password:
-        return jsonify({"error": "Password required"}), 400
+    if not agent_name or not password:
+        return jsonify({"error": "Name and password required"}), 400
 
-    # Look up agent by password in agent_logins table
+    # Look up agent by name only — password is never used as a query parameter
     resp = supabase_request("GET", "agent_logins", params={
-        "select": "agent_name,role",
-        "password": f"eq.{password}",
+        "select": "agent_name,role,password",
+        "agent_name": f"eq.{agent_name}",
         "limit": "1"
     })
     if resp.status_code != 200:
@@ -305,13 +306,13 @@ def login():
     rows = resp.json()
     if not rows:
         LOGIN_ATTEMPTS[ip].append(time.time())
-        log.warning("Failed login attempt from IP %s", ip)
-        return jsonify({"error": "Invalid password"}), 401
+        log.warning("Failed login attempt from IP %s (unknown agent: %s)", ip, agent_name)
+        return jsonify({"error": "Invalid name or password"}), 401
 
     agent = rows[0]
     email = agent_email(agent["agent_name"])
 
-    # Sign in via Supabase GoTrue to get a real session
+    # Primary path: Supabase GoTrue verifies the password
     auth_resp = gotrue_sign_in(email, password)
     log.info("GoTrue sign-in for %s → status %d", agent["agent_name"], auth_resp.status_code)
     if auth_resp.status_code == 200:
@@ -325,15 +326,27 @@ def login():
             "role": agent["role"],
         })
 
-    # Fallback: GoTrue user may not exist yet — use legacy token
-    log.warning("GoTrue sign-in failed for %s (status %d), using legacy token",
-                agent["agent_name"], auth_resp.status_code)
-    token = create_token(agent["agent_name"], agent["role"])
-    return jsonify({
-        "token": token,
-        "agent_name": agent["agent_name"],
-        "role": agent["role"],
-    })
+    # Fallback for agents not yet migrated to Supabase Auth.
+    # Checks the plaintext password column as a temporary bridge.
+    # TODO: Remove this block (and the `password` field in the SELECT above)
+    #       once all agents have been migrated via /api/admin/migrate-auth.
+    legacy_pwd = agent.get("password", "")
+    if legacy_pwd and legacy_pwd == password:
+        log.warning(
+            "Legacy plaintext login for %s — run /api/admin/migrate-auth to complete migration",
+            agent["agent_name"]
+        )
+        token = create_token(agent["agent_name"], agent["role"])
+        return jsonify({
+            "token": token,
+            "agent_name": agent["agent_name"],
+            "role": agent["role"],
+        })
+
+    LOGIN_ATTEMPTS[ip].append(time.time())
+    log.warning("Failed login for %s from IP %s (GoTrue status %d)",
+                agent["agent_name"], ip, auth_resp.status_code)
+    return jsonify({"error": "Invalid name or password"}), 401
 
 
 
