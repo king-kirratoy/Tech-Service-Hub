@@ -688,8 +688,8 @@ function renderCal(){
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
       h+=`<div class="tt ${riskClass}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${esc(tk.category)}</span><span class="ti">${esc(tk.id)}</span></div>
-          <div class="tt-row2"><span class="tit" style="color:${stC}">${esc(tk.status)}</span><span class="te">${tk.est}h</span></div>
+          <div class="tt-row1"><span class="ti">${esc(tk.id)}</span><span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
+          <div class="tt-row2"><span class="tc">${esc(tk.category)}</span><span class="te">${tk.est}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
@@ -731,8 +731,8 @@ function renderCal(){
         const popSide=(di>=3?"pop-left":"")+" pop-bottom";
         h+=`<div class="tt tt-closed" style="height:${closedHt}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="tc">${esc(ct.category)}</span><span class="ti">${esc(ct.id)}</span></div>
-          <div class="tt-row2"><span class="tit" style="color:#999">Closed</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
+          <div class="tt-row1"><span class="ti">${esc(ct.id)}</span><span class="tit" style="color:#999">Closed</span></div>
+          <div class="tt-row2"><span class="tc">${esc(ct.category)}</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">Closed ${closedDate}</div>
