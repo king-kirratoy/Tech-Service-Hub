@@ -186,18 +186,20 @@ def require_auth(f):
         if SUPABASE_JWT_SECRET:
             try:
                 user = _decode_supabase_jwt(token)
+                log.info("Supabase JWT decode OK for %s", request.path)
             except (jwt.ExpiredSignatureError, jwt.InvalidTokenError) as e:
-                log.debug("Supabase JWT decode failed: %s", e)
+                log.warning("Supabase JWT decode failed for %s: %s", request.path, e)
         if user is None and (JWT_SECRET or SUPABASE_JWT_SECRET):
             try:
                 user = _decode_legacy_jwt(token)
+                log.info("Legacy JWT decode OK for %s", request.path)
             except jwt.ExpiredSignatureError:
                 return jsonify({"error": "Token expired"}), 401
             except jwt.InvalidTokenError as e:
-                log.debug("Legacy JWT decode failed: %s", e)
+                log.warning("Legacy JWT decode failed for %s: %s", request.path, e)
         if user is None:
-            log.warning("Auth failed — token prefix: %s..., JWT_SECRET set: %s, SUPABASE_JWT_SECRET set: %s",
-                        token[:20] if token else "(empty)", bool(JWT_SECRET), bool(SUPABASE_JWT_SECRET))
+            log.warning("Auth REJECTED %s — token[:40]: %s, JWT_SECRET set: %s, SUPABASE_JWT_SECRET set: %s",
+                        request.path, token[:40] if token else "(empty)", bool(JWT_SECRET), bool(SUPABASE_JWT_SECRET))
             return jsonify({"error": "Invalid or expired token"}), 401
         request.user = user
         return f(*args, **kwargs)
