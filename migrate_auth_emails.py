@@ -154,23 +154,23 @@ def main() -> None:
             # Check whether the new email already exists (already migrated)
             if new in users_by_email:
                 results["already_correct"].append(name)
-                print(f"  ✓ {name!r} — already migrated ({new})")
+                print(f"  [OK] {name!r} -- already migrated ({new})")
             else:
                 results["not_found"].append(name)
-                print(f"  ✗ {name!r} — no Auth user found at {old!r} or {new!r}")
+                print(f"  [!!] {name!r} -- no Auth user found at {old!r} or {new!r}")
             continue
 
-        print(f"  → {name!r}")
+        print(f"  -> {name!r}")
         print(f"       old: {old}")
         print(f"       new: {new}")
 
         if args.apply:
             try:
                 update_user_email(user["id"], new)
-                print(f"       ✓ updated")
+                print(f"       [OK] updated")
                 results["updated"].append(name)
             except requests.HTTPError as exc:
-                print(f"       ✗ FAILED: {exc.response.status_code} {exc.response.text}")
+                print(f"       [!!] FAILED: {exc.response.status_code} {exc.response.text}")
         else:
             print(f"       (skipped — dry run)")
             results["updated"].append(name)
