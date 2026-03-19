@@ -225,7 +225,7 @@ def require_auth(f):
         if not auth_header.startswith("Bearer "):
             return jsonify({"error": "Missing or invalid Authorization header"}), 401
         token = auth_header[7:]
-        # Try Supabase JWT first, fall back to legacy
+        # Supabase JWT only
         user = None
         is_supabase_jwt = False
         if SUPABASE_JWT_SECRET:
@@ -233,16 +233,10 @@ def require_auth(f):
                 user = _decode_supabase_jwt(token)
                 is_supabase_jwt = True
                 log.info("Supabase JWT decode OK for %s", request.path)
-            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError) as e:
-                log.warning("Supabase JWT decode failed for %s: %s", request.path, e)
-        if user is None and (JWT_SECRET or SUPABASE_JWT_SECRET):
-            try:
-                user = _decode_legacy_jwt(token)
-                log.info("Legacy JWT decode OK for %s", request.path)
             except jwt.ExpiredSignatureError:
                 return jsonify({"error": "Token expired"}), 401
             except jwt.InvalidTokenError as e:
-                log.warning("Legacy JWT decode failed for %s: %s", request.path, e)
+                log.warning("Supabase JWT decode failed for %s: %s", request.path, e)
         if user is None:
             log.warning("Auth REJECTED %s — token[:40]: %s, JWT_SECRET set: %s, SUPABASE_JWT_SECRET set: %s",
                         request.path, token[:40] if token else "(empty)", bool(JWT_SECRET), bool(SUPABASE_JWT_SECRET))
