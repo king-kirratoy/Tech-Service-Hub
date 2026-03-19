@@ -679,11 +679,11 @@ def delete_comms_card(card_id):
     # Delete reactions first
     supabase_request("DELETE", "comms_reactions", params={
         "card_id": f"eq.{card_id}"
-    }, auth_token=request.auth_token)
-    # Delete the card
+    })
+    # Delete the card — service role key so commanders can delete any card
     resp = supabase_request("DELETE", "comms_cards", params={
         "id": f"eq.{card_id}"
-    }, auth_token=request.auth_token)
+    })
     if resp.status_code not in (200, 204):
         return jsonify({"error": "Failed to delete card"}), 502
     return jsonify({"ok": True})
