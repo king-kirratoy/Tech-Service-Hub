@@ -315,7 +315,7 @@ def login():
 
     # Look up agent by name only — password is never used as a query parameter
     resp = supabase_request("GET", "agent_logins", params={
-        "select": "agent_name,role,password",
+        "select": "agent_name,role",
         "agent_name": f"eq.{agent_name}",
         "limit": "1"
     })
@@ -331,7 +331,7 @@ def login():
     agent = rows[0]
     email = agent_email(agent["agent_name"])
 
-    # Primary path: Supabase GoTrue verifies the password
+    # Supabase GoTrue verifies the password
     auth_resp = gotrue_sign_in(email, password)
     log.info("GoTrue sign-in for %s → status %d", agent["agent_name"], auth_resp.status_code)
     if auth_resp.status_code == 200:
@@ -341,23 +341,6 @@ def login():
             "access_token": session.get("access_token"),
             "refresh_token": session.get("refresh_token"),
             "expires_in": session.get("expires_in", 3600),
-            "agent_name": agent["agent_name"],
-            "role": agent["role"],
-        })
-
-    # Fallback for agents not yet migrated to Supabase Auth.
-    # Checks the plaintext password column as a temporary bridge.
-    # TODO: Remove this block (and the `password` field in the SELECT above)
-    #       once all agents have been migrated via /api/admin/migrate-auth.
-    legacy_pwd = agent.get("password", "")
-    if legacy_pwd and legacy_pwd == password:
-        log.warning(
-            "Legacy plaintext login for %s — run /api/admin/migrate-auth to complete migration",
-            agent["agent_name"]
-        )
-        token = create_token(agent["agent_name"], agent["role"])
-        return jsonify({
-            "token": token,
             "agent_name": agent["agent_name"],
             "role": agent["role"],
         })
@@ -487,57 +470,6 @@ def refresh_token():
 
 
 # ═══════════════════════════════════════════════════════════
-# ADMIN — Supabase Auth Migration
-# ═══════════════════════════════════════════════════════════
-
-@app.route("/api/admin/migrate-auth", methods=["POST"])
-@require_auth
-def migrate_auth():
-    """Create Supabase Auth users for all agents in agent_logins.
-    Must be called by a commander (admin role). One-time migration."""
-    if request.user.get("role") != "admin":
-        return jsonify({"error": "Admin access required"}), 403
-
-    # Read all agents including passwords
-    resp = supabase_request("GET", "agent_logins", params={
-        "select": "agent_name,role,password"
-    })
-    if resp.status_code != 200:
-        return jsonify({"error": "Failed to read agent_logins"}), 502
-
-    agents = resp.json()
-    results = {"created": [], "skipped": [], "errors": []}
-
-    for agent in agents:
-        name = agent.get("agent_name", "")
-        role = agent.get("role", "agent")
-        pwd = agent.get("password", "")
-        if not name or not pwd:
-            results["skipped"].append(name or "(empty)")
-            continue
-
-        email = agent_email(name)
-        create_resp = gotrue_create_user(email, pwd, name, role)
-
-        if create_resp.status_code in (200, 201):
-            results["created"].append(name)
-            log.info("Created Supabase Auth user: %s (%s)", name, email)
-        elif create_resp.status_code == 422:
-            # User already exists
-            results["skipped"].append(name)
-        else:
-            err = create_resp.json() if create_resp.headers.get(
-                "content-type", "").startswith("application/json") else {}
-            results["errors"].append({
-                "agent": name,
-                "status": create_resp.status_code,
-                "detail": err.get("msg", err.get("message", "Unknown error")),
-            })
-            log.error("Failed to create auth user %s: %s", name, err)
-
-    return jsonify(results)
-
-
 # ═══════════════════════════════════════════════════════════
 # COMMS BOARD — Cards & Reactions
 # ═══════════════════════════════════════════════════════════
