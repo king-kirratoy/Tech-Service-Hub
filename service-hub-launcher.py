@@ -11,11 +11,13 @@ import logging
 import os
 import re
 import time
+import uuid
 import requests
-from collections import defaultdict
 from functools import wraps
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 import jwt
 
@@ -47,6 +49,13 @@ ALLOWED_ORIGINS = [
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True,
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["120 per minute"],
+    storage_uri="memory://",
+)
 
 # ═══════════════════════════════════════════════════════════
 # PREFLIGHT — Explicit OPTIONS handler for all /api/* routes
@@ -80,24 +89,23 @@ def set_security_headers(response):
     return response
 
 # ═══════════════════════════════════════════════════════════
-# RATE LIMITING — Login endpoint brute-force protection
-# ═══════════════════════════════════════════════════════════
-
-LOGIN_ATTEMPTS = defaultdict(list)  # ip -> [timestamps]
-MAX_LOGIN_ATTEMPTS = 5
-LOGIN_WINDOW = 300  # 5 minutes
-
-# ═══════════════════════════════════════════════════════════
 # AUTH HELPERS
 # ═══════════════════════════════════════════════════════════
 
 AUTH_EMAIL_DOMAIN = "hub.internal"
+# Fixed namespace for deterministic UUID5 generation.
+_EMAIL_NS = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
 
 def agent_email(name):
-    """Convert agent name to a synthetic email for Supabase Auth."""
-    slug = re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
-    return f"{slug}@{AUTH_EMAIL_DOMAIN}"
+    """Convert agent name to a collision-free synthetic email for Supabase Auth.
+
+    Uses UUID5 (SHA-1 hash of namespace + lowercased name) so that two names
+    that reduce to the same slug (e.g. 'Alice Smith' vs 'Alice-Smith') still
+    produce distinct emails, while the same name always produces the same email.
+    """
+    local = uuid.uuid5(_EMAIL_NS, name.lower())
+    return f"{local}@{AUTH_EMAIL_DOMAIN}"
 
 
 def gotrue_request(method, path, body=None, admin=False):
@@ -209,7 +217,9 @@ def _decode_supabase_jwt(token):
 def _decode_legacy_jwt(token):
     """Decode a legacy (custom-signed) JWT."""
     secret = JWT_SECRET or SUPABASE_JWT_SECRET
-    payload = jwt.decode(token, secret, algorithms=["HS256"])
+    # Legacy tokens have no audience claim, so skip audience verification
+    # explicitly rather than relying on library defaults.
+    payload = jwt.decode(token, secret, algorithms=["HS256"], options={"verify_aud": False})
     return {
         "agent_name": payload.get("agent_name", ""),
         "role": payload.get("role", ""),
@@ -317,21 +327,9 @@ def supabase_request(method, table, params=None, body=None, auth_token=None):
 # ROUTES
 # ═══════════════════════════════════════════════════════════
 
-def check_rate_limit(ip):
-    """Returns True if the IP is rate-limited."""
-    now = time.time()
-    # Prune old attempts outside the window
-    LOGIN_ATTEMPTS[ip] = [t for t in LOGIN_ATTEMPTS[ip] if now - t < LOGIN_WINDOW]
-    return len(LOGIN_ATTEMPTS[ip]) >= MAX_LOGIN_ATTEMPTS
-
-
 @app.route("/api/login", methods=["POST"])
+@limiter.limit("5 per 5 minutes")
 def login():
-    ip = request.remote_addr
-    if check_rate_limit(ip):
-        log.warning("Rate limit hit for IP %s", ip)
-        return jsonify({"error": "Too many login attempts. Try again in a few minutes."}), 429
-
     data = request.get_json(silent=True) or {}
     agent_name = data.get("agent_name", "").strip()
     password = data.get("password", "").strip()
@@ -349,8 +347,7 @@ def login():
 
     rows = resp.json()
     if not rows:
-        LOGIN_ATTEMPTS[ip].append(time.time())
-        log.warning("Failed login attempt from IP %s (unknown agent: %s)", ip, agent_name)
+        log.warning("Failed login attempt from IP %s (unknown agent: %s)", request.remote_addr, agent_name)
         return jsonify({"error": "Invalid name or password"}), 401
 
     agent = rows[0]
@@ -370,9 +367,8 @@ def login():
         _set_auth_cookies(response, session)
         return response
 
-    LOGIN_ATTEMPTS[ip].append(time.time())
     log.warning("Failed login for %s from IP %s (GoTrue status %d)",
-                agent["agent_name"], ip, auth_resp.status_code)
+                agent["agent_name"], request.remote_addr, auth_resp.status_code)
     return jsonify({"error": "Invalid name or password"}), 401
 
 
@@ -437,6 +433,7 @@ def get_robot():
 
 @app.route("/api/robot", methods=["POST"])
 @require_auth
+@limiter.limit("30 per minute")
 def save_robot():
     """Save robot config — agents can only save their own."""
     body = request.get_json(silent=True) or {}
@@ -530,6 +527,7 @@ def get_comms_cards():
 
 @app.route("/api/comms-cards", methods=["POST"])
 @require_auth
+@limiter.limit("30 per minute")
 def create_comms_card():
     """Create a new comms card."""
     body = request.get_json(silent=True) or {}
@@ -573,6 +571,7 @@ def create_comms_card():
 
 @app.route("/api/comms-cards/<card_id>", methods=["PUT"])
 @require_auth
+@limiter.limit("30 per minute")
 def update_comms_card(card_id):
     """Update a comms card — only the author can edit."""
     agent_name = request.user.get("agent_name", "")
@@ -614,6 +613,7 @@ def update_comms_card(card_id):
 
 @app.route("/api/comms-cards/<card_id>", methods=["DELETE"])
 @require_auth
+@limiter.limit("30 per minute")
 def delete_comms_card(card_id):
     """Delete a comms card — author or commander only."""
     agent_name = request.user.get("agent_name", "")
@@ -645,6 +645,7 @@ def delete_comms_card(card_id):
 
 @app.route("/api/comms-reactions", methods=["POST"])
 @require_auth
+@limiter.limit("60 per minute")
 def toggle_comms_reaction():
     """Toggle a reaction on a card (add if not exists, remove if exists)."""
     agent_name = request.user.get("agent_name", "")
