@@ -359,12 +359,8 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Workload</h2>
       <p style="font-size:12px;color:var(--text-muted)">Squad capacity overview.</p>
     </div>
-    <!-- Hidden elements kept for JS compatibility -->
-    <select id="kpiClient" style="display:none"><option value=""></option></select>
+    <!-- Hidden selects used for agent filtering in JS -->
     <select id="kpiAgent" style="display:none"><option value=""></option></select>
-    <select id="agentTimePeriod" style="display:none"><option value="today">Today</option></select>
-    <div style="display:none" id="teamAllTable"></div>
-    <div style="display:none" id="sg"></div>
     <div class="cal-layout">
       <div class="glass tech-sidebar">
         <h3>Technicians</h3>
@@ -435,7 +431,6 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
       <p style="font-size:12px;color:var(--text-muted)">Squad mission progress.</p>
     </div>
     <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <select id="campaignClient" style="display:none"><option value=""></option></select>
       <label>Agent:</label>
       <select id="campaignAgent"><option value="">— All Agents —</option></select>
     </div>
@@ -448,8 +443,8 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 
 <script>
 // ═══════════ STATE ═══════════
-let histRaw=[],actRaw=[],kpiM=[],catStats={},actTix=[],closedTix=[],roster=[];
-let selTech=null,calV="week",calD=new Date(),charts={};
+let histRaw=[],actRaw=[],catStats={},actTix=[],closedTix=[],roster=[];
+let selTech=null,charts={};
 let isCommander=false;
 let loggedInAgent=null;
 
@@ -574,7 +569,7 @@ function applyOverrides(){
 const BL_CAT={"Client>Business Meeting":0.5,"Client>Consulting/Research":0.75,"Client>Infrastructure":0.75,"Client>MSP Offboarding":0.25,"Client>MSP Onboarding":19.25,"Client>Purchase Request":0.5,"Client>Renewal":0.75,"Client>Service Documentation":0.5,"Data Analytics>Access/Removal":0.75,"End User>Access Change":0.5,"End User>Account Info Update":0.5,"End User>Account Login Issue":0.5,"End User>Admin Permissions":0.5,"End User>Archive Mailbox":0.75,"End User>Automatic Reply":0.5,"End User>Calendar":0.75,"End User>Computer Setup":1.0,"End User>Email Alias":1.0,"End User>Email Contacts":0.75,"End User>Email Delivery Issue":0.5,"End User>Email Forwarding":0.75,"End User>Email Recovery":0.5,"End User>Email Rule":0.5,"End User>Email Signature":0.25,"End User>Faxing Issue":1.0,"End User>File Access Issue":0.5,"End User>File Recovery":0.5,"End User>File Relocation":0.75,"End User>File Share":0.5,"End User>General Inquiry":0.25,"End User>Group Management":0.25,"End User>Inactive Account Removal":0.5,"End User>International Travel":0.5,"End User>License Change":0.25,"End User>Mailbox Access":0.5,"End User>Mailbox Capacity":0.75,"End User>Mapped Drive Issue":0.5,"End User>Mobile Phone Setup":0.5,"End User>Name Change":0.5,"End User>New User Setup":0.75,"End User>Password Reset":0.25,"End User>SharePoint Access":0.5,"End User>Shared Mailbox":0.25,"End User>Training":0.75,"End User>User Termination":0.75,"End User>Windows Settings":0.5,"Hardware>Asset Shipping & Receiving":0.5,"Hardware>Audio Issue":0.5,"Hardware>Cable/Adapter":0.5,"Hardware>Charger":0.5,"Hardware>Conference Room Equipment":0.75,"Hardware>Desk Phone":0.5,"Hardware>Desktop":0.5,"Hardware>Disk Usage":0.75,"Hardware>Docking Station":0.5,"Hardware>Driver/Firmware Update":0.5,"Hardware>Firewall":0.5,"Hardware>Headset/Headphone":0.25,"Hardware>Inventory":0.5,"Hardware>Laptop":0.75,"Hardware>Microphone":0.5,"Hardware>Mobile Hotspot":0.5,"Hardware>Mobile Phone":0.75,"Hardware>Monitor":0.5,"Hardware>Mouse/Keyboard":0.25,"Hardware>NAS/SAN":0.75,"Hardware>Office Move/Setup":0.5,"Hardware>PC Performance Issue":0.75,"Hardware>Power Strip/Surge Protector":0.25,"Hardware>Printer/Scanner":0.75,"Hardware>Recycling":2.5,"Hardware>Server":0.75,"Hardware>Signature Pad":0.25,"Hardware>Speaker":0.5,"Hardware>Switch":4.0,"Hardware>Tablet":1.25,"Hardware>Time Clock":1.0,"Hardware>UPS/APC":1.25,"Hardware>Webcam":0.25,"Hardware>Wireless Access Point":0.5,"Hardware>iPad":0.5,"Network>DHCP/IP Management":0.75,"Network>DNS/Domain Management":0.75,"Network>Firewall Configuration":0.5,"Network>ISP/LTE":1.5,"Network>Meraki Licensing":0.5,"Network>Network Connectivity":0.75,"Network>Phone System":0.5,"Network>Power Outage":0.25,"Network>Security Camera/Door Access":1.5,"Network>Switch Configuration":1.0,"Network>VLAN Configuration":1.0,"Network>VPN":0.75,"Network>Website Access":0.5,"Network>Wireless Configuration":1.0,"Security>Account Compromise":0.75,"Security>Avanan":0.5,"Security>Certificate":1.5,"Security>Compliance/Audit":1.0,"Security>Conditional Access":0.25,"Security>Encryption":0.5,"Security>External Sharing/Access":0.5,"Security>Forensic Analysis":0.25,"Security>Huntress":0.25,"Security>MFA/2FA":0.25,"Security>Phishing/Spam":0.25,"Security>Proofpoint":0.5,"Security>Restore Request":0.5,"Security>SPF/DKIM/DMARC":2.5,"Security>Suspicious Activity":0.5,"Security>Threatlocker":0.5,"Security>Virus/Malware":0.25,"Software>Adobe":0.5,"Software>Applied Epic":0.25,"Software>AutoCAD":0.75,"Software>Bluebeam":0.5,"Software>CCH ProSystem/Axcess":0.5,"Software>Caseware":2.0,"Software>Citrix/VDI":0.5,"Software>Cloud Drive Mapper (CDM)":0.75,"Software>Datto":0.5,"Software>Dialpad":0.25,"Software>Egnyte":0.25,"Software>Google Chrome":0.5,"Software>Google Workspace":0.5,"Software>Halo":0.5,"Software>Locator":0.75,"Software>McLeod":0.5,"Software>Microsoft 365 Apps Install":1.0,"Software>Microsoft Azure/Entra":0.75,"Software>Microsoft Excel":0.5,"Software>Microsoft OneDrive":0.75,"Software>Microsoft OneNote":1.5,"Software>Microsoft Outlook":0.5,"Software>Microsoft Power Automate":0.25,"Software>Microsoft Power BI":0.5,"Software>Microsoft PowerPoint":0.25,"Software>Microsoft SharePoint":1.0,"Software>Microsoft Teams":0.5,"Software>Microsoft Word":0.5,"Software>Milestone XProtect":1.0,"Software>Nitro":0.25,"Software>Other Application":0.5,"Software>PerfectLaw/AIM":0.25,"Software>Printix":0.5,"Software>QuickBooks":0.5,"Software>RDP":0.5,"Software>SMTP2GO":0.75,"Software>Sage":1.0,"Software>Smokeball":0.25,"Software>Software Removal":0.75,"Software>Splashtop":0.5,"Software>Threadworks":0.25,"Software>Web Browser":0.5,"Software>Windows OS":1.0,"Software>Zee Drive":0.25,"Software>Zoom":0.5,"Software>macOS":1.0,"Triage>Call Transfer":0.25,"Triage>Co-Managed":0.5,"Triage>Merged":0.5,"Uncategorized":1.25};
 
 
-const SH=7,EH=18,HH=128,BIZ_S=8.5,BIZ_E=16.5,BIZ_D=8,FRT_SLA=4,TU_MIN=5,TU_MAX=6;
+const SH=7,EH=18,HH=128,BIZ_S=8.5,BIZ_E=16.5,BIZ_D=8,FRT_SLA=4;
 const TCOL=["#84BD00","#0095C8","#fdcb6e","#ff7675","#74b9ff","#fd79a8","#a29bfe","#00cec9","#e17055","#dfe6e9"];
 const PC={Critical:"#fb9e00",High:"#ffb74d",Medium:"#0095C8",Low:"#6C6C6C"};
 const SC={New:"#88ed61","In Progress":"#f2f400","Pending Reply":"#e27300","Client Update":"#ef0a90","Re-Assigned":"#653294","Pending AM":"#0c797d","Pending Vendor":"#aea1ff","Pending Opportunity":"#194d33","Re-Opened":"#f44e3b",Scheduled:"#999999",Monitoring:"#009ce0","License Update":"#fda1ff",Licensing:"#fda1ff","Pending Followup":"#e27300"};
@@ -605,10 +600,7 @@ function pD(s){if(!s)return null;s=String(s).trim();if(/^\d{4}-\d{2}-\d{2}T\d{2}
 function mK(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function mL(k){const[y,m]=k.split("-");return new Date(y,m-1).toLocaleDateString("en-US",{month:"short",year:"2-digit"})}
 function esc(s){return(s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
-// CSAT: 4=Excellent, 3=Good, 2=Okay, 1=Poor
 function haloLink(id){return esc(id)}
-function csatLabel(v){if(v>=3.5)return"Excellent";if(v>=2.5)return"Good";if(v>=1.5)return"Okay";return"Poor"}
-function csatColor(v){if(v>=3.5)return"var(--green)";if(v>=2.5)return"var(--blue)";if(v>=1.5)return"var(--warning)";return"var(--danger)"}
 function bizH(start,end){if(!start||!end||end<=start)return 0;let t=0;const c=new Date(start);while(c<end){const w=c.getDay();if(w>=1&&w<=5){const ch=c.getHours()+c.getMinutes()/60;const ed=new Date(c);ed.setHours(0,0,0,0);ed.setDate(ed.getDate()+1);const es=Math.max(ch,BIZ_S);let ee;if(end<ed)ee=Math.min(end.getHours()+end.getMinutes()/60,BIZ_E);else ee=BIZ_E;if(ee>es)t+=(ee-es)*60}const n=new Date(c);n.setHours(0,0,0,0);n.setDate(n.getDate()+1);n.setHours(Math.floor(BIZ_S),(BIZ_S%1)*60,0,0);c.setTime(n.getTime())}return t/60}
 function bizD(s,e){return bizH(s,e)/BIZ_D}
 // ═══════════ HISTORICAL PROCESSING ═══════════
@@ -638,8 +630,6 @@ function procHist(){
     const csatVal=csatMap[csatRaw.toLowerCase()];
     if(csatVal){b.csat.push(csatVal)}
   });
-  kpiM=Object.keys(byM).sort().map(mk=>{const b=byM[mk];const csatBk={4:0,3:0,2:0,1:0};b.csat.forEach(v=>{if(csatBk[v]!==undefined)csatBk[v]++});return{m:mL(mk),mk,v:b.v,ar:b.rt.length?b.rt.reduce((a,c)=>a+c,0)/b.rt.length:0,ard:b.rd.length?b.rd.reduce((a,c)=>a+c,0)/b.rd.length:0,sc:b.st?(b.sm/b.st*100):100,fc:b.ft?(b.fm/b.ft*100):100,ttw:b.tw.reduce((a,c)=>a+c,0),csat:b.csat.length?b.csat.reduce((a,c)=>a+c,0)/b.csat.length:null,csatN:b.csat.length,ftf:b.closed?(b.ftf/b.closed*100):0,ftfN:b.ftf,closedN:b.closed,csatBk}});
-
   // Category stats
   catStats={};
   histRaw.forEach(r=>{
@@ -649,7 +639,7 @@ function procHist(){
   });
   Object.keys(catStats).forEach(c=>{const a=catStats[c];catStats[c]={n:a.length,med:med(a),mean:a.reduce((x,y)=>x+y,0)/a.length,p90:p90(a)}});
 
-  buildAgentStats();populateKPIClients();populateCampaignFilters();renderCampaignCharts();updateBanner();
+  populateKPIClients();populateCampaignFilters();renderCampaignCharts();updateBanner();
 }
 
 // ═══════════ ACTIVE PROCESSING ═══════════
@@ -906,9 +896,8 @@ function mapP(r){const c=(r.Ticket_Category||"").toLowerCase();if(c.includes("se
 let campaignCharts={};
 function killCampaignCharts(){Object.values(campaignCharts).forEach(c=>c.destroy());campaignCharts={}}
 function renderCampaignCharts(){
-  const cl=document.getElementById("campaignClient").value;
   const ag=document.getElementById("campaignAgent").value;
-  const{data:dm,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther}=getKPIData(cl,ag);
+  const{data:dm,closedEmailWeb,closedPhoneManual,closedOther,assignedEmailWeb,assignedPhoneManual,assignedOther}=getKPIData(ag);
   if(!dm.length)return;killCampaignCharts();const lb=dm.map(d=>d.m);
   Chart.defaults.color="#506a8a";Chart.defaults.borderColor="rgba(0,149,200,0.08)";Chart.defaults.font.family="'Calibri','Arial',sans-serif";
   const co={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"}},y:{ticks:{color:"#506a8a",font:{size:11}},grid:{color:"rgba(0,149,200,0.06)"}}}};
@@ -962,8 +951,7 @@ function populateKPIClients(){
 
 
 
-function getKPIData(overrideCl,overrideAg){
-  const cl="";
+function getKPIData(overrideAg){
   const ag=overrideAg!==undefined?overrideAg:document.getElementById("kpiAgent").value;
   const csatMap2={excellent:4,good:3,okay:2,poor:1,bad:1};
 
@@ -1133,7 +1121,6 @@ function renderSidebar(){
 }
 
 // ═══════════ CALENDAR ═══════════
-let drag=null;
 function renderCal(){
   const area=document.getElementById("ca");
   if(!actTix.length){area.innerHTML='<div class="glass" style="padding:40px;text-align:center;color:var(--text-dim)">Upload active tickets</div>';return}
@@ -1231,10 +1218,6 @@ function renderCal(){
   h+=`</div>`;
   area.innerHTML=h;
 }
-
-// Manual drag/resize removed - fully automated scheduling
-
-// Calendar always shows current week
 
 // ═══════════ PLAYER CARDS (GAMIFICATION) ═══════════
 function renderPlayerCards(){
@@ -1403,59 +1386,7 @@ function renderPlayerCards(){
   });
 }
 
-// ═══════════ CAPACITY (today only) ═══════════
-function renderCap(){
-  if(!roster.length){document.getElementById("cg").innerHTML="";return}
-  const wd=wkD(new Date()),ti=wd.findIndex(d=>isT(d));
-  document.getElementById("cg").innerHTML=roster.map(t=>{
-    const tt=ti>=0?actTix.filter(x=>x.assignedTo===t.id&&x.dayIdx===ti):[];
-    const bh=tt.reduce((s,x)=>s+x.est,0),rem=Math.max(TU_MAX-bh,0);
-    const ut=((bh/TU_MAX)*100).toFixed(0);
-    const bc=bh>TU_MAX?"var(--danger)":bh>=TU_MIN?"var(--green)":"var(--warning)";
-    const tc=bh>TU_MAX?"#fb9e00":bh>=TU_MIN?"#84BD00":"#fcdc00";
-    const st=bh>TU_MAX?"Over":bh>=TU_MIN?"On target":"Under";
-    return`<div class="glass cap-card"><div class="cname"><div class="tdot" style="background:${t.color};color:${t.color}"></div><span>${esc(t.name)}</span></div><div class="cstats"><span>Today: <b>${tt.length} tix</b></span><span><b>${bh.toFixed(1)}h</b> / ${TU_MAX}h</span></div><div class="cbar"><div class="cbar-fill" style="width:${Math.min(ut,100)}%;background:${bc}"></div></div><div class="cfooter"><span class="mono" style="font-weight:700;color:${tc}">${st}</span><span style="color:var(--text-dim)">${rem.toFixed(1)}h avail</span></div></div>`
-  }).join("");
-}
-
-// ═══════════ TEAM PERFORMANCE ═══════════
-let agentStats={};
-let teamCharts={};
-
-function buildAgentStats(){
-  agentStats={};
-  histRaw.forEach(r=>{
-    const ag=r.Agent_Resolved||r.Agent_Assigned;if(!ag||ag==="Unassigned"||ag.includes("Bot"))return;
-    if(!agentStats[ag])agentStats[ag]={months:{},cats:{},resCats:{},types:{},times:[],respTimes:[],resDays:[],slaMet:0,slaTotal:0,frtMet:0,frtTotal:0,total:0,csat:[],ftf:0,closed:0};
-    const s=agentStats[ag];s.total++;
-    const cr=pD(r.Date_Created);if(!cr)return;
-    const mk=mK(cr);
-    if(!s.months[mk])s.months[mk]={v:0,tw:0,rt:[],rd:[],sm:0,st:0,fm:0,ft:0,csat:[],ftf:0,closed:0};
-    const m=s.months[mk];m.v++;
-
-    const tw=parseFloat(r.Time_Taken);if(!isNaN(tw)&&tw>0){s.times.push(tw);m.tw+=tw}
-    const csatV2=(r.CSAT_Score||r.CSAT_SCORE||"").trim();const csatMap2={excellent:4,good:3,okay:2,poor:1,bad:1};const csatNum=csatMap2[csatV2.toLowerCase()];if(csatNum){s.csat.push(csatNum);m.csat.push(csatNum)}
-    const cat=r.Ticket_Category||"Uncategorized";s.cats[cat]=(s.cats[cat]||0)+1;
-    const rc=r.Resolution_Category;if(rc)s.resCats[rc]=(s.resCats[rc]||0)+1;
-    const tt=r.Ticket_Type||"Service";s.types[tt]=(s.types[tt]||0)+1;
-
-    const frd=pD(r.First_Response_Date);
-    const frt=parseFloat(r.First_Response_Time);
-    if(!isNaN(frt)&&frt>=0){s.respTimes.push(frt);m.rt.push(frt);s.frtTotal++;m.ft++;if(frt<=FRT_SLA){s.frtMet++;m.fm++}}
-    const cd=pD(r.Date_Closed);
-    if(cd){
-      s.closed++;m.closed++;
-      if(cr){const bd=bizD(cr,cd);if(bd>0&&bd<500){s.resDays.push(bd);m.rd.push(bd)}}
-      if(frd&&isSD(frd,cd)){s.ftf++;m.ftf++}
-    }
-    const sl=pD(r.SLA_Resolution_Target);
-    if(cd&&sl){s.slaTotal++;m.st++;if(cd<=sl){s.slaMet++;m.sm++}}
-  });
-}
-
-
-// ═══════════ TEAM VIEW (ALL AGENTS) ═══════════
-function renderTeamAll(){}
+// ═══════════ RISK MONITOR ═══════════
 
 
 // ═══════════ RISK MONITOR ═══════════
@@ -1626,8 +1557,6 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
 
 
 
-// ═══════════ RESOLUTION ASSIST ═══════════
-
 // ═══════════ BANNER ═══════════
 function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateCreated&&wd.some(d=>isSD(d,t.dateCreated))).length+closedTix.length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
 
@@ -1712,7 +1641,6 @@ function applyLoginState(){
     if(!loggedInAgent||isCommander){selTech=0}
     else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
-  renderTeamAll();
   renderCommsBoard();
 }
 // Gate login (main login screen)
@@ -1771,8 +1699,6 @@ document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=
 
 document.getElementById("campaignAgent").addEventListener("change",()=>{renderCampaignCharts()});
 
-
-// File upload removed - using live data sync
 
 // ═══════════ HALOPSA LIVE FETCH ═══════════
 async function fetchHaloReport(reportName,onSuccess){
@@ -3083,10 +3009,6 @@ const BF={
     }else{section.classList.add("hidden")}
   }
 };
-
-// Color utility helpers for battlefield
-function darken(hex,amt){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgb(${Math.round(r*(1-amt))},${Math.round(g*(1-amt))},${Math.round(b*(1-amt))})`}
-function lighten(hex,amt){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgb(${Math.min(255,Math.round(r+(255-r)*amt))},${Math.min(255,Math.round(g+(255-g)*amt))},${Math.min(255,Math.round(b+(255-b)*amt))})`}
 
 // ═══════════ COMMS BOARD ═══════════
 const COMMS_ROWS=10,COMMS_COLS=5;
