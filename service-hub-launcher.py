@@ -186,16 +186,18 @@ def require_auth(f):
         if SUPABASE_JWT_SECRET:
             try:
                 user = _decode_supabase_jwt(token)
-            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-                pass
+            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError) as e:
+                log.debug("Supabase JWT decode failed: %s", e)
         if user is None and (JWT_SECRET or SUPABASE_JWT_SECRET):
             try:
                 user = _decode_legacy_jwt(token)
             except jwt.ExpiredSignatureError:
                 return jsonify({"error": "Token expired"}), 401
-            except jwt.InvalidTokenError:
-                pass
+            except jwt.InvalidTokenError as e:
+                log.debug("Legacy JWT decode failed: %s", e)
         if user is None:
+            log.warning("Auth failed — token prefix: %s..., JWT_SECRET set: %s, SUPABASE_JWT_SECRET set: %s",
+                        token[:20] if token else "(empty)", bool(JWT_SECRET), bool(SUPABASE_JWT_SECRET))
             return jsonify({"error": "Invalid or expired token"}), 401
         request.user = user
         return f(*args, **kwargs)
@@ -265,6 +267,7 @@ def login():
 
     # Sign in via Supabase GoTrue to get a real session
     auth_resp = gotrue_sign_in(email, password)
+    log.info("GoTrue sign-in for %s → status %d", agent["agent_name"], auth_resp.status_code)
     if auth_resp.status_code == 200:
         session = auth_resp.json()
         log.info("Supabase Auth login: %s", agent["agent_name"])
