@@ -71,18 +71,17 @@
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Workload</button>
     <button class="tab" data-tab="comms"><svg style="width:16px;height:16px"><use href="#icomms"/></svg> Comms</button>
     <button class="tab" data-tab="campaign"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Campaign</button>
-    <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Risk Monitor <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
+    <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Radar <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
 
-  <!-- Risk Monitor Tab -->
+  <!-- Radar Tab -->
   <div id="riskTab" class="hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div>
-        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Risk Monitor</h2>
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Radar</h2>
         <p style="font-size:12px;color:var(--text-muted)">Active tickets requiring attention. Auto-detected from your data.</p>
       </div>
     </div>
-    <div class="stat-grid" id="riskSummary" style="margin-bottom:20px"></div>
     <div class="stat-grid" id="riskInsights" style="margin-bottom:20px"></div>
     <div id="riskSections"></div>
   </div>

@@ -914,13 +914,12 @@ function renderPlayerCards(){
   });
 }
 
-// ═══════════ RISK MONITOR ═══════════
+// ═══════════ RADAR ═══════════
 
 
-// ═══════════ RISK MONITOR ═══════════
+// ═══════════ RADAR ═══════════
 function renderRisk(){
   if(!actTix.length){
-    document.getElementById("riskSummary").innerHTML="";
     document.getElementById("riskInsights").innerHTML="";
     document.getElementById("riskSections").innerHTML='<div class="glass" style="padding:30px;text-align:center;color:var(--text-dim)">Upload active tickets to detect risks</div>';
     return;
@@ -999,16 +998,8 @@ function renderRisk(){
   const overdueResp2=overdueResp.filter(t=>!priorityIds.has(t.id));
   const timeOver=timeOverAll.filter(t=>!priorityIds.has(t.id));
 
-  // Summary cards
-  const totalFlags=priority.length+slaBreach2.length+overdueResp2.length+timeOver.length;
-  document.getElementById("riskSummary").innerHTML=[
-    {l:"High Priority",v:priority.length,c:priority.length?"var(--danger)":"var(--green)"},
-    {l:"Zombies",v:timeOver.length,c:timeOver.length?"var(--warning)":"var(--green)"},
-    {l:"Resolution SLA Breached",v:slaBreach2.length,c:slaBreach2.length?"var(--danger)":"var(--green)"},
-    {l:"Response SLA Breached",v:overdueResp2.length,c:overdueResp2.length?"var(--warning)":"var(--green)"},
-  ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${i*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c}">${c.v}</span></div></div>`).join("");
-
   // Badge on tab
+  const totalFlags=priority.length+slaBreach2.length+overdueResp2.length+timeOver.length;
   const badge=document.getElementById("riskBadge");
   if(totalFlags>0){badge.style.display="inline";badge.textContent=totalFlags}else{badge.style.display="none"}
 
