@@ -105,7 +105,7 @@ def gotrue_request(method, path, body=None, admin=False):
     url = f"{SUPABASE_URL}/auth/v1{path}"
     key = SUPABASE_KEY if admin else (SUPABASE_ANON_KEY or SUPABASE_KEY)
     headers = {
-        "apikey": SUPABASE_ANON_KEY or SUPABASE_KEY,
+        "apikey": key,
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
     }
@@ -703,6 +703,7 @@ def toggle_comms_reaction():
 @app.route("/api/agent-schedules", methods=["GET"])
 @require_auth
 def get_agent_schedules():
+    """Return all agent schedule preferences."""
     resp = supabase_request("GET", "agent_schedules", params={"select": "*"})
     if resp.status_code != 200:
         return jsonify({"error": "Failed to fetch schedules"}), 502
