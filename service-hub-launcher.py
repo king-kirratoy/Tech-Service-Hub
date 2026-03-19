@@ -227,9 +227,11 @@ def require_auth(f):
         token = auth_header[7:]
         # Try Supabase JWT first, fall back to legacy
         user = None
+        is_supabase_jwt = False
         if SUPABASE_JWT_SECRET:
             try:
                 user = _decode_supabase_jwt(token)
+                is_supabase_jwt = True
                 log.info("Supabase JWT decode OK for %s", request.path)
             except (jwt.ExpiredSignatureError, jwt.InvalidTokenError) as e:
                 log.warning("Supabase JWT decode failed for %s: %s", request.path, e)
@@ -246,16 +248,33 @@ def require_auth(f):
                         request.path, token[:40] if token else "(empty)", bool(JWT_SECRET), bool(SUPABASE_JWT_SECRET))
             return jsonify({"error": "Invalid or expired token"}), 401
         request.user = user
+        # Expose the raw token for user-scoped Supabase calls (RLS enforcement).
+        # Only set for Supabase JWTs — legacy tokens are not recognised by Supabase RLS
+        # so those routes fall back to the service role key as before.
+        request.auth_token = token if is_supabase_jwt else None
         return f(*args, **kwargs)
     return decorated
 
 
-def supabase_request(method, table, params=None, body=None):
-    """Make a request to the Supabase REST API."""
+def supabase_request(method, table, params=None, body=None, auth_token=None):
+    """Make a request to the Supabase REST API.
+
+    Pass auth_token (the caller's Supabase JWT) for user-scoped write operations
+    so that Supabase RLS policies are enforced when enabled. Omit it for
+    admin operations and cross-agent reads that require the service role key.
+    """
     url = f"{SUPABASE_URL}/rest/v1/{table}"
+    if auth_token:
+        # User-scoped: anon key + user JWT — RLS policies apply
+        api_key = SUPABASE_ANON_KEY or SUPABASE_KEY
+        bearer = auth_token
+    else:
+        # Admin / cross-agent: service role key bypasses RLS
+        api_key = SUPABASE_KEY
+        bearer = SUPABASE_KEY
     headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "apikey": api_key,
+        "Authorization": f"Bearer {bearer}",
         "Content-Type": "application/json",
         "Prefer": "return=representation"
     }
@@ -417,7 +436,7 @@ def save_robot():
     body["agent_name"] = agent_name
     resp = supabase_request("POST", "agent_robots", params={
         "on_conflict": "agent_name"
-    }, body=body)
+    }, body=body, auth_token=request.auth_token)
     if resp.status_code not in (200, 201):
         return jsonify({"error": "Failed to save robot config"}), 502
     return jsonify({"ok": True})
@@ -592,7 +611,7 @@ def create_comms_card():
         "bg_color": body.get("bg_color", "navy"),
         "border_color": body.get("border_color", "blue"),
     }
-    resp = supabase_request("POST", "comms_cards", body=card)
+    resp = supabase_request("POST", "comms_cards", body=card, auth_token=request.auth_token)
     if resp.status_code not in (200, 201):
         return jsonify({"error": "Failed to create card"}), 502
     return jsonify(resp.json()[0] if resp.json() else {"ok": True}), 201
@@ -633,7 +652,7 @@ def update_comms_card(card_id):
 
     resp = supabase_request("PATCH", "comms_cards", params={
         "id": f"eq.{card_id}"
-    }, body=updates)
+    }, body=updates, auth_token=request.auth_token)
     if resp.status_code not in (200, 204):
         return jsonify({"error": "Failed to update card"}), 502
     return jsonify({"ok": True})
@@ -660,11 +679,11 @@ def delete_comms_card(card_id):
     # Delete reactions first
     supabase_request("DELETE", "comms_reactions", params={
         "card_id": f"eq.{card_id}"
-    })
+    }, auth_token=request.auth_token)
     # Delete the card
     resp = supabase_request("DELETE", "comms_cards", params={
         "id": f"eq.{card_id}"
-    })
+    }, auth_token=request.auth_token)
     if resp.status_code not in (200, 204):
         return jsonify({"error": "Failed to delete card"}), 502
     return jsonify({"ok": True})
@@ -699,7 +718,7 @@ def toggle_comms_reaction():
         rx_id = check.json()[0]["id"]
         supabase_request("DELETE", "comms_reactions", params={
             "id": f"eq.{rx_id}"
-        })
+        }, auth_token=request.auth_token)
         return jsonify({"action": "removed"})
     else:
         # Add new reaction
@@ -707,7 +726,7 @@ def toggle_comms_reaction():
             "card_id": card_id,
             "agent_name": agent_name,
             "emoji": emoji
-        })
+        }, auth_token=request.auth_token)
         if resp.status_code not in (200, 201):
             return jsonify({"error": "Failed to add reaction"}), 502
         return jsonify({"action": "added"})
