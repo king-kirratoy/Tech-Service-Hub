@@ -33,12 +33,16 @@
 
 <div class="header">
   <div class="header-left"><div class="header-icon"><svg style="width:20px;height:20px;stroke:var(--navy-darker);fill:none"><use href="#ic"/></svg></div><div><h1>Tech Service Hub</h1><div class="header-sub"><span class="status-dot"></span>Squad Command Center</div></div></div>
-  <div id="headerStats" style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace"></div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace;line-height:1.2"></span>
+      <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;line-height:1.2"></span>
+    </div>
+    <div id="headerStats" style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace"></div>
+  </div>
   <div style="display:flex;align-items:center;gap:14px">
-    <span id="syncStatus" style="font-size:9px;color:var(--blue);font-family:'IBM Plex Mono',monospace"></span>
-    <span id="lastSync" style="font-size:9px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace"></span>
     <span id="loggedInUser" style="font-size:10px;color:var(--green);font-family:'IBM Plex Mono',monospace;font-weight:600;display:none"></span>
-    <div style="position:relative">
+    <div id="loginBtnWrap" style="position:relative">
       <button class="btn" id="loginBtn"><svg style="width:14px;height:14px"><use href="#iad"/></svg> <span id="loginBtnLabel">Login</span></button>
       <div id="loginPanel" class="login-dropdown hidden">
         <input type="text" id="loginName" placeholder="Name..." autocomplete="name" spellcheck="false">

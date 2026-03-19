@@ -1102,15 +1102,18 @@ function applyLoginState(){
   const mainContent=document.getElementById("mainContent");
   const loginGate=document.getElementById("loginGate");
   const loginPanel=document.getElementById("loginPanel");
+  const loginBtnWrap=document.getElementById("loginBtnWrap");
   const ss=document.getElementById("syncStatus");
   if(!authToken){
     if(mainContent)mainContent.classList.add("hidden");
     if(loginGate)loginGate.classList.remove("hidden");
     if(loginPanel)loginPanel.classList.add("hidden");
+    if(loginBtnWrap)loginBtnWrap.style.display="none";
     if(ss)ss.textContent="";
   }else{
     if(mainContent)mainContent.classList.remove("hidden");
     if(loginGate)loginGate.classList.add("hidden");
+    if(loginBtnWrap)loginBtnWrap.style.display="";
   }
   const riskTab=document.querySelector('.tab[data-tab="risk"]');
   const st=document.getElementById("loginStatus");
