@@ -452,7 +452,6 @@ let histRaw=[],actRaw=[],kpiM=[],catStats={},actTix=[],closedTix=[],roster=[];
 let selTech=null,calV="week",calD=new Date(),charts={};
 let isCommander=false;
 let loggedInAgent=null;
-let isWidgetMode=false;
 
 // ═══════════ AUTH & PROXY ═══════════
 const PROXY_BASE="https://service-hub-launcher.onrender.com";
@@ -1752,15 +1751,8 @@ document.getElementById("commanderPwd").addEventListener("keydown",(e)=>{
 });
 document.getElementById("commanderLogoutBtn").addEventListener("click",async()=>{
   isCommander=false;loggedInAgent=null;
-  if(isWidgetMode){
-    // Revert to widget-only auth (keep gate open, clear user identity)
-    const ok=await widgetReauth();
-    applyLoginState();
-    if(ok)startAutoRefresh();
-  }else{
-    if(_sb)await _sb.auth.signOut().catch(()=>{});
-    authToken="";localStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();
-  }
+  if(_sb)await _sb.auth.signOut().catch(()=>{});
+  authToken="";localStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();
 });
 // Last sync timestamp
 function updateLastSync(){
@@ -1781,11 +1773,6 @@ async function fetchHaloReport(reportName,onSuccess){
   try{
     const r=await fetch(PROXY_BASE+"/api/active",{headers:authH()});
     if(r.status===401){
-      // Try silent widget re-auth before showing login gate
-      if(_widgetKey&&_inIframe){
-        const reOk=await widgetReauth();
-        if(reOk){fetchHaloReport(reportName,onSuccess);return}// Retry with fresh token
-      }
       authToken="";localStorage.removeItem("hubToken");stopAutoRefresh();applyLoginState();return;
     }
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
@@ -1833,62 +1820,26 @@ function stopAutoRefresh(){
   autoRefreshOn=false;
 }
 
-// ═══════════ WIDGET AUTO-LOGIN ═══════════
-// If loaded inside an iframe with ?wk= parameter, auto-authenticate via widget key
-const _widgetParams=new URLSearchParams(window.location.search);
-const _widgetKey=_widgetParams.get("wk");
-const _inIframe=window.self!==window.top;
-
-async function widgetReauth(){
-  if(!_widgetKey||!_inIframe)return false;
-  try{
-    const r=await fetch(PROXY_BASE+"/api/widget-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:_widgetKey})});
-    if(!r.ok)return false;
-    const d=await r.json();
-    if(d.access_token&&d.refresh_token&&_sb){
-      await _sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});
-      authToken=d.access_token;
-    }else{
-      authToken=d.token||d.access_token;
-    }
-    localStorage.setItem("hubToken",authToken);
-    isWidgetMode=true;
-    return true;
-  }catch(e){console.error("Widget auto-login failed:",e);return false}
-}
-
-(async function widgetAutoLogin(){
-  await _sbReady; // Ensure Supabase client is initialized
-  if(!_widgetKey||!_inIframe){
-    // Not a widget — use normal auth flow
-    // Try restoring Supabase session if available
-    if(_sb&&!authToken){
-      try{
-        const{data}=await _sb.auth.getSession();
-        if(data.session){
-          authToken=data.session.access_token;
-          localStorage.setItem("hubToken",authToken);
-          const meta=data.session.user?.user_metadata||{};
-          if(meta.agent_name){
-            loggedInAgent=meta.agent_name;
-            isCommander=meta.role==="admin";
-          }
+// ═══════════ SESSION RESTORE ═══════════
+(async function restoreSession(){
+  await _sbReady;
+  // Try restoring Supabase session if available
+  if(_sb&&!authToken){
+    try{
+      const{data}=await _sb.auth.getSession();
+      if(data.session){
+        authToken=data.session.access_token;
+        localStorage.setItem("hubToken",authToken);
+        const meta=data.session.user?.user_metadata||{};
+        if(meta.agent_name){
+          loggedInAgent=meta.agent_name;
+          isCommander=meta.role==="admin";
         }
-      }catch(e){console.error("Session restore error:",e)}
-    }
-    if(authToken){loadAgentSchedules().then(()=>{setTimeout(startAutoRefresh,500)})}
-    applyLoginState();
-    return;
+      }
+    }catch(e){console.error("Session restore error:",e)}
   }
-  // Widget mode: always re-auth to get a fresh token before showing anything
-  const ok=await widgetReauth();
-  if(ok){
-    await loadAgentSchedules();
-    applyLoginState();
-    startAutoRefresh();
-  }else{
-    applyLoginState(); // Show login gate as fallback
-  }
+  if(authToken){loadAgentSchedules().then(()=>{setTimeout(startAutoRefresh,500)})}
+  applyLoginState();
 })();
 
 

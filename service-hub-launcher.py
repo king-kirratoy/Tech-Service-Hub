@@ -38,7 +38,6 @@ SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "")  # legacy — kept for fallback
 if not SUPABASE_JWT_SECRET and not JWT_SECRET:
     log.warning("No JWT secret configured — authentication will fail")
-WIDGET_KEY = os.environ.get("WIDGET_KEY", "")
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://king-kirratoy.github.io")
 
 # Allowed origins for CORS and X-Frame-Options
@@ -287,38 +286,6 @@ def login():
     })
 
 
-@app.route("/api/widget-auth", methods=["POST"])
-def widget_auth():
-    """Auto-login for HaloPSA iframe widget using a shared widget key."""
-    if not WIDGET_KEY:
-        return jsonify({"error": "Widget auth not configured"}), 503
-
-    data = request.get_json(silent=True) or {}
-    key = data.get("key", "").strip()
-    if not key or key != WIDGET_KEY:
-        return jsonify({"error": "Invalid widget key"}), 401
-
-    # Try GoTrue sign-in for the widget viewer account
-    email = agent_email("Widget Viewer")
-    auth_resp = gotrue_sign_in(email, WIDGET_KEY)
-    if auth_resp.status_code == 200:
-        session = auth_resp.json()
-        return jsonify({
-            "access_token": session.get("access_token"),
-            "refresh_token": session.get("refresh_token"),
-            "expires_in": session.get("expires_in", 3600),
-            "agent_name": "Widget Viewer",
-            "role": "agent",
-        })
-
-    # Fallback to legacy token
-    token = create_token("Widget Viewer", "agent")
-    return jsonify({
-        "token": token,
-        "agent_name": "Widget Viewer",
-        "role": "agent",
-    })
-
 
 @app.route("/api/active", methods=["GET"])
 @require_auth
@@ -485,18 +452,6 @@ def migrate_auth():
                 "detail": err.get("msg", err.get("message", "Unknown error")),
             })
             log.error("Failed to create auth user %s: %s", name, err)
-
-    # Also create the Widget Viewer account
-    if WIDGET_KEY:
-        wv_email = agent_email("Widget Viewer")
-        wv_resp = gotrue_create_user(wv_email, WIDGET_KEY, "Widget Viewer", "agent")
-        if wv_resp.status_code in (200, 201):
-            results["created"].append("Widget Viewer")
-        elif wv_resp.status_code == 422:
-            results["skipped"].append("Widget Viewer")
-        else:
-            results["errors"].append({"agent": "Widget Viewer",
-                                      "status": wv_resp.status_code})
 
     return jsonify(results)
 
