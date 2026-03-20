@@ -205,7 +205,7 @@ def _decode_supabase_jwt(token):
             audience="authenticated",
         )
 
-    meta = payload.get("user_metadata", {})
+    meta = payload.get("app_metadata", {})
     return {
         "agent_name": meta.get("agent_name", ""),
         "role": meta.get("role", ""),
