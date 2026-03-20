@@ -135,7 +135,7 @@ def gotrue_create_user(email, password, agent_name, role):
         "email": email,
         "password": password,
         "email_confirm": True,
-        "user_metadata": {
+        "app_metadata": {
             "agent_name": agent_name,
             "role": role,
         },
