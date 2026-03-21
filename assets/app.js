@@ -2725,10 +2725,19 @@ function buildCommsCard(card){
   });
 
   const canvasId="comms-avatar-"+card.id;
+  const _d=pD(card.created_at);
+  const _dateStr=_d
+    ?_d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+      +' · '
+      +_d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+    :'';
   el.innerHTML=`
     <div class="comms-card-header">
       <div class="comms-card-avatar"><canvas id="${canvasId}" width="64" height="64"></canvas></div>
-      <span class="comms-card-agent">${esc(card.agent_name)}</span>
+      <div class="comms-card-agent-group">
+        <span class="comms-card-agent">${esc(card.agent_name)}</span>
+        ${_dateStr?`<span class="comms-card-date">${_dateStr}</span>`:''}
+      </div>
       ${iconEmoji?`<span class="comms-card-icon">${iconEmoji}</span>`:""}
     </div>
     <div class="comms-card-body">
