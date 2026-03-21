@@ -1360,7 +1360,18 @@ const HAT_SPRITE_MAP={
   fedora:"tech-sprite-hat5",
   hardhat:"tech-sprite-hat6",
   viking:"tech-sprite-hat7",
-  crown:"tech-sprite-hat8"
+  crown:"tech-sprite-hat8",
+  partyhat:"tech-sprite-hat9",
+  beanie:"tech-sprite-hat10",
+  knighthelmet:"tech-sprite-hat11",
+  spikedhair:"tech-sprite-hat12",
+  longhair:"tech-sprite-hat13",
+  wizardhat:"tech-sprite-hat14",
+  piratehat:"tech-sprite-hat15",
+  spacehelmet:"tech-sprite-hat16",
+  propellercap:"tech-sprite-hat17",
+  hockeymask:"tech-sprite-hat18",
+  paperbag:"tech-sprite-hat19"
 };
 const ROBOT_ACCESSORIES=[
   {id:"none",label:"None"},
@@ -1372,6 +1383,17 @@ const ROBOT_ACCESSORIES=[
   {id:"hardhat",label:"Hardhat"},
   {id:"viking",label:"Viking"},
   {id:"crown",label:"Crown"},
+  {id:"partyhat",label:"Party Hat"},
+  {id:"beanie",label:"Beanie"},
+  {id:"knighthelmet",label:"Knight Helmet"},
+  {id:"spikedhair",label:"Spiked Hair"},
+  {id:"longhair",label:"Long Hair"},
+  {id:"wizardhat",label:"Wizard Hat"},
+  {id:"piratehat",label:"Pirate Hat"},
+  {id:"spacehelmet",label:"Space Helmet"},
+  {id:"propellercap",label:"Propeller Cap"},
+  {id:"hockeymask",label:"Hockey Mask"},
+  {id:"paperbag",label:"Paper Bag"},
 ];
 
 let currentRobot={color:"blue",eyes:"visor",antenna:"spike",accessory:"none",robot_name:""};
