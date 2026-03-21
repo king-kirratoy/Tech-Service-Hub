@@ -754,11 +754,13 @@ function renderCal(){
 
 // ═══════════ PLAYER CARDS (GAMIFICATION) ═══════════
 function getAgentClass(tech, weekDays) {
-  // Ticket pool: closed within current Mon-Fri week, matched by Agent_Resolved
+  // Ticket pool: assigned AND closed within current Mon-Fri week, by same agent
   const pool = closedTix.filter(t =>
     t.agent === tech.name &&
     t.dateClosed &&
-    weekDays.some(d => isSD(d, t.dateClosed))
+    t.dateAssigned &&
+    weekDays.some(d => isSD(d, t.dateClosed)) &&
+    weekDays.some(d => isSD(d, t.dateAssigned))
   );
 
   // Step 1 — Recruit: no qualifying tickets
