@@ -933,6 +933,7 @@ function renderPlayerCards(){
         <canvas id="${canvasId}" width="160" height="120" style="image-rendering:pixelated"></canvas>
         <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:0">${esc(rName)}</div>
       </div>
+      <div class="pcard-icon">👑</div>
     </div>`;
   }).join("");
 
