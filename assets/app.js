@@ -754,29 +754,58 @@ function renderCal(){
 
 // ═══════════ PLAYER CARDS (GAMIFICATION) ═══════════
 function getAgentClass(tech, weekDays) {
+  // Ticket pool: assigned AND closed within current Mon-Fri week
   const pool = closedTix.filter(t =>
     t.assignedTo === tech.id &&
     t.dateAssigned &&
     weekDays.some(d => isSD(d, t.dateAssigned))
   );
-  if (!pool.length) return { name: 'Recruit', icon: '🎖️' };
+
+  // Step 1 — Recruit: no qualifying tickets
+  if (pool.length === 0) return { name: 'Recruit', icon: '🎖️' };
+
+  // Step 2 — Commander: overrides everything except Recruit
   if (commanderAgentNames.includes(tech.name)) return { name: 'Commander', icon: '👑' };
+
+  // Step 3 — Tank: strictly more high-time tickets than low-time
   const highTime = pool.filter(t => t.timeWorked >= 0.75).length;
   const lowTime = pool.length - highTime;
-  const tankQualifies = highTime > lowTime;
+  if (highTime > lowTime) return { name: 'Tank', icon: '🛡️' };
+
+  // Step 4 — Count ticket types
   const serviceCount = pool.filter(t => t.type === 'Service').length;
   const requestCount = pool.filter(t => t.type === 'Request').length;
-  const medicCount = pool.filter(t => t.type === 'New User Setup').length;
-  const sniperCount = pool.filter(t => t.type === 'User Termination').length;
-  const maxCount = Math.max(serviceCount, requestCount, medicCount, sniperCount);
-  const topTypes = [serviceCount, requestCount, medicCount, sniperCount].filter(c => c === maxCount);
-  const isTied = topTypes.length > 1;
-  if (tankQualifies) return { name: 'Tank', icon: '🛡️' };
-  if (isTied) return { name: 'Engineer', icon: '🔧' };
+  const medicCount   = pool.filter(t => t.type === 'New User Setup').length;
+  const sniperCount  = pool.filter(t => t.type === 'User Termination').length;
+  const hasService = serviceCount > 0;
+  const hasOthers  = requestCount > 0 || medicCount > 0 || sniperCount > 0;
+
+  // Step 5 — Service only: agent has Service but none of the other three types
+  if (hasService && !hasOthers) return { name: 'Soldier', icon: '🪖' };
+
+  // Step 6 — Has Service tickets: use group comparison
+  if (hasService) {
+    const groupA = medicCount + serviceCount;   // Medic group
+    const groupB = sniperCount + serviceCount;  // Sniper group
+    const groupC = requestCount + serviceCount; // Soldier group
+    const maxGroup = Math.max(groupA, groupB, groupC);
+    const tiedGroups = [groupA, groupB, groupC].filter(g => g === maxGroup).length;
+    if (tiedGroups > 1) return { name: 'Engineer', icon: '🔧' };
+    if (groupA === maxGroup) return { name: 'Medic', icon: '⚕️' };
+    if (groupB === maxGroup) return { name: 'Sniper', icon: '🎯' };
+    if (groupC === maxGroup) return { name: 'Soldier', icon: '🪖' };
+  }
+
+  // Step 7 — No Service tickets: compare remaining types directly
+  const maxCount = Math.max(requestCount, medicCount, sniperCount);
+  const tiedTypes = [requestCount, medicCount, sniperCount]
+    .filter(c => c === maxCount).length;
+  if (tiedTypes > 1) return { name: 'Engineer', icon: '🔧' };
   if (medicCount === maxCount) return { name: 'Medic', icon: '⚕️' };
   if (sniperCount === maxCount) return { name: 'Sniper', icon: '🎯' };
-  if (serviceCount === maxCount) return { name: 'Soldier', icon: '🪖' };
-  if (requestCount === maxCount) return { name: 'Scout', icon: '⚡' };
+  if (requestCount === maxCount) return { name: 'Soldier', icon: '🪖' };
+
+  // Fallback
   return { name: 'Recruit', icon: '🎖️' };
 }
 
