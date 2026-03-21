@@ -767,46 +767,18 @@ function getAgentClass(tech, weekDays) {
   // Step 2 — Commander: overrides everything except Recruit
   if (commanderAgentNames.includes(tech.name)) return { name: 'Commander', icon: '👑' };
 
-  // Step 3 — Tank: strictly more high-time tickets than low-time
+  // Step 3 — Calculate time split
   const highTime = pool.filter(t => t.timeWorked >= 0.75).length;
-  const lowTime = pool.length - highTime;
+  const lowTime  = pool.filter(t => t.timeWorked < 0.75).length;
+
+  // Step 4 — Tank: strictly more high-time tickets than low-time
   if (highTime > lowTime) return { name: 'Tank', icon: '🛡️' };
 
-  // Step 4 — Count ticket types
-  const serviceCount = pool.filter(t => t.type === 'Service').length;
-  const requestCount = pool.filter(t => t.type === 'Request').length;
-  const medicCount   = pool.filter(t => t.type === 'New User Setup').length;
-  const sniperCount  = pool.filter(t => t.type === 'User Termination').length;
-  const hasService = serviceCount > 0;
-  const hasOthers  = requestCount > 0 || medicCount > 0 || sniperCount > 0;
+  // Step 5 — Soldier: strictly more low-time tickets than high-time
+  if (lowTime > highTime) return { name: 'Soldier', icon: '🪖' };
 
-  // Step 5 — Service only: agent has Service but none of the other three types
-  if (hasService && !hasOthers) return { name: 'Soldier', icon: '🪖' };
-
-  // Step 6 — Has Service tickets: use group comparison
-  if (hasService) {
-    const groupA = medicCount + serviceCount;   // Medic group
-    const groupB = sniperCount + serviceCount;  // Sniper group
-    const groupC = requestCount + serviceCount; // Soldier group
-    const maxGroup = Math.max(groupA, groupB, groupC);
-    const tiedGroups = [groupA, groupB, groupC].filter(g => g === maxGroup).length;
-    if (tiedGroups > 1) return { name: 'Engineer', icon: '🔧' };
-    if (groupA === maxGroup) return { name: 'Medic', icon: '⚕️' };
-    if (groupB === maxGroup) return { name: 'Sniper', icon: '🎯' };
-    if (groupC === maxGroup) return { name: 'Soldier', icon: '🪖' };
-  }
-
-  // Step 7 — No Service tickets: compare remaining types directly
-  const maxCount = Math.max(requestCount, medicCount, sniperCount);
-  const tiedTypes = [requestCount, medicCount, sniperCount]
-    .filter(c => c === maxCount).length;
-  if (tiedTypes > 1) return { name: 'Engineer', icon: '🔧' };
-  if (medicCount === maxCount) return { name: 'Medic', icon: '⚕️' };
-  if (sniperCount === maxCount) return { name: 'Sniper', icon: '🎯' };
-  if (requestCount === maxCount) return { name: 'Soldier', icon: '🪖' };
-
-  // Fallback
-  return { name: 'Recruit', icon: '🎖️' };
+  // Step 6 — Engineer: exactly tied
+  return { name: 'Engineer', icon: '🔧' };
 }
 
 function renderPlayerCards(){
