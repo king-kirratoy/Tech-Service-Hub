@@ -768,17 +768,14 @@ function getAgentClass(tech, weekDays) {
   if (commanderAgentNames.includes(tech.name)) return { name: 'Commander', icon: '👑' };
 
   // Step 3 — Calculate time split
-  const highTime = pool.filter(t => t.timeWorked >= 0.75).length;
-  const lowTime  = pool.filter(t => t.timeWorked < 0.75).length;
+  const highTime = pool.filter(t => t.timeWorked > 0.50).length;
+  const lowTime  = pool.filter(t => t.timeWorked <= 0.50).length;
 
   // Step 4 — Tank: strictly more high-time tickets than low-time
   if (highTime > lowTime) return { name: 'Tank', icon: '🛡️' };
 
-  // Step 5 — Soldier: strictly more low-time tickets than high-time
-  if (lowTime > highTime) return { name: 'Soldier', icon: '🪖' };
-
-  // Step 6 — Engineer: exactly tied
-  return { name: 'Engineer', icon: '🔧' };
+  // Step 5 — Soldier: low-time tickets are majority or tied
+  return { name: 'Soldier', icon: '🪖' };
 }
 
 function renderPlayerCards(){
