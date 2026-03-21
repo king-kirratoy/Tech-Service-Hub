@@ -128,7 +128,7 @@ function yH(y){return SH+y/HH}
 function snap(h){return Math.ceil(h*4)/4}
 function med(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2}
 function p90(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.max(0,Math.ceil(s.length*0.9)-1)]}
-function pD(s){if(!s)return null;s=String(s).trim();if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)&&!/[Z+-]\d{0,4}$/.test(s))s+="Z";const d=new Date(s);return isNaN(d)?null:d}
+function pD(s){if(!s)return null;s=String(s).trim();if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)&&!/Z$/.test(s)&&!/[+-]\d{2}:?\d{2}$/.test(s))s+="Z";const d=new Date(s);return isNaN(d)?null:d}
 function mK(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function mL(k){const[y,m]=k.split("-");return new Date(y,m-1).toLocaleDateString("en-US",{month:"short",year:"2-digit"})}
 function esc(s){return(s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
@@ -2698,6 +2698,7 @@ function renderCommsBoard(){
 }
 
 function buildCommsCard(card){
+  console.log('card.created_at:', card.created_at);
   const bgHex=(COMMS_CARD_COLORS.find(x=>x.id===card.bg_color)||COMMS_CARD_COLORS[0]).hex;
   const borderHex=(COMMS_BORDER_COLORS.find(x=>x.id===card.border_color)||COMMS_BORDER_COLORS[0]).hex;
   const iconObj=COMMS_ICONS.find(x=>x.id===card.icon);
