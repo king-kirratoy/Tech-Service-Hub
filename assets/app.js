@@ -1126,7 +1126,7 @@ function applyLoginState(){
   const loggedInUserEl=document.getElementById("loggedInUser");
   const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#capTab .qbr-select label:nth-of-type(2)');
   const agentSelect=document.getElementById("kpiAgent");
-  // Find the agent filter label+select wrapper elements (Workload tab)
+  // Find the agent filter label+select wrapper elements (Deployment tab)
   const agentFilterEls=document.querySelectorAll('#capTab .qbr-select > *');
   let agentLabelEl=null,agentSelectEl=null;
   agentFilterEls.forEach(el=>{
