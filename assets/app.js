@@ -767,14 +767,13 @@ function getAgentClass(tech, weekDays) {
   // Step 2 — Commander: overrides everything except Recruit
   if (commanderAgentNames.includes(tech.name)) return { name: 'Commander', icon: '👑' };
 
-  // Step 3 — Calculate time split
-  const highTime = pool.filter(t => t.timeWorked > 0.50).length;
-  const lowTime  = pool.filter(t => t.timeWorked <= 0.50).length;
+  // Step 3 — Calculate average Time_Taken across pool
+  const avgTime = pool.reduce((sum, t) => sum + (t.timeWorked || 0), 0) / pool.length;
 
-  // Step 4 — Tank: strictly more high-time tickets than low-time
-  if (highTime > lowTime) return { name: 'Tank', icon: '🛡️' };
+  // Step 4 — Tank: average time strictly greater than 0.75h
+  if (avgTime > 0.75) return { name: 'Tank', icon: '🛡️' };
 
-  // Step 5 — Soldier: low-time tickets are majority or tied
+  // Step 5 — Soldier: average time 0.75h or under
   return { name: 'Soldier', icon: '🪖' };
 }
 
