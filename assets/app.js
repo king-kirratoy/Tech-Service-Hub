@@ -2352,17 +2352,16 @@ const BF={
         else if(w.level>=18)rank='<span style="color:#84BD00">ULTRA VIOLENCE</span>';
         else if(w.level>=11)rank='<span style="color:#fcdc00">HURT ME PLENTY</span>';
         else rank='<span style="color:#fcdc00">ASPIRING SLAYER</span>';
-        html=`<div style="font-weight:700;font-size:12px;margin-bottom:4px;color:${w.color}">${esc(w.name)}</div>`;
-        html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:6px">Lvl ${w.level} \u00b7 ${rank}</div>`;
-        html+=`<div style="font-size:9px;margin-bottom:2px">HP: <span style="color:${w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00"}">${w.hp}/100</span></div>`;
-        html+=`<div style="font-size:9px">Active: ${tt.length} \u00b7 Est: ${tt.reduce((s2,x)=>s2+x.est,0).toFixed(1)}h</div>`;
+        html=`<div style="line-height:1.2"><div style="font-weight:700;font-size:12px;margin-bottom:2px;color:${w.color}">${esc(w.name)}</div>`;
+        html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">Lvl ${w.level} \u00b7 ${rank}</div>`;
+        html+=`<div style="font-size:9px;margin-bottom:2px">HP: <span style="color:${w.hp>=60?"#84BD00":w.hp>=30?"#fcdc00":"#fb9e00"}">${w.hp}/100</span></div></div>`;
       }else{
         const tk=found.entity.ticketRef;
         if(tk){
           const stC=SC[tk.status]||"var(--text-dim)";
-          html=`<div style="font-weight:700;font-size:11px;color:var(--blue);margin-bottom:4px">${esc(tk.id)}</div>`;
+          html=`<div style="line-height:1.2"><div style="font-weight:700;font-size:11px;color:var(--blue);margin-bottom:2px">${esc(tk.id)}</div>`;
           html+=`<div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">${esc(tk.category)}</div>`;
-          html+=`<div style="font-size:9px"><span style="color:${stC}">${esc(tk.status)}</span> \u00b7 ${tk.est}h est</div>`;
+          html+=`<div style="font-size:9px"><span style="color:${stC}">${esc(tk.status)}</span> \u00b7 ${tk.est}h est</div></div>`;
         }
       }
       tooltip.innerHTML=html;tooltip.style.display="block";
