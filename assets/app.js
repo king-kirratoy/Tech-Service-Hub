@@ -754,10 +754,12 @@ function renderCal(){
 
 // ═══════════ PLAYER CARDS (GAMIFICATION) ═══════════
 function getAgentClass(tech, weekDays) {
-  // Ticket pool: assigned AND closed within current Mon-Fri week
+  // Ticket pool: assigned AND closed within current Mon-Fri week, by same agent
   const pool = closedTix.filter(t =>
-    t.assignedTo === tech.id &&
+    t.agent === tech.name &&
+    t.dateClosed &&
     t.dateAssigned &&
+    weekDays.some(d => isSD(d, t.dateClosed)) &&
     weekDays.some(d => isSD(d, t.dateAssigned))
   );
 
@@ -770,10 +772,10 @@ function getAgentClass(tech, weekDays) {
   // Step 3 — Calculate average Time_Taken across pool
   const avgTime = pool.reduce((sum, t) => sum + (t.timeWorked || 0), 0) / pool.length;
 
-  // Step 4 — Tank: average time strictly greater than 0.75h
-  if (avgTime > 0.75) return { name: 'Tank', icon: '🛡️' };
+  // Step 4 — Tank: average time strictly greater than 0.60h
+  if (avgTime > 0.60) return { name: 'Tank', icon: '🛡️' };
 
-  // Step 5 — Soldier: average time 0.75h or under
+  // Step 5 — Soldier: average time 0.60h or under
   return { name: 'Soldier', icon: '🪖' };
 }
 
