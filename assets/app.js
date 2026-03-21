@@ -1329,6 +1329,7 @@ function stopAutoRefresh(){
 
 // ═══════════ ROBOT CUSTOMIZER ═══════════
 const ROBOT_COLORS=[
+  {id:"none",hex:null,label:"None"},
   {id:"blue",hex:"#0095C8",label:"Cyber Blue"},
   {id:"green",hex:"#84BD00",label:"Neon Green"},
   {id:"red",hex:"#ff5c5c",label:"Blaze Red"},
@@ -1435,7 +1436,7 @@ function loadAllHatSprites(){
 }
 
 function getTintedHatSprite(hatId,color){
-  const key=hatId+":"+color;
+  const key=hatId+":"+(color||"none");
   if(hatTintCache[key])return hatTintCache[key];
   const sheet=hatSpriteSheets[hatId]||hatSpriteSheets["none"];
   if(!sheet)return null;
@@ -1443,18 +1444,20 @@ function getTintedHatSprite(hatId,color){
   oc.width=sheet.width;oc.height=sheet.height;
   const ox=oc.getContext("2d");
   ox.drawImage(sheet,0,0);
-  const id=ox.getImageData(0,0,oc.width,oc.height);
-  const d=id.data;
-  const tr=parseInt(color.slice(1,3),16),tg=parseInt(color.slice(3,5),16),tb=parseInt(color.slice(5,7),16);
-  for(let i=0;i<d.length;i+=4){
-    const r=d[i],g=d[i+1],b=d[i+2];
-    if(r<25&&g<25&&b<25){d[i+3]=0;continue}
-    const lum=(r*0.299+g*0.587+b*0.114)/255;
-    d[i]=Math.min(255,Math.round(tr*lum+r*0.15));
-    d[i+1]=Math.min(255,Math.round(tg*lum+g*0.15));
-    d[i+2]=Math.min(255,Math.round(tb*lum+b*0.15));
+  if(color){
+    const id=ox.getImageData(0,0,oc.width,oc.height);
+    const d=id.data;
+    const tr=parseInt(color.slice(1,3),16),tg=parseInt(color.slice(3,5),16),tb=parseInt(color.slice(5,7),16);
+    for(let i=0;i<d.length;i+=4){
+      const r=d[i],g=d[i+1],b=d[i+2];
+      if(r<25&&g<25&&b<25){d[i+3]=0;continue}
+      const lum=(r*0.299+g*0.587+b*0.114)/255;
+      d[i]=Math.min(255,Math.round(tr*lum+r*0.15));
+      d[i+1]=Math.min(255,Math.round(tg*lum+g*0.15));
+      d[i+2]=Math.min(255,Math.round(tb*lum+b*0.15));
+    }
+    ox.putImageData(id,0,0);
   }
-  ox.putImageData(id,0,0);
   hatTintCache[key]=oc;
   return oc;
 }
@@ -1468,8 +1471,8 @@ function getRobotConfigForAgent(agentName){
 function drawRobot(ctx,w,h,config,scale){
   const s=scale||4;
   ctx.clearRect(0,0,w,h);
-  const c=ROBOT_COLORS.find(x=>x.id===config.color)||ROBOT_COLORS[0];
-  const hex=c.hex;
+  const c=ROBOT_COLORS.find(x=>x.id===config.color)||ROBOT_COLORS[1];
+  const hex=c.hex||null;
   const hatId=config.accessory||"none";
 
   // Get the tinted sprite for this hat + color combo
@@ -1484,7 +1487,7 @@ function drawRobot(ctx,w,h,config,scale){
     ctx.drawImage(tinted,SPRITE_INSET,0,SPRITE_FRAME_W-SPRITE_INSET*2,SPRITE_FRAME_H,cx-dw/2,baseY-dh,dw,dh);
   }else{
     // Fallback: simple colored rectangle
-    ctx.fillStyle=hex;
+    ctx.fillStyle=hex||"#888888";
     ctx.fillRect(cx-15*s,baseY-38*s,30*s,38*s);
   }
 }
@@ -1502,7 +1505,7 @@ function initRobotCustomizer(){
   function buildPicker(container,items,key,isColor){
     container.innerHTML=items.map(item=>{
       const active=currentRobot[key]===item.id?"active":"";
-      if(isColor){
+      if(isColor&&item.hex){
         return`<div class="robo-opt ${active}" data-key="${key}" data-val="${item.id}" style="background:${item.hex}" title="${item.label}"></div>`;
       }
       return`<div class="robo-opt robo-opt-text ${active}" data-key="${key}" data-val="${item.id}" title="${item.label}">${item.label}</div>`;
@@ -2618,9 +2621,9 @@ function drawRobotHead(canvas,config){
   const ctx=canvas.getContext("2d");
   const w=canvas.width,h=canvas.height;
   ctx.clearRect(0,0,w,h);
-  const c=ROBOT_COLORS.find(x=>x.id===config.color)||ROBOT_COLORS[0];
+  const c=ROBOT_COLORS.find(x=>x.id===config.color)||ROBOT_COLORS[1];
   const hatId=config.accessory||"none";
-  const tinted=getTintedHatSprite(hatId,c.hex);
+  const tinted=getTintedHatSprite(hatId,c.hex||null);
   if(tinted){
     // Crop head+body region of the 369px sprite, keeping aspect ratio
     const srcY=0,srcH=Math.round(SPRITE_FRAME_H*0.55);
