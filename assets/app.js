@@ -753,6 +753,33 @@ function renderCal(){
 }
 
 // ═══════════ PLAYER CARDS (GAMIFICATION) ═══════════
+function getAgentClass(tech, weekDays) {
+  const pool = closedTix.filter(t =>
+    t.assignedTo === tech.id &&
+    t.dateAssigned &&
+    weekDays.some(d => isSD(d, t.dateAssigned))
+  );
+  if (!pool.length) return { name: 'Recruit', icon: '🎖️' };
+  if (commanderAgentNames.includes(tech.name)) return { name: 'Commander', icon: '👑' };
+  const highTime = pool.filter(t => t.timeWorked >= 0.75).length;
+  const lowTime = pool.length - highTime;
+  const tankQualifies = highTime > lowTime;
+  const serviceCount = pool.filter(t => t.type === 'Service').length;
+  const requestCount = pool.filter(t => t.type === 'Request').length;
+  const medicCount = pool.filter(t => t.type === 'New User Setup').length;
+  const sniperCount = pool.filter(t => t.type === 'User Termination').length;
+  const maxCount = Math.max(serviceCount, requestCount, medicCount, sniperCount);
+  const topTypes = [serviceCount, requestCount, medicCount, sniperCount].filter(c => c === maxCount);
+  const isTied = topTypes.length > 1;
+  if (tankQualifies) return { name: 'Tank', icon: '🛡️' };
+  if (isTied) return { name: 'Engineer', icon: '🔧' };
+  if (medicCount === maxCount) return { name: 'Medic', icon: '⚕️' };
+  if (sniperCount === maxCount) return { name: 'Sniper', icon: '🎯' };
+  if (serviceCount === maxCount) return { name: 'Soldier', icon: '🪖' };
+  if (requestCount === maxCount) return { name: 'Scout', icon: '⚡' };
+  return { name: 'Recruit', icon: '🎖️' };
+}
+
 function renderPlayerCards(){
   const section=document.getElementById("playerCards");
   const grid=document.getElementById("playerGrid");
@@ -822,7 +849,8 @@ function renderPlayerCards(){
     else if(hp>=30){hpColor="#fcdc00";hpBg="rgba(251,158,0,0.8)"}
     else{hpColor="#fb9e00";hpBg="rgba(255,92,92,0.8)"}
 
-    return{tech:t,hp,hpColor,hpBg,level,xpInLevel,totalXP,rank,rankColor,rankBg,totalTix};
+    const agentClass=getAgentClass(t,weekDays);
+    return{tech:t,hp,hpColor,hpBg,level,xpInLevel,totalXP,rank,rankColor,rankBg,totalTix,agentClass};
   });
 
   // Sort by HP ascending (most overwhelmed first)
@@ -837,6 +865,7 @@ function renderPlayerCards(){
       <div class="pcard-header">
         <div>
           <div class="pcard-name">${esc(c.tech.name)}</div>
+          <div class="pcard-class">${esc(c.agentClass.name)}</div>
           <div class="pcard-level">Lvl ${c.level}</div>
         </div>
         <span class="pcard-rank" style="color:${c.rankColor};background:${c.rankBg};border:1px solid ${c.rankColor}30${c.rank==="NIGHTMARE"?";text-shadow:0 0 8px "+c.rankColor+";box-shadow:0 0 12px "+c.rankColor+"40":""}">${c.rank}</span>
@@ -853,6 +882,7 @@ function renderPlayerCards(){
         <canvas id="${canvasId}" width="160" height="120" style="image-rendering:pixelated"></canvas>
         <div style="font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-top:0">${esc(rName)}</div>
       </div>
+      <div class="pcard-icon">${c.agentClass.icon}</div>
     </div>`;
   }).join("");
 
