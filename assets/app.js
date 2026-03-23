@@ -971,7 +971,7 @@ function renderRisk(){
     if(!slaTgt)return;
     if(now>slaTgt){
       const overdueH=bizH(slaTgt,now);
-      if(overdueH>16)slaBreach.push({...tk,overdueH,slaTgt,severity:overdueH>=48?"high":overdueH>=24?"med":"low"});
+      if(overdueH>16)slaBreach.push({...tk,overdueH,slaTgt,severity:overdueH>=48?"high":overdueH>=32?"med":"low"});
     }
   });
 
@@ -990,7 +990,7 @@ function renderRisk(){
     if(resBreachedIds.has(tk.id))return; // resolution target breached, skip
     if(now>tk.nextResponse){
       const overdueBizH=bizH(tk.nextResponse,now);
-      if(overdueBizH>16)overdueResp.push({...tk,overdueBizH,severity:overdueBizH>=32?"high":overdueBizH>16?"med":"low"});
+      if(overdueBizH>16)overdueResp.push({...tk,overdueBizH,severity:overdueBizH>=40?"high":overdueBizH>32?"med":"low"});
     }
   });
 
