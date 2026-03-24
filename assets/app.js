@@ -252,14 +252,9 @@ function procAct(){
     const slaTgt=pD(r.SLA_Resolution_Target);
     const isWaiting=WAIT_STATUSES.has(status);
 
-    // Calculate remaining estimate: for waiting tickets use 0.25h (15 min follow-up)
-    let est;
-    if(isWaiting){
-      est=0.25;
-    }else{
-      est=Math.max(0.25,totalEst-timeWorked);
-      est=Math.round(est*4)/4;
-    }
+    // Calculate remaining estimate
+    let est=Math.max(0.25,totalEst-timeWorked);
+    est=Math.round(est*4)/4;
 
     return{id:r.Ticket_ID||`TK-${i}`,category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,isWaiting,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
   });
