@@ -563,6 +563,7 @@ function getKPIData(overrideAg){
 
 // ═══════════ TECH SIDEBAR ═══════════
 let openSchedTech=null;
+let _dragCancel=null; // abort any in-progress calendar drag
 function renderSidebar(){
   const l=document.getElementById("tl");
   if(!roster.length){l.innerHTML='<p style="color:var(--text-dim);font-size:11px;font-style:italic">Upload active tickets</p>';return}
@@ -696,7 +697,6 @@ function renderCal(){
       const stC=SC[tk.status]||"var(--text-dim)";
       const endH=tk.startHour+tk.est;
       const nrd=tk.nextResponse?tk.nextResponse.toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"—";
-      const waitLabel=tk.isWaiting?`<span style="font-size:8px;background:rgba(255,183,77,0.2);color:#ffb74d;padding:1px 5px;border-radius:3px;margin-left:4px">WAITING</span>`:"";
       const popSide=(di>=3?"pop-left":"")+" "+(tk.startHour>=14?"pop-bottom":"");
       const riskClass=tk.nrdAtRisk?"nrd-risk":"";
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
@@ -708,7 +708,7 @@ function renderCal(){
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
-          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}${waitLabel}</span></div>
+          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(tk.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${esc(tk.type)}</span></div>
@@ -765,6 +765,7 @@ function renderCal(){
   }
 
   h+=`</div>`;
+  if(_dragCancel){_dragCancel();_dragCancel=null;}
   area.innerHTML=h;
   _bindCalDrag(area);
 }
@@ -804,6 +805,7 @@ function _bindCalDrag(area){
       el.setPointerCapture(e.pointerId);
       const rect=el.getBoundingClientRect();
       ds={offsetY:e.clientY-rect.top,startX:e.clientX,startY:e.clientY,moved:false,rect};
+      _dragCancel=()=>{if(ghost){ghost.remove();ghost=null;}el.style.opacity='';document.body.style.cursor='';ds=null;};
     });
     el.addEventListener('pointermove',e=>{
       if(!ds)return;
@@ -825,6 +827,7 @@ function _bindCalDrag(area){
       if(ghost){ghost.remove();ghost=null;}
       el.style.opacity='';
       document.body.style.cursor='';
+      _dragCancel=null;
       if(ds.moved){
         const col=getCol(e.clientX);
         if(col){
@@ -840,6 +843,7 @@ function _bindCalDrag(area){
       if(ghost){ghost.remove();ghost=null;}
       el.style.opacity='';
       document.body.style.cursor='';
+      _dragCancel=null;
       ds=null;
     });
   });
