@@ -329,23 +329,16 @@ function schedTix(){
       byA[tk.assignedTo]={d:startD,h:snap(startH)};
     }
     const a=byA[tk.assignedTo];
-    a.h=snap(a.h);
-
     const dur=Math.ceil(tk.est*4)/4;
-
-    if(a.h>=s.ls&&a.h<s.le)a.h=snap(s.le);
-    if(a.h<s.ls&&a.h+dur>s.ls)a.h=snap(s.le);
-    if(a.h+dur>s.se){
-      a.d=a.d+1;
-      a.h=snap(s.ss);
-      if(a.h>=s.ls&&a.h<s.le)a.h=snap(s.le);
-      if(a.h<s.ls&&a.h+dur>s.ls)a.h=snap(s.le);
+    // Loop until cursor is in a valid window (not in lunch, not overflowing shift end)
+    for(let i=0;i<20;i++){
+      a.h=snap(a.h);
+      if(a.h<s.ss){a.h=snap(s.ss);continue;}
+      if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
+      if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
+      if(a.h+dur>s.se||a.h>=s.se){a.d=Math.min(a.d+1,4);a.h=snap(s.ss);continue;}
+      break;
     }
-    if(a.h>=s.se){
-      a.d=a.d+1;
-      a.h=snap(s.ss);
-    }
-
     tk.dayIdx=a.d;
     tk.startHour=a.h;
     a.h+=dur;
@@ -370,24 +363,29 @@ function schedTix(){
   // Enhanced placeTicket that skips occupied slots
   function placeTicketAround(tk){
     placeTicket(tk);
-    // Check if placed position overlaps any overridden ticket
-    const key=tk.assignedTo+"-"+tk.dayIdx;
-    const occ=occupied[key];
-    if(occ){
-      let maxTries=20;
-      while(maxTries-->0){
-        const tkEnd=tk.startHour+tk.est;
-        const conflict=occ.find(o=>tk.startHour<o.e&&tkEnd>o.s);
-        if(!conflict)break;
-        // Jump cursor past the conflicting ticket
-        const a=byA[tk.assignedTo];
-        a.h=snap(conflict.e);
-        const s=getSched(tk.assignedTo);
-        if(a.h>=s.ls&&a.h<s.le)a.h=snap(s.le);
-        const dur=Math.ceil(tk.est*4)/4;
-        if(a.h+dur>s.se){a.d=a.d+1;a.h=snap(s.ss)}
-        tk.dayIdx=a.d;tk.startHour=a.h;a.h+=dur;
+    const s=getSched(tk.assignedTo);
+    const dur=Math.ceil(tk.est*4)/4;
+    const a=byA[tk.assignedTo];
+    let maxTries=20;
+    while(maxTries-->0){
+      // Re-derive occupied list for current day (day may have changed)
+      const occ=occupied[tk.assignedTo+"-"+tk.dayIdx]||[];
+      const tkEnd=tk.startHour+tk.est;
+      const conflict=occ.find(o=>tk.startHour<o.e&&tkEnd>o.s);
+      if(!conflict)break;
+      // Jump cursor past the conflicting ticket then re-apply lunch/shift rules
+      a.d=tk.dayIdx;
+      a.h=snap(conflict.e);
+      for(let i=0;i<20;i++){
+        a.h=snap(a.h);
+        if(a.h<s.ss){a.h=snap(s.ss);continue;}
+        if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
+        if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
+        if(a.h+dur>s.se||a.h>=s.se){a.d=Math.min(a.d+1,4);a.h=snap(s.ss);continue;}
+        break;
       }
+      tk.dayIdx=a.d;tk.startHour=a.h;a.h+=dur;
+      if(a.h>s.ls&&a.h<=s.le)a.h=snap(s.le);
     }
     // Register this ticket as occupied too (for subsequent auto tickets)
     const key2=tk.assignedTo+"-"+tk.dayIdx;
