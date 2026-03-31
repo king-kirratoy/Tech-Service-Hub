@@ -733,7 +733,7 @@ function renderCal(){
       const colStyle=totalCols>1?`left:calc(${col*w}% + 2px);width:calc(${w}% - 4px);right:auto;`:'';
       h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC};${colStyle}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="ti">${esc(tk.id)}</span>${isOvr?'<span class="tt-override-star">★</span>':''}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
+          <div class="tt-row1"><span class="ti"${tk.sla==="Initial Response SLA"?' style="color:var(--green)"':''}>${esc(tk.id)}</span>${isOvr?'<span class="tt-override-star">★</span>':''}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="tt-row2"><span class="tc">${esc(tk.category)}</span><span class="te">${tk.est}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
