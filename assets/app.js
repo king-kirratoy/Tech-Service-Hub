@@ -873,17 +873,29 @@ function _bindCalDrag(area){
   });
 }
 
-// ── Viewport-aware popup positioning for closed tickets ──────────────────────
+// ── Fixed-position popup for closed tickets (bypasses tcw overflow:hidden) ───
 function _bindClosedPopups(area){
-  const POPUP_H=200; // approximate max popup height in px
+  let floatEl=null;
   area.querySelectorAll('.tt-closed').forEach(el=>{
+    const src=el.querySelector('.tt-popup');
+    if(!src)return;
     el.addEventListener('mouseenter',()=>{
-      const popup=el.querySelector('.tt-popup');
-      if(!popup)return;
-      const rect=el.getBoundingClientRect();
-      if(rect.top<POPUP_H){popup.classList.remove('pop-bottom');}
-      else{popup.classList.add('pop-bottom');}
+      if(floatEl)floatEl.remove();
+      floatEl=document.createElement('div');
+      floatEl.className='tt-popup';
+      floatEl.innerHTML=src.innerHTML;
+      floatEl.style.cssText='position:fixed;display:block;z-index:9999;pointer-events:none;width:270px;visibility:hidden';
+      document.body.appendChild(floatEl);
+      const ph=floatEl.offsetHeight;
+      floatEl.style.visibility='';
+      const r=el.getBoundingClientRect();
+      // Horizontal: right of ticket, fall back to left if near right edge
+      const lx=r.right+8;
+      floatEl.style.left=((lx+270)>window.innerWidth-8?r.left-8-270:lx)+'px';
+      // Vertical: align to ticket top, clamped within viewport
+      floatEl.style.top=Math.max(8,Math.min(r.top,window.innerHeight-ph-8))+'px';
     });
+    el.addEventListener('mouseleave',()=>{if(floatEl){floatEl.remove();floatEl=null;}});
   });
 }
 
