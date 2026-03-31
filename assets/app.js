@@ -767,7 +767,7 @@ function renderCal(){
       closedDay.forEach(ct=>{
         const stC=SC[ct.status]||"#999999";
         const closedDate=ct.dateClosed?ct.dateClosed.toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"—";
-        const popSide=(di>=3?"pop-left":"")+" pop-bottom";
+        const popSide=(di>=3?"pop-left":"");
         h+=`<div class="tt tt-closed" style="height:${closedHt}px;border-left-color:${stC}">
         <div class="tt-inner">
           <div class="tt-row1"><span class="ti">${esc(ct.id)}</span><span class="tit" style="color:#999">Closed</span></div>
@@ -791,6 +791,7 @@ function renderCal(){
   if(_dragCancel){_dragCancel();_dragCancel=null;}
   area.innerHTML=h;
   _bindCalDrag(area);
+  _bindClosedPopups(area);
 }
 
 // ── Drag-to-reposition and resize for calendar tickets ───────────────────────
@@ -868,6 +869,20 @@ function _bindCalDrag(area){
       document.body.style.cursor='';
       _dragCancel=null;
       ds=null;
+    });
+  });
+}
+
+// ── Viewport-aware popup positioning for closed tickets ──────────────────────
+function _bindClosedPopups(area){
+  const POPUP_H=200; // approximate max popup height in px
+  area.querySelectorAll('.tt-closed').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{
+      const popup=el.querySelector('.tt-popup');
+      if(!popup)return;
+      const rect=el.getBoundingClientRect();
+      if(rect.top<POPUP_H){popup.classList.remove('pop-bottom');}
+      else{popup.classList.add('pop-bottom');}
     });
   });
 }
