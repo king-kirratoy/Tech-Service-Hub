@@ -653,13 +653,17 @@ function renderSidebar(){
   if(actionsEl){
     const ovr=loadOverrides();
     const hasOvr=selTech&&actTix.some(t=>t.assignedTo===selTech&&ovr[t.id]);
-    actionsEl.innerHTML=hasOvr?`<button id="resetCalBtn" style="width:100%;margin-bottom:8px;padding:6px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.3);border-radius:6px;color:#ff7675;cursor:pointer">Reset Positions</button>`:"";
-    if(hasOvr)document.getElementById("resetCalBtn").addEventListener("click",()=>{
-      const o=loadOverrides();
-      actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
-      saveOverrides(o);
-      schedTix();renderCal();renderSidebar();
-    });
+    if(selTech){
+      actionsEl.innerHTML=`<button id="resetCalBtn" ${hasOvr?'':'disabled'} style="width:100%;margin-bottom:8px;padding:6px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:${hasOvr?'rgba(255,107,107,0.08)':'rgba(108,108,108,0.06)'};border:1px solid ${hasOvr?'rgba(255,107,107,0.3)':'rgba(108,108,108,0.2)'};border-radius:6px;color:${hasOvr?'#ff7675':'var(--text-dim)'};cursor:${hasOvr?'pointer':'default'}">Reset Positions</button>`;
+      if(hasOvr)document.getElementById("resetCalBtn").addEventListener("click",()=>{
+        const o=loadOverrides();
+        actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
+        saveOverrides(o);
+        schedTix();renderCal();renderSidebar();
+      });
+    } else {
+      actionsEl.innerHTML="";
+    }
   }
 }
 
