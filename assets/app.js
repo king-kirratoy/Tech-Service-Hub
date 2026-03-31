@@ -645,6 +645,8 @@ function renderSidebar(){
     if(f==="s"){const o=SHIFTS[v];techSched[tid].ss=o.s;techSched[tid].se=o.e;techSched[tid].si=v}
     if(f==="l"){const o=LUNCHES[v];techSched[tid].ls=o.s;techSched[tid].le=o.e;techSched[tid].li=v}
     schedTix();renderCal();
+    const tech=roster.find(t=>t.id===tid);
+    if(tech){const sb={agent_name:tech.name};if(f==="s")sb.shift_slot=v;if(f==="l")sb.lunch_slot=v;fetchRetry(PROXY_BASE+"/api/agent-schedules",{method:"PATCH",headers:authH(),body:JSON.stringify(sb)}).catch(err=>console.error("Schedule save error:",err));}
   })});
 }
 
