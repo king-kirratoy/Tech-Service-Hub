@@ -661,7 +661,7 @@ function renderSidebar(){
       const o=loadOverrides();
       actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
       saveOverrides(o);
-      schedTix();renderCal();renderSidebar();
+      procAct();
     });
   }
 }
