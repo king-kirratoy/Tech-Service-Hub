@@ -128,6 +128,11 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .tt-popup .pop-label{color:var(--text-dim);font-weight:600;white-space:nowrap;margin-right:10px}
 .tt-popup .pop-val{color:var(--text);font-weight:500;text-align:right;max-width:65%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tt-popup .pop-summary{font-size:11px;color:var(--text);line-height:1.5;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);word-wrap:break-word}
+/* --- Drag / resize --- */
+.tt{cursor:grab}
+.tt-resize-handle{position:absolute;bottom:0;left:0;right:0;height:8px;cursor:ns-resize;z-index:10;border-radius:0 0 4px 4px}
+.tt-resize-handle:hover{background:rgba(255,255,255,0.15)}
+.tt-override-dot{position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--blue);pointer-events:none;z-index:11}
 .now-line{position:absolute;left:0;right:0;z-index:8;pointer-events:none;display:flex;align-items:center}
 .now-line::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-left:-4px}
 .now-line::after{content:"";flex:1;height:2px;background:var(--danger)}

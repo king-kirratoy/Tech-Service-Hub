@@ -648,22 +648,21 @@ function renderSidebar(){
     const tech=roster.find(t=>t.id===tid);
     if(tech){const sb={agent_name:tech.name};if(f==="s")sb.shift_slot=v;if(f==="l")sb.lunch_slot=v;fetchRetry(PROXY_BASE+"/api/agent-schedules",{method:"PATCH",headers:authH(),body:JSON.stringify(sb)}).catch(err=>console.error("Schedule save error:",err));}
   })});
-  // ── Reset positions button ────────────────────────────
+  // ── Reset calendar button ─────────────────────────────
   const actionsEl=document.getElementById("tl-actions");
   if(actionsEl){
     const ovr=loadOverrides();
     const hasOvr=selTech&&actTix.some(t=>t.assignedTo===selTech&&ovr[t.id]);
-    if(selTech){
-      actionsEl.innerHTML=`<button id="resetCalBtn" ${hasOvr?'':'disabled'} style="width:100%;margin-bottom:8px;padding:6px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:${hasOvr?'rgba(255,107,107,0.08)':'rgba(108,108,108,0.06)'};border:1px solid ${hasOvr?'rgba(255,107,107,0.3)':'rgba(108,108,108,0.2)'};border-radius:6px;color:${hasOvr?'#ff7675':'var(--text-dim)'};cursor:${hasOvr?'pointer':'default'}">Reset Positions</button>`;
-      if(hasOvr)document.getElementById("resetCalBtn").addEventListener("click",()=>{
-        const o=loadOverrides();
-        actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
-        saveOverrides(o);
-        schedTix();renderCal();renderSidebar();
-      });
-    } else {
-      actionsEl.innerHTML="";
-    }
+    const bs=`width:100%;margin-bottom:8px;padding:9px 16px;font-size:12px;font-weight:600;font-family:var(--font-body);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;transition:all .25s;`;
+    actionsEl.innerHTML=hasOvr
+      ?`<button id="resetCalBtn" style="${bs}background:rgba(0,149,200,0.1);border:1px solid var(--border-bright);color:var(--blue);cursor:pointer" onmouseenter="this.style.background='rgba(0,149,200,0.2)';this.style.borderColor='var(--blue)'" onmouseleave="this.style.background='rgba(0,149,200,0.1)';this.style.borderColor='var(--border-bright)'">Reset Calendar</button>`
+      :`<button disabled style="${bs}background:rgba(0,149,200,0.04);border:1px solid rgba(108,108,108,0.2);color:var(--text-dim);cursor:default;opacity:0.5">Reset Calendar</button>`;
+    if(hasOvr)document.getElementById("resetCalBtn").addEventListener("click",()=>{
+      const o=loadOverrides();
+      actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
+      saveOverrides(o);
+      schedTix();renderCal();renderSidebar();
+    });
   }
 }
 
@@ -675,6 +674,7 @@ function renderCal(){
   const days=weekDays;
   const gh=(EH-SH)*HH,sc=getSched(selTech||1);
   const dtm=days.map((_,di)=>actTix.filter(t=>t.assignedTo===selTech&&t.dayIdx===di));
+  const calOvr=loadOverrides();
 
   let h=`<div class="tcw"><div class="tch"><div class="tg"></div>`;
   days.forEach((day,di)=>{const tks=dtm[di],th=tks.reduce((s,t)=>s+t.est,0),td=isT(day);h+=`<div class="dch ${td?"today":""}"><div class="dn">${fDS(day)}</div><div class="dd">${fD(day)}</div><div class="ds">${tks.length} tix · ${th.toFixed(1)}h</div></div>`});
@@ -700,11 +700,13 @@ function renderCal(){
       const popSide=(di>=3?"pop-left":"")+" "+(tk.startHour>=14?"pop-bottom":"");
       const riskClass=tk.nrdAtRisk?"nrd-risk":"";
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
-      h+=`<div class="tt ${riskClass}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
+      const isOvr=!!calOvr[tk.id];
+      h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
         <div class="tt-inner">
           <div class="tt-row1"><span class="ti">${esc(tk.id)}</span><span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="tt-row2"><span class="tc">${esc(tk.category)}</span><span class="te">${tk.est}h</span></div>
         </div>
+        ${isOvr?'<div class="tt-override-dot"></div>':''}
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}${waitLabel}</span></div>
@@ -715,6 +717,7 @@ function renderCal(){
           <div class="pop-row"><span class="pop-label">Est. Remaining</span><span class="pop-val" style="color:var(--green)">${tk.est}h</span></div>
           <div class="pop-row"><span class="pop-label">Next Response</span><span class="pop-val" style="${nrdColor}">${nrd}</span></div>
         </div>
+        <div class="tt-resize-handle"></div>
       </div>`;
     });
     h+=`</div>`;
@@ -764,6 +767,77 @@ function renderCal(){
 
   h+=`</div>`;
   area.innerHTML=h;
+  _bindCalDrag(area);
+}
+
+// ── Drag-to-reposition and resize for calendar tickets ───────────────────────
+function _bindCalDrag(area){
+  const cols=Array.from(area.querySelectorAll('.dc[data-d]'));
+  function getCol(x){return cols.find(c=>{const r=c.getBoundingClientRect();return x>=r.left&&x<=r.right})||null}
+  function clampHour(h,est){return Math.max(SH,Math.min(EH-est,Math.round(h*4)/4))}
+  area.querySelectorAll('.tt').forEach(el=>{
+    const tid=el.dataset.id,tk=actTix.find(t=>t.id===tid);if(!tk)return;
+    // ── Resize ──────────────────────────────────────────────
+    const handle=el.querySelector('.tt-resize-handle');
+    if(handle){
+      let rs=null;
+      handle.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();handle.setPointerCapture(e.pointerId);rs={origY:e.clientY,origEst:tk.est}});
+      handle.addEventListener('pointermove',e=>{
+        if(!rs)return;
+        const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
+        el.style.height=(ne*HH)+'px';
+        const te=el.querySelector('.te');if(te)te.textContent=ne+'h';
+        const pt=el.querySelector('.pop-time');if(pt)pt.textContent=hT(tk.startHour)+' — '+hT(tk.startHour+ne);
+      });
+      handle.addEventListener('pointerup',e=>{
+        if(!rs)return;
+        const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
+        rs=null;
+        setOverride(tk.id,{est:ne,dayIdx:tk.dayIdx,startHour:tk.startHour});
+        setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+      });
+    }
+    // ── Drag ────────────────────────────────────────────────
+    let ds=null,ghost=null;
+    el.addEventListener('pointerdown',e=>{
+      if(e.target.closest('.tt-resize-handle')||e.target.closest('.tt-popup')||e.button!==0)return;
+      e.preventDefault();
+      const rect=el.getBoundingClientRect();
+      ghost=el.cloneNode(true);
+      ghost.style.cssText=`position:fixed;width:${rect.width}px;height:${rect.height}px;top:${rect.top}px;left:${rect.left}px;opacity:0.8;pointer-events:none;z-index:9999;transition:none;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.5)`;
+      document.body.appendChild(ghost);
+      el.style.opacity='0.2';
+      document.body.style.cursor='grabbing';
+      el.setPointerCapture(e.pointerId);
+      ds={offsetY:e.clientY-rect.top};
+    });
+    el.addEventListener('pointermove',e=>{
+      if(!ds||!ghost)return;
+      const col=getCol(e.clientX);
+      ghost.style.top=(e.clientY-ds.offsetY)+'px';
+      if(col){const r=col.getBoundingClientRect();ghost.style.left=r.left+'px';ghost.style.width=(r.width-6)+'px';}
+    });
+    el.addEventListener('pointerup',e=>{
+      if(!ds)return;
+      if(ghost){ghost.remove();ghost=null;}
+      el.style.opacity='';
+      document.body.style.cursor='';
+      const col=getCol(e.clientX);
+      if(col){
+        const cr=col.getBoundingClientRect();
+        const rawH=SH+(e.clientY-ds.offsetY-cr.top)/HH;
+        setOverride(tk.id,{dayIdx:parseInt(col.dataset.d),startHour:clampHour(rawH,tk.est),est:tk.est});
+      }
+      ds=null;
+      setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+    });
+    el.addEventListener('pointercancel',()=>{
+      if(ghost){ghost.remove();ghost=null;}
+      el.style.opacity='';
+      document.body.style.cursor='';
+      ds=null;
+    });
+  });
 }
 
 // ═══════════ PLAYER CARDS (GAMIFICATION) ═══════════
