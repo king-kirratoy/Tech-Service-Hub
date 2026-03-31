@@ -123,6 +123,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .tt-popup.pop-left{left:auto;right:calc(100% + 8px)}
 .tt-popup.pop-bottom{top:auto;bottom:0}
 .tt:hover .tt-popup{display:block}
+.tt-closed:hover .tt-popup{display:none!important}
 .tt-popup .pop-time{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--green);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .tt-popup .pop-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:11px}
 .tt-popup .pop-label{color:var(--text-dim);font-weight:600;white-space:nowrap;margin-right:10px}

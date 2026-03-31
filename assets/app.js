@@ -318,12 +318,14 @@ function schedTix(){
     return tk.status==="Client Update";
   }
 
-  // Assign a scheduling priority score (lower = schedule sooner)
-  // NRD is the primary driver
-  // Sort all tickets by agent, then by NRD (oldest first), with Client Update as tiebreaker
+  // Sort all tickets by agent, then SLA tier, then NRD, with Client Update as tiebreaker
+  function slaPri(tk){return tk.sla==="Initial Response SLA"?0:1}
   const sorted=[...actTix].sort((a,b)=>{
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
-    // Primary: NRD oldest to newest (no NRD = pushed to end)
+    // Primary: SLA tier (Initial Response SLA first)
+    const aSla=slaPri(a),bSla=slaPri(b);
+    if(aSla!==bSla)return aSla-bSla;
+    // Secondary: NRD oldest to newest (no NRD = pushed to end)
     const aNrd=a.nextResponse?a.nextResponse.getTime():9e15;
     const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
     if(aNrd!==bNrd)return aNrd-bNrd;
@@ -690,6 +692,38 @@ function renderSidebar(){
   }
 }
 
+// ── Overlap layout: assigns col/totalCols to tickets sharing the same day ────
+function layoutTixDay(tks){
+  if(!tks.length)return[];
+  const sorted=[...tks].sort((a,b)=>a.startHour-b.startHour);
+  // Greedy slot assignment
+  const slotEnd=[];
+  const colOf={};
+  sorted.forEach(tk=>{
+    const end=tk.startHour+tk.est;
+    let c=slotEnd.findIndex(e=>e<=tk.startHour);
+    if(c===-1){c=slotEnd.length;slotEnd.push(end);}
+    else slotEnd[c]=end;
+    colOf[tk.id]=c;
+  });
+  // Union-find to cluster all transitively-overlapping tickets
+  const par={};
+  sorted.forEach(tk=>par[tk.id]=tk.id);
+  function find(id){return par[id]===id?id:(par[id]=find(par[id]))}
+  function unite(a,b){const pa=find(a),pb=find(b);if(pa!==pb)par[pa]=pb;}
+  for(let i=0;i<sorted.length;i++){
+    for(let j=i+1;j<sorted.length;j++){
+      const a=sorted[i],b=sorted[j];
+      if(b.startHour>=a.startHour+a.est)break;
+      unite(a.id,b.id);
+    }
+  }
+  // Max slot index+1 within each cluster = totalCols for that cluster
+  const clMax={};
+  sorted.forEach(tk=>{const r=find(tk.id);clMax[r]=Math.max(clMax[r]||0,colOf[tk.id]+1);});
+  return sorted.map(tk=>({tk,col:colOf[tk.id],totalCols:clMax[find(tk.id)]}));
+}
+
 // ═══════════ CALENDAR ═══════════
 function renderCal(){
   const area=document.getElementById("ca");
@@ -715,7 +749,7 @@ function renderCal(){
       if(sc.se<EH)h+=`<div class="shift-off" style="top:${hY(sc.se)}px;height:${(EH-sc.se)*HH}px"></div>`;
     }
     if(isT(day)){const n=new Date(),nh=n.getHours()+n.getMinutes()/60;if(nh>=SH&&nh<=EH)h+=`<div class="now-line" style="top:${hY(nh)}px"></div>`}
-    tks.forEach(tk=>{
+    layoutTixDay(tks).forEach(({tk,col,totalCols})=>{
       const top=hY(tk.startHour),ht=tk.est*HH;
       const stC=SC[tk.status]||"var(--text-dim)";
       const endH=tk.startHour+tk.est;
@@ -724,7 +758,9 @@ function renderCal(){
       const riskClass=tk.nrdAtRisk?"nrd-risk":"";
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
       const isOvr=!!calOvr[tk.id];
-      h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
+      const w=100/totalCols;
+      const colStyle=totalCols>1?`left:calc(${col*w}% + 2px);width:calc(${w}% - 4px);right:auto;`:'';
+      h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC};${colStyle}">
         <div class="tt-inner">
           <div class="tt-row1"><span class="ti">${esc(tk.id)}</span>${isOvr?'<span class="tt-override-star">★</span>':''}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="tt-row2"><span class="tc">${esc(tk.category)}</span><span class="te">${tk.est}h</span></div>
@@ -873,17 +909,29 @@ function _bindCalDrag(area){
   });
 }
 
-// ── Viewport-aware popup positioning for closed tickets ──────────────────────
+// ── Fixed-position popup for closed tickets (bypasses tcw overflow:hidden) ───
 function _bindClosedPopups(area){
-  const POPUP_H=200; // approximate max popup height in px
+  let floatEl=null;
   area.querySelectorAll('.tt-closed').forEach(el=>{
+    const src=el.querySelector('.tt-popup');
+    if(!src)return;
     el.addEventListener('mouseenter',()=>{
-      const popup=el.querySelector('.tt-popup');
-      if(!popup)return;
-      const rect=el.getBoundingClientRect();
-      if(rect.top<POPUP_H){popup.classList.remove('pop-bottom');}
-      else{popup.classList.add('pop-bottom');}
+      if(floatEl)floatEl.remove();
+      floatEl=document.createElement('div');
+      floatEl.className='tt-popup';
+      floatEl.innerHTML=src.innerHTML;
+      floatEl.style.cssText='position:fixed;display:block;z-index:9999;pointer-events:none;width:270px;visibility:hidden';
+      document.body.appendChild(floatEl);
+      const ph=floatEl.offsetHeight;
+      floatEl.style.visibility='';
+      const r=el.getBoundingClientRect();
+      // Horizontal: right of ticket, fall back to left if near right edge
+      const lx=r.right+8;
+      floatEl.style.left=((lx+270)>window.innerWidth-8?r.left-8-270:lx)+'px';
+      // Vertical: align to ticket top, clamped within viewport
+      floatEl.style.top=Math.max(8,Math.min(r.top,window.innerHeight-ph-8))+'px';
     });
+    el.addEventListener('mouseleave',()=>{if(floatEl){floatEl.remove();floatEl=null;}});
   });
 }
 
