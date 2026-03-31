@@ -219,8 +219,6 @@ function procAct(){
   // Restore selection by name
   if(prevSelName){const found=roster.find(t=>t.name===prevSelName);if(found)selTech=found.id;}
 
-  const WAIT_STATUSES=new Set(["Pending Reply","Pending Vendor","Pending AM","Pending Followup","Monitoring","Scheduled"]);
-
   // Split raw data into active and closed-this-week tickets
   const activeRaw=actRaw.filter(r=>!r.Date_Closed||!r.Date_Closed.trim());
   const closedRaw=actRaw.filter(r=>r.Date_Closed&&r.Date_Closed.trim());
@@ -273,26 +271,23 @@ function procAct(){
     const timeWorked=(!isNaN(tw)&&tw>0)?tw:0;
     const dateCreated=pD(r.Date_Created);
     const slaTgt=pD(r.SLA_Resolution_Target);
-    const isWaiting=WAIT_STATUSES.has(status);
 
     // Calculate remaining estimate
     let est=Math.max(0.25,totalEst-timeWorked);
     est=Math.round(est*4)/4;
 
-    return{id:r.Ticket_ID||`TK-${i}`,category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,isWaiting,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
+    return{id:r.Ticket_ID||`TK-${i}`,category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
   });
 
-  // Sort by Next Response Date (soonest first), then by status priority
-  const stPri={New:1,"Re-Opened":1,"In Progress":2,"Re-Assigned":2,"Client Update":3,"Pending Reply":4,"Pending AM":5,"Pending Vendor":5,"Pending Followup":5,Scheduled:6,Monitoring:7,Closed:8};
+  // Sort by SLA tier (Initial Response SLA first), then Next Response Date
+  function _slaPri(tk){return tk.sla==="Initial Response SLA"?0:1}
   actTix.sort((a,b)=>{
-    // Group by agent
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
-    // Next response date soonest first
+    const as=_slaPri(a),bs=_slaPri(b);
+    if(as!==bs)return as-bs;
     const an=a.nextResponse?a.nextResponse.getTime():9e15;
     const bn=b.nextResponse?b.nextResponse.getTime():9e15;
-    if(an!==bn)return an-bn;
-    // Then status priority
-    return(stPri[a.status]||5)-(stPri[b.status]||5);
+    return an-bn;
   });
 
   applyOverrides();
@@ -313,30 +308,14 @@ function schedTix(){
   const todayDayIdx=weekDays.findIndex(d=>isSD(d,now));
   const startDayIdx=todayDayIdx>=0?todayDayIdx:0;
 
-  // Detect actionable Client Update tickets
-  function isActionableClientUpdate(tk){
-    return tk.status==="Client Update";
-  }
-
-  // Sort all tickets by agent, then SLA tier, then NRD, with Client Update as tiebreaker
-  function slaPri(tk){return tk.sla==="Initial Response SLA"?0:1}
+  // Sort all tickets by agent, then SLA tier (Initial Response SLA first), then NRD
   const sorted=[...actTix].sort((a,b)=>{
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
-    // Primary: SLA tier (Initial Response SLA first)
-    const aSla=slaPri(a),bSla=slaPri(b);
-    if(aSla!==bSla)return aSla-bSla;
-    // Secondary: NRD oldest to newest (no NRD = pushed to end)
+    const as=(a.sla==="Initial Response SLA"?0:1),bs=(b.sla==="Initial Response SLA"?0:1);
+    if(as!==bs)return as-bs;
     const aNrd=a.nextResponse?a.nextResponse.getTime():9e15;
     const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
-    if(aNrd!==bNrd)return aNrd-bNrd;
-    // Tiebreaker: actionable Client Updates go before others
-    const aCU=isActionableClientUpdate(a)?0:1;
-    const bCU=isActionableClientUpdate(b)?0:1;
-    if(aCU!==bCU)return aCU-bCU;
-    // Final tiebreaker: waiting tickets after active
-    const aW=a.isWaiting?1:0;
-    const bW=b.isWaiting?1:0;
-    return aW-bW;
+    return aNrd-bNrd;
   });
 
   // Schedule all tickets per-agent in priority order
@@ -351,14 +330,6 @@ function schedTix(){
     }
     const a=byA[tk.assignedTo];
     a.h=snap(a.h);
-
-    // For non-overdue waiting tickets, try to push toward their deadline
-    if(tk.isWaiting&&tk.nextResponse&&tk.nextResponse>now){
-      const nrdDay=weekDays.findIndex(d=>isSD(d,tk.nextResponse));
-      let targetDay=nrdDay>=0?Math.max(startDayIdx,nrdDay-1):4;
-      if(tk.slaTgt){const slaDay=weekDays.findIndex(d=>isSD(d,tk.slaTgt));if(slaDay>=0)targetDay=Math.min(targetDay,Math.max(startDayIdx,slaDay-1))}
-      if(targetDay>a.d){a.d=targetDay;a.h=snap(s.ss)}
-    }
 
     const dur=Math.ceil(tk.est*4)/4;
 
