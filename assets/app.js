@@ -278,7 +278,7 @@ function procAct(){
     if(!loggedInAgent||isCommander){selTech=0}
     else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
-  renderSidebar();renderCal();renderRisk();renderPlayerCards();updateBanner();BF.refresh();
+  setTimeout(()=>{renderSidebar();renderCal();renderRisk();renderPlayerCards();updateBanner();BF.refresh();},0);
 }
 
 function schedTix(){
