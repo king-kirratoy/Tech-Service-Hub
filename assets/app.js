@@ -743,7 +743,7 @@ function renderCal(){
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(tk.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${esc(tk.type)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${tk.timeWorked.toFixed(1)}h</span></div>
-          <div class="pop-row"><span class="pop-label">Est. Remaining</span><span class="pop-val" style="color:var(--green)">${tk.est}h</span></div>
+          <div class="pop-row"><span class="pop-label">Est. Remaining</span><span class="pop-val">${tk.est}h</span></div>
           <div class="pop-row"><span class="pop-label">Next Response</span><span class="pop-val" style="${nrdColor}">${nrd}</span></div>
         </div>
         <div class="tt-resize-handle"></div>
