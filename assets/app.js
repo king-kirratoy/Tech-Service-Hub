@@ -661,7 +661,7 @@ function renderSidebar(){
       const o=loadOverrides();
       actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
       saveOverrides(o);
-      schedTix();renderCal();renderSidebar();
+      procAct();
     });
   }
 }
@@ -703,10 +703,9 @@ function renderCal(){
       const isOvr=!!calOvr[tk.id];
       h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="ti">${esc(tk.id)}</span><span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
+          <div class="tt-row1"><span class="ti">${esc(tk.id)}</span>${isOvr?'<span class="tt-override-star">★</span>':''}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="tt-row2"><span class="tc">${esc(tk.category)}</span><span class="te">${tk.est}h</span></div>
         </div>
-        ${isOvr?'<div class="tt-override-dot"></div>':''}
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}${waitLabel}</span></div>
@@ -802,17 +801,21 @@ function _bindCalDrag(area){
     el.addEventListener('pointerdown',e=>{
       if(e.target.closest('.tt-resize-handle')||e.target.closest('.tt-popup')||e.button!==0)return;
       e.preventDefault();
-      const rect=el.getBoundingClientRect();
-      ghost=el.cloneNode(true);
-      ghost.style.cssText=`position:fixed;width:${rect.width}px;height:${rect.height}px;top:${rect.top}px;left:${rect.left}px;opacity:0.8;pointer-events:none;z-index:9999;transition:none;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.5)`;
-      document.body.appendChild(ghost);
-      el.style.opacity='0.2';
-      document.body.style.cursor='grabbing';
       el.setPointerCapture(e.pointerId);
-      ds={offsetY:e.clientY-rect.top};
+      const rect=el.getBoundingClientRect();
+      ds={offsetY:e.clientY-rect.top,startX:e.clientX,startY:e.clientY,moved:false,rect};
     });
     el.addEventListener('pointermove',e=>{
-      if(!ds||!ghost)return;
+      if(!ds)return;
+      if(!ds.moved&&Math.abs(e.clientX-ds.startX)+Math.abs(e.clientY-ds.startY)>5){
+        ds.moved=true;
+        ghost=el.cloneNode(true);
+        ghost.style.cssText=`position:fixed;width:${ds.rect.width}px;height:${ds.rect.height}px;top:${ds.rect.top}px;left:${ds.rect.left}px;opacity:0.8;pointer-events:none;z-index:9999;transition:none;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.5)`;
+        document.body.appendChild(ghost);
+        el.style.opacity='0.2';
+        document.body.style.cursor='grabbing';
+      }
+      if(!ds.moved||!ghost)return;
       const col=getCol(e.clientX);
       ghost.style.top=(e.clientY-ds.offsetY)+'px';
       if(col){const r=col.getBoundingClientRect();ghost.style.left=r.left+'px';ghost.style.width=(r.width-6)+'px';}
@@ -822,14 +825,16 @@ function _bindCalDrag(area){
       if(ghost){ghost.remove();ghost=null;}
       el.style.opacity='';
       document.body.style.cursor='';
-      const col=getCol(e.clientX);
-      if(col){
-        const cr=col.getBoundingClientRect();
-        const rawH=SH+(e.clientY-ds.offsetY-cr.top)/HH;
-        setOverride(tk.id,{dayIdx:parseInt(col.dataset.d),startHour:clampHour(rawH,tk.est),est:tk.est});
+      if(ds.moved){
+        const col=getCol(e.clientX);
+        if(col){
+          const cr=col.getBoundingClientRect();
+          const rawH=SH+(e.clientY-ds.offsetY-cr.top)/HH;
+          setOverride(tk.id,{dayIdx:parseInt(col.dataset.d),startHour:clampHour(rawH,tk.est),est:tk.est});
+          setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+        }
       }
       ds=null;
-      setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
     });
     el.addEventListener('pointercancel',()=>{
       if(ghost){ghost.remove();ghost=null;}
