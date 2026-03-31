@@ -648,6 +648,23 @@ function renderSidebar(){
     const tech=roster.find(t=>t.id===tid);
     if(tech){const sb={agent_name:tech.name};if(f==="s")sb.shift_slot=v;if(f==="l")sb.lunch_slot=v;fetchRetry(PROXY_BASE+"/api/agent-schedules",{method:"PATCH",headers:authH(),body:JSON.stringify(sb)}).catch(err=>console.error("Schedule save error:",err));}
   })});
+  // ── Reset positions button ────────────────────────────
+  const actionsEl=document.getElementById("tl-actions");
+  if(actionsEl){
+    const ovr=loadOverrides();
+    const hasOvr=selTech&&actTix.some(t=>t.assignedTo===selTech&&ovr[t.id]);
+    if(selTech){
+      actionsEl.innerHTML=`<button id="resetCalBtn" ${hasOvr?'':'disabled'} style="width:100%;margin-bottom:8px;padding:6px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:${hasOvr?'rgba(255,107,107,0.08)':'rgba(108,108,108,0.06)'};border:1px solid ${hasOvr?'rgba(255,107,107,0.3)':'rgba(108,108,108,0.2)'};border-radius:6px;color:${hasOvr?'#ff7675':'var(--text-dim)'};cursor:${hasOvr?'pointer':'default'}">Reset Positions</button>`;
+      if(hasOvr)document.getElementById("resetCalBtn").addEventListener("click",()=>{
+        const o=loadOverrides();
+        actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
+        saveOverrides(o);
+        schedTix();renderCal();renderSidebar();
+      });
+    } else {
+      actionsEl.innerHTML="";
+    }
+  }
 }
 
 // ═══════════ CALENDAR ═══════════
@@ -1294,7 +1311,14 @@ function startAutoRefresh(){
   if(autoRefreshOn)return;
   autoRefreshOn=true;
   fetchActiveNow();
-  autoRefreshTimer=setInterval(()=>{refreshTokenIfNeeded();fetchActiveNow()},60*1000);
+  autoRefreshTimer=setInterval(async()=>{
+    refreshTokenIfNeeded();
+    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadCommsCards()]);
+    if(results[1])allRobotConfigs=results[1];
+    roster.forEach(t=>{const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li}});
+    renderCommsBoard();
+    fetchActiveNow();
+  },60*1000);
 }
 function stopAutoRefresh(){
   if(!autoRefreshOn)return;
