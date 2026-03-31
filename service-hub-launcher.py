@@ -697,6 +697,44 @@ def get_agent_schedules():
     return jsonify(resp.json())
 
 
+@app.route("/api/agent-schedules", methods=["PATCH"])
+@require_auth
+def update_agent_schedule():
+    """Upsert an agent's shift/lunch schedule preference."""
+    data = request.get_json(silent=True) or {}
+    agent_name = (data.get("agent_name") or "").strip()
+    if not agent_name:
+        return jsonify({"error": "agent_name required"}), 400
+
+    update_body = {}
+    if data.get("lunch_slot") is not None:
+        update_body["lunch_slot"] = int(data["lunch_slot"])
+    if data.get("shift_slot") is not None:
+        update_body["shift_slot"] = int(data["shift_slot"])
+    if not update_body:
+        return jsonify({"error": "No fields to update"}), 400
+
+    # Try to update an existing row first
+    patch_resp = supabase_request(
+        "PATCH", "agent_schedules",
+        params={"agent_name": f"eq.{agent_name}"},
+        body=update_body
+    )
+    if patch_resp.status_code not in (200, 204):
+        return jsonify({"error": "Failed to update schedule"}), 502
+
+    result = patch_resp.json() if patch_resp.content and patch_resp.status_code == 200 else []
+    if not result:
+        # No existing row — insert a new one
+        insert_body = {"agent_name": agent_name, **update_body}
+        post_resp = supabase_request("POST", "agent_schedules", body=insert_body)
+        if post_resp.status_code not in (200, 201):
+            return jsonify({"error": "Failed to insert schedule"}), 502
+        return jsonify(post_resp.json())
+
+    return jsonify(result)
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config():
     """Return public Supabase config for the frontend."""
