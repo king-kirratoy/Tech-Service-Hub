@@ -318,12 +318,14 @@ function schedTix(){
     return tk.status==="Client Update";
   }
 
-  // Assign a scheduling priority score (lower = schedule sooner)
-  // NRD is the primary driver
-  // Sort all tickets by agent, then by NRD (oldest first), with Client Update as tiebreaker
+  // Sort all tickets by agent, then SLA tier, then NRD, with Client Update as tiebreaker
+  function slaPri(tk){return tk.sla==="Initial Response SLA"?0:1}
   const sorted=[...actTix].sort((a,b)=>{
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
-    // Primary: NRD oldest to newest (no NRD = pushed to end)
+    // Primary: SLA tier (Initial Response SLA first)
+    const aSla=slaPri(a),bSla=slaPri(b);
+    if(aSla!==bSla)return aSla-bSla;
+    // Secondary: NRD oldest to newest (no NRD = pushed to end)
     const aNrd=a.nextResponse?a.nextResponse.getTime():9e15;
     const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
     if(aNrd!==bNrd)return aNrd-bNrd;
