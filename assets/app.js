@@ -76,9 +76,32 @@ async function loadCommanderAgents(){
 const OVR_KEY="servicehub_overrides";
 function loadOverrides(){try{return JSON.parse(localStorage.getItem(OVR_KEY)||"{}")}catch(e){return{}}}
 function saveOverrides(ovr){try{localStorage.setItem(OVR_KEY,JSON.stringify(ovr))}catch(e){}}
-function setOverride(id,data){const ovr=loadOverrides();ovr[id]={...ovr[id],...data,ts:Date.now()};saveOverrides(ovr)}
-function clearOverride(id){const ovr=loadOverrides();delete ovr[id];saveOverrides(ovr)}
+function setOverride(id,data){const ovr=loadOverrides();ovr[id]={...ovr[id],...data,ts:Date.now()};saveOverrides(ovr);pushTicketOverride(id,ovr[id]);}
+function clearOverride(id){const ovr=loadOverrides();delete ovr[id];saveOverrides(ovr);deleteTicketOverride(id);}
 function clearAllOverrides(){localStorage.removeItem(OVR_KEY)}
+async function loadTicketOverrides(){
+  try{
+    const r=await fetchRetry(PROXY_BASE+"/api/ticket-overrides",{headers:authH()});
+    if(!r||!r.ok)return;
+    const rows=await r.json();
+    if(!Array.isArray(rows))return;
+    const ovr={};
+    rows.forEach(row=>{ovr[row.ticket_id]={dayIdx:row.day_idx,startHour:row.start_hour,est:row.est,ts:row.updated_at?new Date(row.updated_at).getTime():Date.now()}});
+    saveOverrides(ovr);
+  }catch(e){console.error("Ticket overrides load error:",e)}
+}
+async function pushTicketOverride(id,data){
+  try{
+    const body={ticket_id:id};
+    if(data.dayIdx!=null)body.day_idx=data.dayIdx;
+    if(data.startHour!=null)body.start_hour=data.startHour;
+    if(data.est!=null)body.est=data.est;
+    await fetchRetry(PROXY_BASE+"/api/ticket-overrides",{method:"POST",headers:authH(),body:JSON.stringify(body)});
+  }catch(e){console.error("Override push error:",e)}
+}
+async function deleteTicketOverride(id){
+  try{await fetchRetry(PROXY_BASE+"/api/ticket-overrides/"+encodeURIComponent(id),{method:"DELETE",headers:authH()});}catch(e){console.error("Override delete error:",e)}
+}
 function applyOverrides(){
   const ovr=loadOverrides();
   // Remove overrides for tickets that no longer exist
@@ -660,7 +683,7 @@ function renderSidebar(){
       :`<button disabled style="${bs}background:rgba(0,149,200,0.04);border:1px solid rgba(108,108,108,0.2);color:var(--text-dim);cursor:default;opacity:0.5">Reset Calendar</button>`;
     if(hasOvr)document.getElementById("resetCalBtn").addEventListener("click",()=>{
       const o=loadOverrides();
-      actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
+      actTix.filter(t=>t.assignedTo===selTech).forEach(t=>{deleteTicketOverride(t.id);delete o[t.id];});
       saveOverrides(o);
       procAct();
     });
@@ -1301,7 +1324,7 @@ async function doGateLogin(){
   if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
-  await loadAgentSchedules();
+  await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
   allRobotConfigs=await loadAllRobots();
   commanderAgentNames=await loadCommanderAgents();
   loadAllHatSprites();
@@ -1324,7 +1347,7 @@ document.getElementById("loginSubmitBtn").addEventListener("click",async()=>{
   if(result.error){st.textContent=result.error;st.style.color="var(--danger)";st.style.display="";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
-  await loadAgentSchedules();
+  await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
   allRobotConfigs=await loadAllRobots();
   commanderAgentNames=await loadCommanderAgents();
   loadAllHatSprites();
@@ -1396,7 +1419,7 @@ function startAutoRefresh(){
   fetchActiveNow();
   autoRefreshTimer=setInterval(async()=>{
     refreshTokenIfNeeded();
-    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadCommsCards()]);
+    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadCommsCards(),loadTicketOverrides()]);
     if(results[1])allRobotConfigs=results[1];
     roster.forEach(t=>{const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li}});
     renderCommsBoard();
@@ -1425,7 +1448,7 @@ function stopAutoRefresh(){
     }
   }catch(e){/* network error — stay logged out */}
   if(authToken){
-    await loadAgentSchedules();
+    await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
     allRobotConfigs=await loadAllRobots();
     commanderAgentNames=await loadCommanderAgents();
     loadAllHatSprites();
