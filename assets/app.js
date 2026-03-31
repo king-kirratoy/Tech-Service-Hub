@@ -76,9 +76,32 @@ async function loadCommanderAgents(){
 const OVR_KEY="servicehub_overrides";
 function loadOverrides(){try{return JSON.parse(localStorage.getItem(OVR_KEY)||"{}")}catch(e){return{}}}
 function saveOverrides(ovr){try{localStorage.setItem(OVR_KEY,JSON.stringify(ovr))}catch(e){}}
-function setOverride(id,data){const ovr=loadOverrides();ovr[id]={...ovr[id],...data,ts:Date.now()};saveOverrides(ovr)}
-function clearOverride(id){const ovr=loadOverrides();delete ovr[id];saveOverrides(ovr)}
+function setOverride(id,data){const ovr=loadOverrides();ovr[id]={...ovr[id],...data,ts:Date.now()};saveOverrides(ovr);pushTicketOverride(id,ovr[id]);}
+function clearOverride(id){const ovr=loadOverrides();delete ovr[id];saveOverrides(ovr);deleteTicketOverride(id);}
 function clearAllOverrides(){localStorage.removeItem(OVR_KEY)}
+async function loadTicketOverrides(){
+  try{
+    const r=await fetchRetry(PROXY_BASE+"/api/ticket-overrides",{headers:authH()});
+    if(!r||!r.ok)return;
+    const rows=await r.json();
+    if(!Array.isArray(rows))return;
+    const ovr={};
+    rows.forEach(row=>{ovr[row.ticket_id]={dayIdx:row.day_idx,startHour:row.start_hour,est:row.est,ts:row.updated_at?new Date(row.updated_at).getTime():Date.now()}});
+    saveOverrides(ovr);
+  }catch(e){console.error("Ticket overrides load error:",e)}
+}
+async function pushTicketOverride(id,data){
+  try{
+    const body={ticket_id:id};
+    if(data.dayIdx!=null)body.day_idx=data.dayIdx;
+    if(data.startHour!=null)body.start_hour=data.startHour;
+    if(data.est!=null)body.est=data.est;
+    await fetchRetry(PROXY_BASE+"/api/ticket-overrides",{method:"POST",headers:authH(),body:JSON.stringify(body)});
+  }catch(e){console.error("Override push error:",e)}
+}
+async function deleteTicketOverride(id){
+  try{await fetchRetry(PROXY_BASE+"/api/ticket-overrides/"+encodeURIComponent(id),{method:"DELETE",headers:authH()});}catch(e){console.error("Override delete error:",e)}
+}
 function applyOverrides(){
   const ovr=loadOverrides();
   // Remove overrides for tickets that no longer exist
@@ -563,6 +586,7 @@ function getKPIData(overrideAg){
 
 // ═══════════ TECH SIDEBAR ═══════════
 let openSchedTech=null;
+let _dragCancel=null; // abort any in-progress calendar drag
 function renderSidebar(){
   const l=document.getElementById("tl");
   if(!roster.length){l.innerHTML='<p style="color:var(--text-dim);font-size:11px;font-style:italic">Upload active tickets</p>';return}
@@ -659,7 +683,7 @@ function renderSidebar(){
       :`<button disabled style="${bs}background:rgba(0,149,200,0.04);border:1px solid rgba(108,108,108,0.2);color:var(--text-dim);cursor:default;opacity:0.5">Reset Calendar</button>`;
     if(hasOvr)document.getElementById("resetCalBtn").addEventListener("click",()=>{
       const o=loadOverrides();
-      actTix.filter(t=>t.assignedTo===selTech).forEach(t=>delete o[t.id]);
+      actTix.filter(t=>t.assignedTo===selTech).forEach(t=>{deleteTicketOverride(t.id);delete o[t.id];});
       saveOverrides(o);
       procAct();
     });
@@ -696,7 +720,6 @@ function renderCal(){
       const stC=SC[tk.status]||"var(--text-dim)";
       const endH=tk.startHour+tk.est;
       const nrd=tk.nextResponse?tk.nextResponse.toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"—";
-      const waitLabel=tk.isWaiting?`<span style="font-size:8px;background:rgba(255,183,77,0.2);color:#ffb74d;padding:1px 5px;border-radius:3px;margin-left:4px">WAITING</span>`:"";
       const popSide=(di>=3?"pop-left":"")+" "+(tk.startHour>=14?"pop-bottom":"");
       const riskClass=tk.nrdAtRisk?"nrd-risk":"";
       const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
@@ -708,7 +731,7 @@ function renderCal(){
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
-          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}${waitLabel}</span></div>
+          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}</span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(tk.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${esc(tk.type)}</span></div>
@@ -765,6 +788,7 @@ function renderCal(){
   }
 
   h+=`</div>`;
+  if(_dragCancel){_dragCancel();_dragCancel=null;}
   area.innerHTML=h;
   _bindCalDrag(area);
 }
@@ -804,6 +828,7 @@ function _bindCalDrag(area){
       el.setPointerCapture(e.pointerId);
       const rect=el.getBoundingClientRect();
       ds={offsetY:e.clientY-rect.top,startX:e.clientX,startY:e.clientY,moved:false,rect};
+      _dragCancel=()=>{if(ghost){ghost.remove();ghost=null;}el.style.opacity='';document.body.style.cursor='';ds=null;};
     });
     el.addEventListener('pointermove',e=>{
       if(!ds)return;
@@ -825,6 +850,7 @@ function _bindCalDrag(area){
       if(ghost){ghost.remove();ghost=null;}
       el.style.opacity='';
       document.body.style.cursor='';
+      _dragCancel=null;
       if(ds.moved){
         const col=getCol(e.clientX);
         if(col){
@@ -840,6 +866,7 @@ function _bindCalDrag(area){
       if(ghost){ghost.remove();ghost=null;}
       el.style.opacity='';
       document.body.style.cursor='';
+      _dragCancel=null;
       ds=null;
     });
   });
@@ -1297,7 +1324,7 @@ async function doGateLogin(){
   if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
-  await loadAgentSchedules();
+  await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
   allRobotConfigs=await loadAllRobots();
   commanderAgentNames=await loadCommanderAgents();
   loadAllHatSprites();
@@ -1320,7 +1347,7 @@ document.getElementById("loginSubmitBtn").addEventListener("click",async()=>{
   if(result.error){st.textContent=result.error;st.style.color="var(--danger)";st.style.display="";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
-  await loadAgentSchedules();
+  await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
   allRobotConfigs=await loadAllRobots();
   commanderAgentNames=await loadCommanderAgents();
   loadAllHatSprites();
@@ -1392,7 +1419,7 @@ function startAutoRefresh(){
   fetchActiveNow();
   autoRefreshTimer=setInterval(async()=>{
     refreshTokenIfNeeded();
-    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadCommsCards()]);
+    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadCommsCards(),loadTicketOverrides()]);
     if(results[1])allRobotConfigs=results[1];
     roster.forEach(t=>{const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li}});
     renderCommsBoard();
@@ -1421,7 +1448,7 @@ function stopAutoRefresh(){
     }
   }catch(e){/* network error — stay logged out */}
   if(authToken){
-    await loadAgentSchedules();
+    await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
     allRobotConfigs=await loadAllRobots();
     commanderAgentNames=await loadCommanderAgents();
     loadAllHatSprites();

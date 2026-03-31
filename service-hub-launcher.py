@@ -735,6 +735,55 @@ def update_agent_schedule():
     return jsonify(result)
 
 
+@app.route("/api/ticket-overrides", methods=["GET"])
+@require_auth
+def get_ticket_overrides():
+    """Return all ticket calendar position/size overrides."""
+    resp = supabase_request("GET", "ticket_overrides", params={"select": "*"})
+    if resp.status_code != 200:
+        return jsonify({"error": "Failed to fetch overrides"}), 502
+    return jsonify(resp.json())
+
+
+@app.route("/api/ticket-overrides", methods=["POST"])
+@require_auth
+@limiter.limit("120 per minute")
+def upsert_ticket_override():
+    """Upsert a ticket calendar override by ticket_id."""
+    data = request.get_json(silent=True) or {}
+    ticket_id = (data.get("ticket_id") or "").strip()
+    if not ticket_id:
+        return jsonify({"error": "ticket_id required"}), 400
+
+    row = {"ticket_id": ticket_id}
+    if data.get("day_idx") is not None:
+        row["day_idx"] = int(data["day_idx"])
+    if data.get("start_hour") is not None:
+        row["start_hour"] = float(data["start_hour"])
+    if data.get("est") is not None:
+        row["est"] = float(data["est"])
+
+    resp = supabase_request("POST", "ticket_overrides", params={
+        "on_conflict": "ticket_id"
+    }, body=row)
+    if resp.status_code not in (200, 201):
+        return jsonify({"error": "Failed to save override"}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/ticket-overrides/<path:ticket_id>", methods=["DELETE"])
+@require_auth
+@limiter.limit("120 per minute")
+def delete_ticket_override(ticket_id):
+    """Delete a specific ticket override."""
+    resp = supabase_request("DELETE", "ticket_overrides", params={
+        "ticket_id": f"eq.{ticket_id}"
+    })
+    if resp.status_code not in (200, 204):
+        return jsonify({"error": "Failed to delete override"}), 502
+    return jsonify({"ok": True})
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config():
     """Return public Supabase config for the frontend."""
