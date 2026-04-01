@@ -128,7 +128,7 @@ function applyOverrides(){
   actTix.forEach(tk=>{
     const o=ovr[tk.id];
     if(!o)return;
-    if(o.est!=null){tk.est=o.est;tk.manualEst=true}
+    if(o.est!=null&&(o.manualResize||o.est>=0.5)){tk.est=o.est;tk.manualEst=true}
     if(o.startHour!=null)tk.startHour=o.startHour;
     if(o.dayIdx!=null)tk.dayIdx=o.dayIdx;
   });
@@ -288,7 +288,7 @@ function procAct(){
     const slaTgt=pD(r.SLA_Resolution_Target);
 
     // Calculate remaining estimate
-    let est=Math.max(0.25,totalEst-timeWorked);
+    let est=Math.max(0.5,totalEst-timeWorked);
     est=Math.round(est*4)/4;
 
     return{id:r.Ticket_ID||`TK-${i}`,category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
@@ -962,7 +962,7 @@ function _bindCalDrag(area){
         if(!rs)return;
         const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
         rs=null;
-        setOverride(tk.id,{est:ne,dayIdx:tk.dayIdx,startHour:tk.startHour});
+        setOverride(tk.id,{est:ne,dayIdx:tk.dayIdx,startHour:tk.startHour,manualResize:true});
         setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
       });
     }
