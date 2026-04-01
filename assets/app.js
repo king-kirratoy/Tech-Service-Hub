@@ -12,10 +12,13 @@ let _sb=null; // Supabase client — initialized after config fetch
 // The actual Halo base URL lives only in Render env vars — never in frontend source.
 function openTicket(id,e){
   if(e){e.preventDefault();e.stopPropagation();}
+  // Open blank window synchronously to preserve user-gesture context (popup blocker bypass)
+  const win=window.open('','_blank');
+  if(!win)return;
   fetch(PROXY_BASE+"/api/ticket/"+encodeURIComponent(id)+"/open",{headers:authH()})
     .then(r=>r.ok?r.json():null)
-    .then(d=>{if(d&&d.url)window.open(d.url,"_blank","noopener,noreferrer");})
-    .catch(()=>{});
+    .then(d=>{if(d&&d.url)win.location.href=d.url;else win.close();})
+    .catch(()=>win.close());
 }
 
 async function _initSupabase(){
