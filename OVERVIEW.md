@@ -25,19 +25,17 @@ render.yaml                 ← Render deployment config + env var declarations.
 
 | Section | Lines | Purpose |
 |---|---|---|
-| STATE | 1 | Module globals — `actTix`, `histRaw`, `roster`, `loggedInAgent`, etc. |
+| STATE | 1 | Module globals — `actTix`, `actRaw`, `histRaw`, `roster`, `loggedInAgent`, etc. |
 | AUTH & PROXY | 9 | `supaLogin`, `fetchRetry`, robot config CRUD, `openTicket` |
 | OVERRIDE PERSISTENCE | 90 | localStorage + Supabase sync for manual ticket positions |
 | UTILS | 155 | Date, time, format helpers (`wkD`, `hT`, `snap`, `esc`, `bizH`) |
 | HISTORICAL PROCESSING | 175 | `procHist()` — monthly KPI stats from closed ticket raw data |
-| ACTIVE PROCESSING | 215 | `procAct()` — builds `actTix[]` from HaloPSA raw data |
-| SCHEDULER | 338 | `schedTix()` — assigns `dayIdx` + `startHour` to every ticket |
-| Campaign Charts | 517 | Historical trend charts (Chart.js) |
+| ACTIVE PROCESSING | 214 | `procAct()` — builds `actTix[]` from HaloPSA raw data; `schedTix()` (line 338) and `renderCampaignCharts()` (line 518) live in this block (no sub-headers) |
 | KPI AGENT SELECTOR | 563 | Per-agent KPI deep-dive panel |
 | TECH SIDEBAR | 656 | `renderSidebar()` — ticket list per tech |
 | CALENDAR | 794 | `renderCal()`, `_bindCalDrag()` — weekly drag/resize calendar |
-| PLAYER CARDS | 1083 | `renderPlayerCards()` — gamified tech stat cards |
-| RADAR | 1284 | `renderRisk()` — at-risk ticket detection |
+| PLAYER CARDS (GAMIFICATION) | 1083 | `renderPlayerCards()` — gamified tech stat cards |
+| RADAR | 1280 | `renderRisk()` — at-risk ticket detection (duplicate header at 1283; `renderRisk()` starts at 1284) |
 | BANNER | 1417 | Header stats bar |
 | EVENTS | 1420 | Tab switching, keyboard, button wiring, `applyLoginState()` |
 | HALOPSA LIVE FETCH | 1582 | `fetchHaloReport()`, `fetchActiveNow()`, auto-refresh |
@@ -58,12 +56,14 @@ render.yaml                 ← Render deployment config + env var declarations.
 | GET | `/api/me` | ✓ | Return current agent info |
 | GET | `/api/config` | — | Return Supabase URL + anon key to frontend |
 | GET | `/api/active` | ✓ | Proxy HaloPSA report (active tickets) |
-| GET | `/api/ticket/<id>/open` | ✓ | Return full Halo ticket URL (base URL in env var) |
+| GET | `/api/ticket/<path:ticket_id>/open` | ✓ | Return full Halo ticket URL (base URL in env var) |
 | GET/PATCH | `/api/agent-schedules` | ✓ | Per-agent shift + lunch slot assignments |
-| GET/POST/DELETE | `/api/ticket-overrides` | ✓ | Manual calendar position overrides |
-| GET/POST/PUT/DELETE | `/api/comms-cards` | ✓ | Team comms board cards |
+| GET/POST | `/api/ticket-overrides` | ✓ | Manual calendar position overrides |
+| DELETE | `/api/ticket-overrides/<path:ticket_id>` | ✓ | Delete a specific ticket override |
+| GET/POST/PUT/DELETE | `/api/comms-cards` | ✓ | Team comms board cards (PUT/DELETE use `/<card_id>`) |
 | POST | `/api/comms-reactions` | ✓ | Toggle emoji reactions on comms cards |
-| GET/POST | `/api/robot(s)` | ✓ | Robot avatar configs |
+| GET | `/api/robots` | ✓ | Load all robot avatar configs |
+| GET/POST | `/api/robot` | ✓ | Load or save robot config for a specific agent |
 | GET | `/api/commanders` | ✓ | List commander-role agents |
 | GET | `/health` | — | Health check |
 
@@ -143,15 +143,21 @@ Per-agent shift/lunch assigned via `AGENT_SHIFT[agentName]` / `AGENT_LUNCH[agent
 ## Key State Globals (app.js)
 
 ```javascript
+// ── STATE block (lines 1–8) ──
 actTix[]           // Processed active tickets — rebuilt by procAct() each sync
+actRaw[]           // Raw HaloPSA response data before processing
 closedTix[]        // This week's closed tickets
 histRaw[]          // Raw historical ticket records
+catStats{}         // Category statistics object
 roster[]           // Tech agents list
+charts{}           // Chart.js instance map
 selTech            // Currently selected tech (null = all)
 loggedInAgent      // {agent_name, role} or null
 isCommander        // true if role === "commander"
 _lastTicketState   // {id: {sla, nrdMs}} — detects SLA/NRD changes for override auto-clear
 _calCtxMenu        // Active right-click context menu DOM element (or null)
+
+// ── Declared at line 152 (between OVERRIDE PERSISTENCE and UTILS) ──
 techSched          // {techId: {ss,se,ls,le,si,li}} — built from AGENT_SHIFT/LUNCH
 ```
 
@@ -177,12 +183,12 @@ techSched          // {techId: {ss,se,ls,le,si,li}} — built from AGENT_SHIFT/L
 
 | Table | Purpose |
 |---|---|
-| `tw_agents` | Agent roster + roles + passwords (GoTrue auth) |
-| `tw_agent_schedules` | Per-agent shift + lunch slot indices |
-| `tw_ticket_overrides` | Manual calendar position overrides (synced from localStorage) |
-| `tw_comms_cards` | Comms board cards |
-| `tw_comms_reactions` | Emoji reactions on comms cards |
-| `tw_robot_configs` | Robot avatar configs per agent |
+| `agent_logins` | Agent roster + roles + passwords (GoTrue auth) |
+| `agent_schedules` | Per-agent shift + lunch slot indices |
+| `ticket_overrides` | Manual calendar position overrides (synced from localStorage) |
+| `comms_cards` | Comms board cards |
+| `comms_reactions` | Emoji reactions on comms cards |
+| `agent_robots` | Robot avatar configs per agent |
 
 ---
 
