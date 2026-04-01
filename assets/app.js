@@ -365,14 +365,6 @@ function schedTix(){
   // Apply override positions
   overridden.forEach(tk=>{const o=ovr[tk.id];if(o.startHour!=null)tk.startHour=o.startHour;if(o.dayIdx!=null)tk.dayIdx=o.dayIdx;if(o.est!=null)tk.est=o.est});
 
-  // Build occupied time map per agent per day from overridden tickets
-  const occupied={};
-  overridden.forEach(tk=>{
-    const key=tk.assignedTo+"-"+tk.dayIdx;
-    if(!occupied[key])occupied[key]=[];
-    occupied[key].push({s:tk.startHour,e:tk.startHour+tk.est});
-  });
-
   // Helper: advance cursor past all lunch/shift/occupied conflicts
   function advancePast(a,s,dur){
     for(let i=0;i<20;i++){
@@ -384,6 +376,44 @@ function schedTix(){
       break;
     }
   }
+
+  // Time-shift: for overridden tickets on today whose saved position is now in the past,
+  // advance them to at least nowSnapped (in-memory only — saved overrides are unchanged).
+  // Then cascade any overridden tickets on today that now conflict with each other.
+  if(startDayIdx>=0){
+    overridden.forEach(tk=>{
+      if(tk.dayIdx!==startDayIdx||tk.startHour>=nowSnapped)return;
+      const s=getSched(tk.assignedTo);
+      const dur=Math.ceil(tk.est*4)/4;
+      const a={d:startDayIdx,h:Math.max(nowSnapped,s.ss)};
+      advancePast(a,s,dur);
+      tk.startHour=a.h;
+    });
+    // In-memory cascade: re-sort today's overridden tickets per tech and push any
+    // that now overlap the previous one forward.
+    const techsToday=new Set(overridden.filter(tk=>tk.dayIdx===startDayIdx).map(tk=>tk.assignedTo));
+    techsToday.forEach(techId=>{
+      const s=getSched(techId);
+      const items=overridden.filter(tk=>tk.assignedTo===techId&&tk.dayIdx===startDayIdx).sort((a,b)=>a.startHour-b.startHour);
+      for(let i=1;i<items.length;i++){
+        const prev=items[i-1],cur=items[i];
+        if(cur.startHour<prev.startHour+prev.est){
+          const dur=Math.ceil(cur.est*4)/4;
+          const a={d:cur.dayIdx,h:snap(prev.startHour+prev.est)};
+          advancePast(a,s,dur);
+          cur.startHour=a.h;cur.dayIdx=a.d;
+        }
+      }
+    });
+  }
+
+  // Build occupied time map per agent per day from overridden tickets
+  const occupied={};
+  overridden.forEach(tk=>{
+    const key=tk.assignedTo+"-"+tk.dayIdx;
+    if(!occupied[key])occupied[key]=[];
+    occupied[key].push({s:tk.startHour,e:tk.startHour+tk.est});
+  });
 
   // Enhanced placeTicket that skips occupied slots
   function placeTicketAround(tk){
