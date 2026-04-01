@@ -141,6 +141,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .cal-ctx-menu{background:var(--surface);border:1px solid var(--border-bright);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.5);min-width:160px;padding:4px 0;user-select:none}
 .cal-ctx-item{color:var(--text);cursor:pointer;font-size:11px;padding:7px 14px;white-space:nowrap}
 .cal-ctx-item:hover{background:rgba(0,149,200,0.15);color:var(--blue)}
+.tt.ctx-open .tt-popup{display:none!important}
 /* Capacity */
 .cap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:22px}
 .cap-card{padding:16px 18px}

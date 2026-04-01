@@ -969,24 +969,32 @@ function _bindCalDrag(area){
     // ── Right-click context menu ─────────────────────────────
     el.addEventListener('contextmenu',e=>{
       e.preventDefault();e.stopPropagation();
-      if(_calCtxMenu){_calCtxMenu.remove();_calCtxMenu=null;}
+      // Close any existing menu and restore its ticket
+      if(_calCtxMenu){_calCtxMenu._el&&_calCtxMenu._el.classList.remove('ctx-open');_calCtxMenu.remove();_calCtxMenu=null;}
       const isOvr=!!(loadOverrides()[tk.id]&&loadOverrides()[tk.id].startHour!=null);
       const menu=document.createElement('div');
+      menu._el=el;
       menu.className='cal-ctx-menu';
       menu.innerHTML=`<div class="cal-ctx-item cal-ctx-reset"${!isOvr?' style="opacity:0.4;pointer-events:none"':''}>↺ Reset position</div>`;
-      menu.style.cssText=`position:fixed;left:${e.clientX}px;top:${e.clientY}px;z-index:10000`;
+      // Position to the right of the ticket (mirroring how .tt-popup appears)
+      const r=el.getBoundingClientRect();
+      const menuW=168;
+      const left=(r.right+8+menuW>window.innerWidth-8)?r.left-8-menuW:r.right+8;
+      menu.style.cssText=`position:fixed;left:${left}px;top:${r.top}px;z-index:10000`;
       document.body.appendChild(menu);
+      el.classList.add('ctx-open');
       _calCtxMenu=menu;
+      function closeMenu(){menu.remove();el.classList.remove('ctx-open');_calCtxMenu=null;}
       menu.querySelector('.cal-ctx-reset').addEventListener('click',ev=>{
         ev.stopPropagation();
-        menu.remove();_calCtxMenu=null;
+        closeMenu();
         clearOverride(tk.id);
         schedTix();renderCal();renderSidebar();
       });
-      // Dismiss on outside click or Escape
+      // Dismiss on outside click
       setTimeout(()=>{
         document.addEventListener('pointerdown',function dismiss(ev){
-          if(!menu.contains(ev.target)){menu.remove();_calCtxMenu=null;}
+          if(!menu.contains(ev.target)){closeMenu();}
           document.removeEventListener('pointerdown',dismiss,true);
         },{once:true,capture:true});
       },0);
