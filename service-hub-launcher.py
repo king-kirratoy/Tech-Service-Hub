@@ -822,7 +822,7 @@ def open_ticket(ticket_id):
     ticket_id = ticket_id.strip()
     if not ticket_id:
         return jsonify({"error": "Invalid ticket ID"}), 400
-    return jsonify({"url": f"{HALO_TICKET_BASE_URL.rstrip('/')}/{ticket_id}"})
+    return jsonify({"url": f"{HALO_TICKET_BASE_URL}{ticket_id}"})
 
 
 @app.route("/health", methods=["GET"])
