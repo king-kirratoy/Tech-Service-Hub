@@ -3,6 +3,8 @@ let histRaw=[],actRaw=[],catStats={},actTix=[],closedTix=[],roster=[];
 let selTech=null,charts={};
 let isCommander=false;
 let loggedInAgent=null;
+let _lastTicketState={};  // id → {sla, nrdMs} — used to detect SLA/NRD changes
+let _calCtxMenu=null;     // active right-click context menu element
 
 // ═══════════ AUTH & PROXY ═══════════
 const PROXY_BASE="https://service-hub-launcher.onrender.com";
@@ -302,6 +304,27 @@ function procAct(){
     const bn=b.nextResponse?b.nextResponse.getTime():9e15;
     return an-bn;
   });
+
+  // Auto-clear override for manually positioned tickets whose SLA or NRD changed.
+  // Compares against state from the previous sync — first sync only populates state.
+  {
+    const ovr=loadOverrides();
+    let ovrChanged=false;
+    actTix.forEach(tk=>{
+      const nrdMs=tk.nextResponse?tk.nextResponse.getTime():null;
+      const prev=_lastTicketState[tk.id];
+      if(prev&&ovr[tk.id]&&ovr[tk.id].startHour!=null){
+        if(tk.sla!==prev.sla||nrdMs!==prev.nrdMs){
+          delete ovr[tk.id];
+          ovrChanged=true;
+        }
+      }
+      _lastTicketState[tk.id]={sla:tk.sla,nrdMs};
+    });
+    // Clean up state for tickets that closed/disappeared
+    Object.keys(_lastTicketState).forEach(id=>{if(!actTix.find(t=>t.id===id))delete _lastTicketState[id];});
+    if(ovrChanged)saveOverrides(ovr);
+  }
 
   applyOverrides();
   schedTix();
@@ -943,6 +966,31 @@ function _bindCalDrag(area){
         setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
       });
     }
+    // ── Right-click context menu ─────────────────────────────
+    el.addEventListener('contextmenu',e=>{
+      e.preventDefault();e.stopPropagation();
+      if(_calCtxMenu){_calCtxMenu.remove();_calCtxMenu=null;}
+      const isOvr=!!(loadOverrides()[tk.id]&&loadOverrides()[tk.id].startHour!=null);
+      const menu=document.createElement('div');
+      menu.className='cal-ctx-menu';
+      menu.innerHTML=`<div class="cal-ctx-item cal-ctx-reset"${!isOvr?' style="opacity:0.4;pointer-events:none"':''}>↺ Reset position</div>`;
+      menu.style.cssText=`position:fixed;left:${e.clientX}px;top:${e.clientY}px;z-index:10000`;
+      document.body.appendChild(menu);
+      _calCtxMenu=menu;
+      menu.querySelector('.cal-ctx-reset').addEventListener('click',ev=>{
+        ev.stopPropagation();
+        menu.remove();_calCtxMenu=null;
+        clearOverride(tk.id);
+        schedTix();renderCal();renderSidebar();
+      });
+      // Dismiss on outside click or Escape
+      setTimeout(()=>{
+        document.addEventListener('pointerdown',function dismiss(ev){
+          if(!menu.contains(ev.target)){menu.remove();_calCtxMenu=null;}
+          document.removeEventListener('pointerdown',dismiss,true);
+        },{once:true,capture:true});
+      },0);
+    });
     // ── Drag ────────────────────────────────────────────────
     let ds=null,ghost=null;
     el.addEventListener('pointerdown',e=>{
