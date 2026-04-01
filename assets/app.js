@@ -128,7 +128,7 @@ function applyOverrides(){
   actTix.forEach(tk=>{
     const o=ovr[tk.id];
     if(!o)return;
-    if(o.est!=null&&o.est>=0.5){tk.est=o.est;tk.manualEst=true}
+    if(o.est!=null&&(o.manualResize||o.est>=0.5)){tk.est=o.est;tk.manualEst=true}
     if(o.startHour!=null)tk.startHour=o.startHour;
     if(o.dayIdx!=null)tk.dayIdx=o.dayIdx;
   });
@@ -953,16 +953,16 @@ function _bindCalDrag(area){
       handle.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();handle.setPointerCapture(e.pointerId);rs={origY:e.clientY,origEst:tk.est}});
       handle.addEventListener('pointermove',e=>{
         if(!rs)return;
-        const ne=Math.max(0.5,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
+        const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
         el.style.height=(ne*HH)+'px';
         const te=el.querySelector('.te');if(te)te.textContent=ne+'h';
         const pt=el.querySelector('.pop-time');if(pt)pt.textContent=hT(tk.startHour)+' — '+hT(tk.startHour+ne);
       });
       handle.addEventListener('pointerup',e=>{
         if(!rs)return;
-        const ne=Math.max(0.5,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
+        const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
         rs=null;
-        setOverride(tk.id,{est:ne,dayIdx:tk.dayIdx,startHour:tk.startHour});
+        setOverride(tk.id,{est:ne,dayIdx:tk.dayIdx,startHour:tk.startHour,manualResize:true});
         setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
       });
     }
