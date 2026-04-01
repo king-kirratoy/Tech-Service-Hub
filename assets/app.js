@@ -874,7 +874,7 @@ function _bindCalDrag(area){
     // ── Drag ────────────────────────────────────────────────
     let ds=null,ghost=null;
     el.addEventListener('pointerdown',e=>{
-      if(e.target.closest('.tt-resize-handle')||e.target.closest('.tt-popup')||e.button!==0)return;
+      if(e.target.closest('.tt-resize-handle')||e.target.closest('.tt-popup')||e.target.closest('a')||e.button!==0)return;
       e.preventDefault();
       el.setPointerCapture(e.pointerId);
       const rect=el.getBoundingClientRect();
