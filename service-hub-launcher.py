@@ -33,6 +33,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 HALOPSA_REPORT_URL = os.environ.get("HALOPSA_REPORT_URL", "")
 HALO_BEARER_TOKEN = os.environ.get("HALO_BEARER_TOKEN", "")
+HALO_TICKET_BASE_URL = os.environ.get("HALO_TICKET_BASE_URL", "")  # e.g. https://yourco.halopsa.com/tickets/
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")  # service_role key
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
@@ -809,6 +810,19 @@ def get_me():
         "agent_name": request.user.get("agent_name", ""),
         "role": request.user.get("role", ""),
     })
+
+
+@app.route("/api/ticket/<path:ticket_id>/open", methods=["GET"])
+@require_auth
+def open_ticket(ticket_id):
+    """Return the full Halo ticket URL for an authenticated user to open.
+    The base URL lives only in server env vars — never in frontend source."""
+    if not HALO_TICKET_BASE_URL:
+        return jsonify({"error": "Ticket URL not configured"}), 503
+    ticket_id = ticket_id.strip()
+    if not ticket_id:
+        return jsonify({"error": "Invalid ticket ID"}), 400
+    return jsonify({"url": f"{HALO_TICKET_BASE_URL}{ticket_id}"})
 
 
 @app.route("/health", methods=["GET"])

@@ -8,6 +8,16 @@ let loggedInAgent=null;
 const PROXY_BASE="https://service-hub-launcher.onrender.com";
 let _sb=null; // Supabase client — initialized after config fetch
 
+// Open a Halo ticket in a new tab via the authenticated backend.
+// The actual Halo base URL lives only in Render env vars — never in frontend source.
+function openTicket(id,e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  fetch(PROXY_BASE+"/api/ticket/"+encodeURIComponent(id)+"/open",{headers:authH()})
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{if(d&&d.url)window.open(d.url,"_blank","noopener,noreferrer");})
+    .catch(()=>{});
+}
+
 async function _initSupabase(){
   if(!window.supabase)return;
   try{
@@ -763,12 +773,12 @@ function renderCal(){
       const colStyle=totalCols>1?`left:calc(${col*w}% + 2px);width:calc(${w}% - 4px);right:auto;`:'';
       h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC};${colStyle}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="ti"${tk.sla==="Initial Response SLA"?' style="color:var(--green)"':''}>${esc(tk.id)}</span>${isOvr?'<span class="tt-override-star">★</span>':''}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
+          <div class="tt-row1"><span class="ti"${tk.sla==="Initial Response SLA"?' style="color:var(--green)"':''}><a href="#" onclick="openTicket('${esc(tk.id)}',event)">${esc(tk.id)}</a></span>${isOvr?'<span class="tt-override-star">★</span>':''}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="tt-row2"><span class="tc">${esc(tk.category)}</span><span class="te">${tk.est}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
-          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(tk.id)}</span></div>
+          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val"><a href="#" onclick="openTicket('${esc(tk.id)}',event)" style="color:inherit;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${esc(tk.id)}</a></span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(tk.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${esc(tk.type)}</span></div>
@@ -807,12 +817,12 @@ function renderCal(){
         const popSide=(di>=3?"pop-left":"");
         h+=`<div class="tt tt-closed" style="height:${closedHt}px;border-left-color:${stC}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="ti">${esc(ct.id)}</span><span class="tit" style="color:#999">Closed</span></div>
+          <div class="tt-row1"><span class="ti"><a href="#" onclick="openTicket('${esc(ct.id)}',event)">${esc(ct.id)}</a></span><span class="tit" style="color:#999">Closed</span></div>
           <div class="tt-row2"><span class="tc">${esc(ct.category)}</span><span class="te">${ct.timeWorked.toFixed(2)}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
           <div class="pop-time">Closed ${closedDate}</div>
-          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val">${esc(ct.id)}</span></div>
+          <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val"><a href="#" onclick="openTicket('${esc(ct.id)}',event)" style="color:inherit;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${esc(ct.id)}</a></span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:#999">Closed</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(ct.category)}</span></div>
           <div class="pop-row"><span class="pop-label">Time Worked</span><span class="pop-val">${ct.timeWorked.toFixed(1)}h</span></div>
@@ -1262,7 +1272,7 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
   tickets.forEach(tk=>{
     const sev=tk.severity==="high"?"sev-high":tk.severity==="med"?"sev-med":"sev-low";
     const dateCreated=tk.dateCreated?tk.dateCreated.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+tk.dateCreated.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"—";
-    h+=`<div class="risk-row ${sev}"><span class="risk-id">${esc(tk.id)}</span><span class="risk-title">${esc(tk.category)}</span><span class="risk-agent">${esc(tk.agent)||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
+    h+=`<div class="risk-row ${sev}"><span class="risk-id"><a href="#" onclick="openTicket('${esc(tk.id)}',event)">${esc(tk.id)}</a></span><span class="risk-title">${esc(tk.category)}</span><span class="risk-agent">${esc(tk.agent)||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
   });
   h+=`</div></div>`;
   return h;
