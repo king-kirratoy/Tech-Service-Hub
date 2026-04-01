@@ -15,7 +15,7 @@ function openTicket(id,e){
   // Open blank window synchronously to preserve user-gesture context (popup blocker bypass)
   const win=window.open('','_blank');
   if(!win)return;
-  fetch(PROXY_BASE+"/api/ticket/"+encodeURIComponent(id)+"/open",{headers:authH()})
+  fetch(PROXY_BASE+"/api/ticket/"+encodeURIComponent(id)+"/open",{credentials:"include",headers:authH()})
     .then(r=>r.ok?r.json():null)
     .then(d=>{if(d&&d.url)win.location.href=d.url;else win.close();})
     .catch(()=>win.close());
