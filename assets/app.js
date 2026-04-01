@@ -848,7 +848,49 @@ function renderCal(){
 function _bindCalDrag(area){
   const cols=Array.from(area.querySelectorAll('.dc[data-d]'));
   function getCol(x){return cols.find(c=>{const r=c.getBoundingClientRect();return x>=r.left&&x<=r.right})||null}
-  function clampHour(h,est){return Math.max(SH,Math.min(EH-est,Math.round(h*4)/4))}
+  function clampHour(h,est,s){
+    const dur=Math.ceil(est*4)/4;
+    let r=Math.round(h*4)/4;
+    r=Math.max(s.ss,Math.min(s.se-dur,r));
+    // Push out of lunch
+    if(r>=s.ls&&r<s.le)r=s.le;
+    if(r<s.ls&&r+dur>s.ls)r=s.le;
+    // If pushing past lunch now overflows shift end, try before lunch instead
+    if(r+dur>s.se)r=Math.max(s.ss,snap(s.ls-dur));
+    // Last resort: shift start
+    if(r+dur>s.se||r<s.ss)r=s.ss;
+    return r;
+  }
+  // After a manual drop, cascade all overridden tickets on the same tech+day
+  // so that each one starts no earlier than the end of the previous one.
+  function cascadeOverrides(techId,dayIdx){
+    const s=getSched(techId);
+    const ovr=loadOverrides();
+    const items=actTix
+      .filter(t=>t.assignedTo===techId&&ovr[t.id]&&ovr[t.id].startHour!=null&&(ovr[t.id].dayIdx!=null?ovr[t.id].dayIdx:t.dayIdx)===dayIdx)
+      .map(t=>({id:t.id,startHour:ovr[t.id].startHour,est:ovr[t.id].est!=null?ovr[t.id].est:t.est}))
+      .sort((a,b)=>a.startHour-b.startHour);
+    if(items.length<2)return;
+    for(let i=1;i<items.length;i++){
+      const prev=items[i-1],cur=items[i];
+      const prevEnd=prev.startHour+prev.est;
+      if(cur.startHour<prevEnd){
+        const dur=Math.ceil(cur.est*4)/4;
+        let newH=snap(prevEnd);
+        for(let j=0;j<20;j++){
+          newH=snap(newH);
+          if(newH>=s.ls&&newH<s.le){newH=snap(s.le);continue;}
+          if(newH<s.ls&&newH+dur>s.ls){newH=snap(s.le);continue;}
+          if(newH+dur>s.se||newH>=s.se){newH=Math.max(s.ss,snap(s.se-dur));break;}
+          break;
+        }
+        cur.startHour=newH;
+        ovr[cur.id]={...ovr[cur.id],startHour:newH};
+        pushTicketOverride(cur.id,ovr[cur.id]);
+      }
+    }
+    saveOverrides(ovr);
+  }
   area.querySelectorAll('.tt').forEach(el=>{
     const tid=el.dataset.id,tk=actTix.find(t=>t.id===tid);if(!tk)return;
     // ── Resize ──────────────────────────────────────────────
@@ -907,7 +949,10 @@ function _bindCalDrag(area){
         if(col){
           const cr=col.getBoundingClientRect();
           const rawH=SH+(e.clientY-ds.offsetY-cr.top)/HH;
-          setOverride(tk.id,{dayIdx:parseInt(col.dataset.d),startHour:clampHour(rawH,tk.est),est:tk.est});
+          const dropDay=parseInt(col.dataset.d);
+          const s=getSched(tk.assignedTo);
+          setOverride(tk.id,{dayIdx:dropDay,startHour:clampHour(rawH,tk.est,s),est:tk.est});
+          cascadeOverrides(tk.assignedTo,dropDay);
           setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
         }
       }
