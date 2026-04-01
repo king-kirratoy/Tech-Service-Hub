@@ -360,6 +360,18 @@ function schedTix(){
     occupied[key].push({s:tk.startHour,e:tk.startHour+tk.est});
   });
 
+  // Helper: advance cursor past all lunch/shift/occupied conflicts
+  function advancePast(a,s,dur){
+    for(let i=0;i<20;i++){
+      a.h=snap(a.h);
+      if(a.h<s.ss){a.h=snap(s.ss);continue;}
+      if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
+      if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
+      if(a.h+dur>s.se||a.h>=s.se){a.d=Math.min(a.d+1,4);a.h=snap(s.ss);continue;}
+      break;
+    }
+  }
+
   // Enhanced placeTicket that skips occupied slots
   function placeTicketAround(tk){
     placeTicket(tk);
@@ -370,30 +382,50 @@ function schedTix(){
     while(maxTries-->0){
       // Re-derive occupied list for current day (day may have changed)
       const occ=occupied[tk.assignedTo+"-"+tk.dayIdx]||[];
-      const tkEnd=tk.startHour+tk.est;
-      const conflict=occ.find(o=>tk.startHour<o.e&&tkEnd>o.s);
-      if(!conflict)break;
-      // Jump cursor past the conflicting ticket then re-apply lunch/shift rules
+      const tkEnd=tk.startHour+dur;
+      // Find max end among ALL currently-conflicting slots (jump further in one step)
+      const conflicts=occ.filter(o=>tk.startHour<o.e&&tkEnd>o.s);
+      if(!conflicts.length)break;
+      const maxEnd=conflicts.reduce((m,o)=>o.e>m?o.e:m,0);
       a.d=tk.dayIdx;
-      a.h=snap(conflict.e);
-      for(let i=0;i<20;i++){
-        a.h=snap(a.h);
-        if(a.h<s.ss){a.h=snap(s.ss);continue;}
-        if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
-        if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
-        if(a.h+dur>s.se||a.h>=s.se){a.d=Math.min(a.d+1,4);a.h=snap(s.ss);continue;}
-        break;
-      }
+      a.h=snap(maxEnd);
+      advancePast(a,s,dur);
       tk.dayIdx=a.d;tk.startHour=a.h;a.h+=dur;
       if(a.h>s.ls&&a.h<=s.le)a.h=snap(s.le);
     }
     // Register this ticket as occupied too (for subsequent auto tickets)
     const key2=tk.assignedTo+"-"+tk.dayIdx;
     if(!occupied[key2])occupied[key2]=[];
-    occupied[key2].push({s:tk.startHour,e:tk.startHour+tk.est});
+    occupied[key2].push({s:tk.startHour,e:tk.startHour+dur});
   }
 
   autoSchedule.forEach(placeTicketAround);
+
+  // Safety pass: scan all tickets per tech sorted by (day, startHour) and push any
+  // auto ticket that still overlaps the previous ticket forward.
+  // This catches any edge cases the main scheduling loop may have missed.
+  const ovrIds=new Set(overridden.map(t=>t.id));
+  const byTechAll={};
+  actTix.forEach(tk=>{if(!byTechAll[tk.assignedTo])byTechAll[tk.assignedTo]=[];byTechAll[tk.assignedTo].push(tk);});
+  Object.values(byTechAll).forEach(tks=>{
+    tks.sort((a,b)=>a.dayIdx!==b.dayIdx?a.dayIdx-b.dayIdx:a.startHour-b.startHour);
+    let i=0;
+    while(i<tks.length-1){
+      const prev=tks[i],cur=tks[i+1];
+      if(cur.dayIdx===prev.dayIdx&&cur.startHour<prev.startHour+prev.est&&!ovrIds.has(cur.id)){
+        const s=getSched(cur.assignedTo);
+        const dur=Math.ceil(cur.est*4)/4;
+        const a={d:cur.dayIdx,h:snap(prev.startHour+prev.est)};
+        advancePast(a,s,dur);
+        cur.dayIdx=a.d;cur.startHour=a.h;
+        // Re-sort since dayIdx or startHour changed
+        tks.sort((a,b)=>a.dayIdx!==b.dayIdx?a.dayIdx-b.dayIdx:a.startHour-b.startHour);
+        i=0; // restart scan
+      } else {
+        i++;
+      }
+    }
+  });
 
   // Breach detection: compare scheduled end time against NRD
   actTix.forEach(tk=>{
