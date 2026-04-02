@@ -1191,7 +1191,8 @@ function findForecastSlot(techId,dayIdx,preferredHour,est,excludeId){
 
 // ── Forecast ticket picker modal ──────────────────────────────────────────────
 function showForecastPicker(dayIdx,startHour){
-  const unassigned=actTix.filter(t=>t.assignedTo===0);
+  const fcstNow=loadForecast();
+  const unassigned=actTix.filter(t=>t.assignedTo===0&&!(fcstNow[t.id]&&fcstNow[t.id].techId===selTech));
   if(!unassigned.length)return;
   const existing=document.getElementById('fcast-picker');
   if(existing)existing.remove();
