@@ -1076,7 +1076,8 @@ function _bindCalDrag(area){
             const f=loadForecast();
             if(f[tid]){
               const fEst=f[tid].est??tk.est;
-              f[tid]={...f[tid],dayIdx:dropDay,startHour:findForecastSlot(selTech,dropDay,rawH,fEst,tid)};
+              const s=getSched(selTech);
+              f[tid]={...f[tid],dayIdx:dropDay,startHour:clampHour(rawH,fEst,s)};
               saveForecast(f);
             }
             setTimeout(()=>{renderCal();renderSidebar();},0);
