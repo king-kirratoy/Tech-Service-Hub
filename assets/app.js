@@ -3,7 +3,7 @@ let histRaw=[],actRaw=[],catStats={},actTix=[],closedTix=[],roster=[];
 let selTech=null,charts={};
 let isCommander=false;
 let loggedInAgent=null;
-let _lastTicketState={};  // id → {sla, nrdMs} — used to detect SLA/NRD changes
+let _lastTicketState={};  // id → {sla, nrdMs, status} — used to detect SLA/NRD/status changes
 let _calCtxMenu=null;     // active right-click context menu element
 
 // ═══════════ AUTH & PROXY ═══════════
@@ -294,12 +294,15 @@ function procAct(){
     return{id:r.Ticket_ID||`TK-${i}`,category:cat,type:r.Ticket_Type||"Service",priority:mapP(r),est,totalEst,timeWorked,assignedTo:tech?tech.id:0,agent,startHour:8,dayIdx:0,nextResponse:nrd,status,dateCreated,slaTgt,sla:r.SLA||"",source:r.Source||"",dateAssigned:pD(r.Date_Assigned)};
   });
 
-  // Sort by SLA tier (Initial Response SLA first), then Next Response Date
+  // Sort by SLA tier (Initial Response SLA first), then priority status, then Next Response Date
   function _slaPri(tk){return tk.sla==="Initial Response SLA"?0:1}
+  function _statusPri(tk){return(tk.status==="Client Update"||tk.status==="Re-Opened"||tk.status==="Re-Assigned")?0:1}
   actTix.sort((a,b)=>{
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
     const as=_slaPri(a),bs=_slaPri(b);
     if(as!==bs)return as-bs;
+    const ast=_statusPri(a),bst=_statusPri(b);
+    if(ast!==bst)return ast-bst;
     const an=a.nextResponse?a.nextResponse.getTime():9e15;
     const bn=b.nextResponse?b.nextResponse.getTime():9e15;
     return an-bn;
@@ -314,12 +317,12 @@ function procAct(){
       const nrdMs=tk.nextResponse?tk.nextResponse.getTime():null;
       const prev=_lastTicketState[tk.id];
       if(prev&&ovr[tk.id]&&ovr[tk.id].startHour!=null){
-        if(tk.sla!==prev.sla||nrdMs!==prev.nrdMs){
+        if(tk.sla!==prev.sla||nrdMs!==prev.nrdMs||tk.status!==prev.status){
           delete ovr[tk.id];
           ovrChanged=true;
         }
       }
-      _lastTicketState[tk.id]={sla:tk.sla,nrdMs};
+      _lastTicketState[tk.id]={sla:tk.sla,nrdMs,status:tk.status};
     });
     // Clean up state for tickets that closed/disappeared
     Object.keys(_lastTicketState).forEach(id=>{if(!actTix.find(t=>t.id===id))delete _lastTicketState[id];});
@@ -344,11 +347,14 @@ function schedTix(){
   const todayDayIdx=weekDays.findIndex(d=>isSD(d,now));
   const startDayIdx=todayDayIdx>=0?todayDayIdx:0;
 
-  // Sort all tickets by agent, then SLA tier (Initial Response SLA first), then NRD
+  // Sort all tickets by agent, then SLA tier (Initial Response SLA first), then priority status, then NRD
   const sorted=[...actTix].sort((a,b)=>{
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
     const as=(a.sla==="Initial Response SLA"?0:1),bs=(b.sla==="Initial Response SLA"?0:1);
     if(as!==bs)return as-bs;
+    const ast=(a.status==="Client Update"||a.status==="Re-Opened"||a.status==="Re-Assigned")?0:1;
+    const bst=(b.status==="Client Update"||b.status==="Re-Opened"||b.status==="Re-Assigned")?0:1;
+    if(ast!==bst)return ast-bst;
     const aNrd=a.nextResponse?a.nextResponse.getTime():9e15;
     const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
     return aNrd-bNrd;
