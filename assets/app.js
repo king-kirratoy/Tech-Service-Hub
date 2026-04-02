@@ -94,6 +94,11 @@ function saveOverrides(ovr){try{localStorage.setItem(OVR_KEY,JSON.stringify(ovr)
 function setOverride(id,data){const ovr=loadOverrides();ovr[id]={...ovr[id],...data,ts:Date.now()};saveOverrides(ovr);pushTicketOverride(id,ovr[id]);}
 function clearOverride(id){const ovr=loadOverrides();delete ovr[id];saveOverrides(ovr);deleteTicketOverride(id);}
 function clearAllOverrides(){localStorage.removeItem(OVR_KEY)}
+// ── Forecast persistence ──────────────────────────────────────────────────────
+const FCST_KEY='servicehub_forecast';
+function loadForecast(){try{return JSON.parse(localStorage.getItem(FCST_KEY)||'{}')}catch(e){return{}}}
+function saveForecast(f){try{localStorage.setItem(FCST_KEY,JSON.stringify(f))}catch(e){}}
+function removeForecast(id){const f=loadForecast();delete f[id];saveForecast(f);}
 async function loadTicketOverrides(){
   try{
     const r=await fetchRetry(PROXY_BASE+"/api/ticket-overrides",{headers:authH()});
@@ -327,6 +332,12 @@ function procAct(){
     // Clean up state for tickets that closed/disappeared
     Object.keys(_lastTicketState).forEach(id=>{if(!actTix.find(t=>t.id===id))delete _lastTicketState[id];});
     if(ovrChanged)saveOverrides(ovr);
+  }
+  // Remove forecast entries for tickets that are now assigned or no longer exist
+  {
+    const f=loadForecast();let fChanged=false;
+    Object.keys(f).forEach(id=>{const tk=actTix.find(t=>t.id===id);if(!tk||tk.assignedTo!==0){delete f[id];fChanged=true;}});
+    if(fChanged)saveForecast(f);
   }
 
   applyOverrides();
@@ -806,6 +817,8 @@ function renderCal(){
   const gh=(EH-SH)*HH,sc=getSched(selTech||1);
   const dtm=days.map((_,di)=>actTix.filter(t=>t.assignedTo===selTech&&t.dayIdx===di));
   const calOvr=loadOverrides();
+  const fcst=loadForecast();
+  const unassignedPool=selTech>0?actTix.filter(t=>t.assignedTo===0):[];
 
   let h=`<div class="tcw"><div class="tch"><div class="tg"></div>`;
   days.forEach((day,di)=>{const tks=dtm[di],th=tks.reduce((s,t)=>s+t.est,0),td=isT(day);h+=`<div class="dch ${td?"today":""}"><div class="dn">${fDS(day)}</div><div class="dd">${fD(day)}</div><div class="ds">${tks.length} tix · ${th.toFixed(1)}h</div></div>`});
@@ -815,6 +828,11 @@ function renderCal(){
   for(let hr=SH;hr<=EH;hr++){h+=`<div class="hl" style="top:${hY(hr)}px"></div>`;if(hr<EH){h+=`<div class="hhl" style="top:${hY(hr+.25)}px"></div>`;h+=`<div class="hhl" style="top:${hY(hr+.5)}px"></div>`;h+=`<div class="hhl" style="top:${hY(hr+.75)}px"></div>`}}
   days.forEach((day,di)=>{
     const tks=dtm[di];
+    const forecastTks=selTech>0?Object.entries(fcst)
+      .filter(([id,f])=>f.techId===selTech&&f.dayIdx===di)
+      .map(([id,f])=>{const src=unassignedPool.find(t=>t.id===id);if(!src)return null;return{...src,startHour:f.startHour,est:f.est??src.est,_forecast:true};})
+      .filter(Boolean):[];
+    const allTks=[...tks,...forecastTks];
     h+=`<div class="dc" data-d="${di}" style="height:${gh}px">`;
     if(selTech!==0){
       if(sc.ss>SH)h+=`<div class="shift-off" style="top:0;height:${hY(sc.ss)}px"></div>`;
@@ -822,24 +840,26 @@ function renderCal(){
       if(sc.se<EH)h+=`<div class="shift-off" style="top:${hY(sc.se)}px;height:${(EH-sc.se)*HH}px"></div>`;
     }
     if(isT(day)){const n=new Date(),nh=n.getHours()+n.getMinutes()/60;if(nh>=SH&&nh<=EH)h+=`<div class="now-line" style="top:${hY(nh)}px"></div>`}
-    layoutTixDay(tks).forEach(({tk,col,totalCols})=>{
+    layoutTixDay(allTks).forEach(({tk,col,totalCols})=>{
+      const isFcast=!!tk._forecast;
       const top=hY(tk.startHour),ht=tk.est*HH;
       const stC=SC[tk.status]||"var(--text-dim)";
       const endH=tk.startHour+tk.est;
       const nrd=tk.nextResponse?tk.nextResponse.toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"—";
       const popSide=(di>=3?"pop-left":"")+" "+(tk.startHour>=14?"pop-bottom":"");
-      const riskClass=tk.nrdAtRisk?"nrd-risk":"";
-      const nrdColor=tk.nrdAtRisk?"color:var(--danger);font-weight:700":"";
-      const isOvr=!!calOvr[tk.id];
+      const riskClass=(!isFcast&&tk.nrdAtRisk)?"nrd-risk":"";
+      const nrdColor=(!isFcast&&tk.nrdAtRisk)?"color:var(--danger);font-weight:700":"";
+      const isOvr=!isFcast&&!!calOvr[tk.id];
       const w=100/totalCols;
       const colStyle=totalCols>1?`left:calc(${col*w}% + 2px);width:calc(${w}% - 4px);right:auto;`:'';
-      h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}" data-id="${esc(tk.id)}" data-d="${di}" style="top:${top}px;height:${ht}px;border-left-color:${stC};${colStyle}">
+      const starHtml=isFcast?'<span class="tt-forecast-star">★</span>':(isOvr?'<span class="tt-override-star">★</span>':'');
+      h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}${isFcast?' tt-forecast':''}" data-id="${esc(tk.id)}" data-d="${di}"${isFcast?' data-forecast="true"':''} style="top:${top}px;height:${ht}px;border-left-color:${stC};${colStyle}">
         <div class="tt-inner">
-          <div class="tt-row1"><span class="ti"${tk.sla==="Initial Response SLA"?' style="color:var(--green)"':''}><a href="#" onclick="openTicket('${esc(tk.id)}',event)">${esc(tk.id)}</a></span>${isOvr?'<span class="tt-override-star">★</span>':''}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
+          <div class="tt-row1"><span class="ti"${tk.sla==="Initial Response SLA"?' style="color:var(--green)"':''}><a href="#" onclick="openTicket('${esc(tk.id)}',event)">${esc(tk.id)}</a></span>${starHtml}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="tt-row2"><span class="tc">${esc(tk.category)}</span><span class="te">${tk.est}h</span></div>
         </div>
         <div class="tt-popup ${popSide}">
-          <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}</div>
+          <div class="pop-time">${hT(tk.startHour)} — ${hT(endH)}${isFcast?' <span style="color:#FFD700;font-size:10px">FORECAST</span>':''}</div>
           <div class="pop-row"><span class="pop-label">Ticket</span><span class="pop-val"><a href="#" onclick="openTicket('${esc(tk.id)}',event)" style="color:inherit;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${esc(tk.id)}</a></span></div>
           <div class="pop-row"><span class="pop-label">Status</span><span class="pop-val" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="pop-row"><span class="pop-label">Category</span><span class="pop-val">${esc(tk.category)}</span></div>
@@ -952,58 +972,67 @@ function _bindCalDrag(area){
   }
   area.querySelectorAll('.tt').forEach(el=>{
     const tid=el.dataset.id,tk=actTix.find(t=>t.id===tid);if(!tk)return;
+    const isFcast=el.dataset.forecast==='true';
     // ── Resize ──────────────────────────────────────────────
     const handle=el.querySelector('.tt-resize-handle');
     if(handle){
       let rs=null;
-      handle.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();handle.setPointerCapture(e.pointerId);rs={origY:e.clientY,origEst:tk.est}});
+      const getOrigEst=()=>{if(isFcast){const f=loadForecast()[tid];return f?f.est:tk.est;}return tk.est;};
+      handle.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();handle.setPointerCapture(e.pointerId);rs={origY:e.clientY,origEst:getOrigEst()};});
       handle.addEventListener('pointermove',e=>{
         if(!rs)return;
         const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
         el.style.height=(ne*HH)+'px';
         const te=el.querySelector('.te');if(te)te.textContent=ne+'h';
-        const pt=el.querySelector('.pop-time');if(pt)pt.textContent=hT(tk.startHour)+' — '+hT(tk.startHour+ne);
+        const curH=isFcast?(loadForecast()[tid]?.startHour??tk.startHour):tk.startHour;
+        const pt=el.querySelector('.pop-time');if(pt)pt.textContent=hT(curH)+' — '+hT(curH+ne);
       });
       handle.addEventListener('pointerup',e=>{
         if(!rs)return;
         const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
         rs=null;
-        setOverride(tk.id,{est:ne,dayIdx:tk.dayIdx,startHour:tk.startHour,manualResize:true});
-        setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+        if(isFcast){
+          const f=loadForecast();if(f[tid]){f[tid]={...f[tid],est:ne};saveForecast(f);}
+          setTimeout(()=>{renderCal();renderSidebar();},0);
+        }else{
+          setOverride(tk.id,{est:ne,dayIdx:tk.dayIdx,startHour:tk.startHour,manualResize:true});
+          setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+        }
       });
     }
     // ── Right-click context menu ─────────────────────────────
     el.addEventListener('contextmenu',e=>{
       e.preventDefault();e.stopPropagation();
-      // Close any existing menu and restore its ticket
       if(_calCtxMenu){_calCtxMenu._el&&_calCtxMenu._el.classList.remove('ctx-open');_calCtxMenu.remove();_calCtxMenu=null;}
-      const isOvr=!!(loadOverrides()[tk.id]&&loadOverrides()[tk.id].startHour!=null);
       const menu=document.createElement('div');
       menu._el=el;
       menu.className='cal-ctx-menu';
-      menu.innerHTML=`<div class="cal-ctx-item cal-ctx-reset"${!isOvr?' style="opacity:0.4;pointer-events:none"':''}>↺ Reset position</div>`;
-      // Position to the right of the ticket (mirroring how .tt-popup appears)
       const r=el.getBoundingClientRect();
       const menuW=168;
       const left=(r.right+8+menuW>window.innerWidth-8)?r.left-8-menuW:r.right+8;
       menu.style.cssText=`position:fixed;left:${left}px;top:${r.top}px;z-index:10000`;
-      document.body.appendChild(menu);
-      el.classList.add('ctx-open');
-      _calCtxMenu=menu;
-      function closeMenu(){menu.remove();el.classList.remove('ctx-open');_calCtxMenu=null;}
-      menu.querySelector('.cal-ctx-reset').addEventListener('click',ev=>{
-        ev.stopPropagation();
-        closeMenu();
-        clearOverride(tk.id);
-        schedTix();renderCal();renderSidebar();
-      });
-      // Dismiss on outside click
-      setTimeout(()=>{
-        document.addEventListener('pointerdown',function dismiss(ev){
-          if(!menu.contains(ev.target)){closeMenu();}
-          document.removeEventListener('pointerdown',dismiss,true);
-        },{once:true,capture:true});
-      },0);
+      if(isFcast){
+        menu.innerHTML=`<div class="cal-ctx-item cal-ctx-rmfcast">✕ Remove from forecast</div>`;
+        document.body.appendChild(menu);
+        el.classList.add('ctx-open');
+        _calCtxMenu=menu;
+        function closeFcastMenu(){menu.remove();el.classList.remove('ctx-open');_calCtxMenu=null;}
+        menu.querySelector('.cal-ctx-rmfcast').addEventListener('click',ev=>{
+          ev.stopPropagation();closeFcastMenu();removeForecast(tid);renderCal();renderSidebar();
+        });
+        setTimeout(()=>{document.addEventListener('pointerdown',function dismiss(ev){if(!menu.contains(ev.target)){closeFcastMenu();}document.removeEventListener('pointerdown',dismiss,true);},{once:true,capture:true});},0);
+      }else{
+        const isOvr=!!(loadOverrides()[tk.id]&&loadOverrides()[tk.id].startHour!=null);
+        menu.innerHTML=`<div class="cal-ctx-item cal-ctx-reset"${!isOvr?' style="opacity:0.4;pointer-events:none"':''}>↺ Reset position</div>`;
+        document.body.appendChild(menu);
+        el.classList.add('ctx-open');
+        _calCtxMenu=menu;
+        function closeMenu(){menu.remove();el.classList.remove('ctx-open');_calCtxMenu=null;}
+        menu.querySelector('.cal-ctx-reset').addEventListener('click',ev=>{
+          ev.stopPropagation();closeMenu();clearOverride(tk.id);schedTix();renderCal();renderSidebar();
+        });
+        setTimeout(()=>{document.addEventListener('pointerdown',function dismiss(ev){if(!menu.contains(ev.target)){closeMenu();}document.removeEventListener('pointerdown',dismiss,true);},{once:true,capture:true});},0);
+      }
     });
     // ── Drag ────────────────────────────────────────────────
     let ds=null,ghost=null;
@@ -1042,10 +1071,20 @@ function _bindCalDrag(area){
           const cr=col.getBoundingClientRect();
           const rawH=SH+(e.clientY-ds.offsetY-cr.top)/HH;
           const dropDay=parseInt(col.dataset.d);
-          const s=getSched(tk.assignedTo);
-          setOverride(tk.id,{dayIdx:dropDay,startHour:clampHour(rawH,tk.est,s),est:tk.est});
-          cascadeOverrides(tk.assignedTo,dropDay);
-          setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+          if(isFcast){
+            const f=loadForecast();
+            if(f[tid]){
+              const s=getSched(selTech);
+              f[tid]={...f[tid],dayIdx:dropDay,startHour:clampHour(rawH,f[tid].est??tk.est,s)};
+              saveForecast(f);
+            }
+            setTimeout(()=>{renderCal();renderSidebar();},0);
+          }else{
+            const s=getSched(tk.assignedTo);
+            setOverride(tk.id,{dayIdx:dropDay,startHour:clampHour(rawH,tk.est,s),est:tk.est});
+            cascadeOverrides(tk.assignedTo,dropDay);
+            setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+          }
         }
       }
       ds=null;
@@ -1056,6 +1095,34 @@ function _bindCalDrag(area){
       document.body.style.cursor='';
       _dragCancel=null;
       ds=null;
+    });
+  });
+  // ── Right-click on empty column space → + Unassigned Ticket ─────────────────
+  cols.forEach(col=>{
+    col.addEventListener('contextmenu',e=>{
+      if(e.target.closest('.tt'))return;
+      e.preventDefault();
+      if(!selTech||selTech===0)return;
+      if(!actTix.some(t=>t.assignedTo===0))return;
+      if(_calCtxMenu){_calCtxMenu._el&&_calCtxMenu._el.classList.remove('ctx-open');_calCtxMenu.remove();_calCtxMenu=null;}
+      const cr=col.getBoundingClientRect();
+      const s=getSched(selTech);
+      const rawH=SH+(e.clientY-cr.top)/HH;
+      const snapH=snap(Math.max(s.ss,Math.min(s.se-0.5,rawH)));
+      const dayIdx=parseInt(col.dataset.d);
+      const menu=document.createElement('div');
+      menu.className='cal-ctx-menu';
+      menu.innerHTML=`<div class="cal-ctx-item cal-ctx-addfcast">＋ Unassigned Ticket</div>`;
+      const menuW=168;
+      const left=(e.clientX+menuW>window.innerWidth-8)?e.clientX-menuW:e.clientX;
+      menu.style.cssText=`position:fixed;left:${left}px;top:${e.clientY}px;z-index:10000`;
+      document.body.appendChild(menu);
+      _calCtxMenu=menu;
+      function closeColMenu(){menu.remove();_calCtxMenu=null;}
+      menu.querySelector('.cal-ctx-addfcast').addEventListener('click',ev=>{
+        ev.stopPropagation();closeColMenu();showForecastPicker(dayIdx,snapH);
+      });
+      setTimeout(()=>{document.addEventListener('pointerdown',function dismiss(ev){if(!menu.contains(ev.target)){closeColMenu();}document.removeEventListener('pointerdown',dismiss,true);},{once:true,capture:true});},0);
     });
   });
 }
@@ -1083,6 +1150,45 @@ function _bindClosedPopups(area){
       floatEl.style.top=Math.max(8,Math.min(r.top,window.innerHeight-ph-8))+'px';
     });
     el.addEventListener('mouseleave',()=>{if(floatEl){floatEl.remove();floatEl=null;}});
+  });
+}
+
+// ── Forecast ticket picker modal ──────────────────────────────────────────────
+function showForecastPicker(dayIdx,startHour){
+  const unassigned=actTix.filter(t=>t.assignedTo===0);
+  if(!unassigned.length)return;
+  const existing=document.getElementById('fcast-picker');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='fcast-picker';
+  overlay.style.cssText='position:fixed;inset:0;z-index:11000;display:flex;align-items:center;justify-content:center;background:rgba(0,10,25,0.7);backdrop-filter:blur(4px)';
+  const modal=document.createElement('div');
+  modal.className='fcast-modal';
+  const rows=unassigned.map(tk=>{
+    const stC=SC[tk.status]||'var(--text-dim)';
+    const nrd=tk.nextResponse?tk.nextResponse.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—';
+    return`<div class="fcast-row" data-id="${esc(tk.id)}"><span class="fcast-tid">${esc(tk.id)}</span><span class="fcast-status" style="color:${stC}">${esc(tk.status)}</span><span class="fcast-cat">${esc(tk.category)}</span><span class="fcast-nrd">${nrd}</span></div>`;
+  }).join('');
+  modal.innerHTML=`<div class="fcast-header"><span class="fcast-title">＋ Unassigned Ticket</span><button class="fcast-close">✕</button></div><div class="fcast-col-hdr"><span>Ticket</span><span>Status</span><span>Category</span><span>Next Response</span></div><div class="fcast-list">${rows}</div>`;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  function closePicker(){overlay.remove();}
+  modal.querySelector('.fcast-close').addEventListener('click',closePicker);
+  overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)closePicker();});
+  const onKey=e=>{if(e.key==='Escape'){closePicker();document.removeEventListener('keydown',onKey);}};
+  document.addEventListener('keydown',onKey);
+  modal.querySelectorAll('.fcast-row').forEach(row=>{
+    row.addEventListener('click',()=>{
+      const id=row.dataset.id;
+      const tk=actTix.find(t=>t.id===id);
+      if(!tk)return;
+      const f=loadForecast();
+      f[id]={techId:selTech,dayIdx,startHour,est:tk.est};
+      saveForecast(f);
+      closePicker();
+      document.removeEventListener('keydown',onKey);
+      renderCal();renderSidebar();
+    });
   });
 }
 

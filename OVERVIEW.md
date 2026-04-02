@@ -96,6 +96,25 @@ render.yaml                 ← Render deployment config + env var declarations.
 - `clampHour(h, est, s)` — snaps a drop position to valid slot, skipping lunch window
 - `cascadeOverrides(techId, dayIdx)` — after a manual drag, re-sorts all overridden tickets for that tech+day and pushes conflicts forward; saves to localStorage and Supabase
 - `layoutTixDay(tks)` — greedy column assignment for side-by-side rendering detection (used in `renderCal`)
+- `showForecastPicker(dayIdx, startHour)` — modal listing unassigned tickets; selecting one saves a forecast placement to `servicehub_forecast` localStorage
+
+### Forecast schema (localStorage key: `servicehub_forecast`)
+
+Unassigned tickets placed on a tech's calendar for planning purposes only. Never modifies `actTix` or backend data.
+
+```javascript
+{
+  [ticketId]: {
+    techId: 3,         // roster id of the target tech
+    dayIdx: 1,         // 0=Mon … 4=Fri
+    startHour: 10.0,   // decimal hour, 0.25 steps
+    est: 0.5           // hours; can be resized by user
+  }
+}
+```
+
+Forecast entries are cleaned up automatically in `procAct()` when the source ticket becomes assigned or disappears.
+Right-click a forecast ticket → "✕ Remove from forecast". Forecast tickets render with a gold star (★) and dashed border.
 
 ### Override schema (localStorage key: `servicehub_overrides`)
 
