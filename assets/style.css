@@ -134,6 +134,24 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .tt-resize-handle{position:absolute;bottom:0;left:0;right:0;height:8px;cursor:ns-resize;z-index:10;border-radius:0 0 4px 4px}
 .tt-resize-handle:hover{background:rgba(255,255,255,0.15)}
 .tt-override-star{font-size:9px;color:var(--blue);line-height:1;flex-shrink:0;pointer-events:none}
+.tt-forecast-star{font-size:9px;color:#FFD700;line-height:1;flex-shrink:0;pointer-events:none}
+/* --- Forecast ticket (unassigned, placed for planning) --- */
+.tt.tt-forecast{border-style:dashed}
+/* --- Forecast picker modal --- */
+.fcast-modal{background:linear-gradient(135deg,rgba(0,40,85,0.97),rgba(0,22,50,0.97));border:1px solid var(--border-bright);border-radius:12px;width:600px;max-width:calc(100vw - 32px);max-height:70vh;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,0.6)}
+.fcast-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.fcast-title{font-size:13px;font-weight:700;font-family:var(--font-heading);text-transform:uppercase;letter-spacing:0.5px;color:var(--text)}
+.fcast-close{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:2px 8px;border-radius:4px;line-height:1}
+.fcast-close:hover{color:var(--text);background:rgba(0,149,200,0.12)}
+.fcast-col-hdr{display:grid;grid-template-columns:85px 130px 1fr 150px;gap:8px;padding:7px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border)}
+.fcast-list{overflow-y:auto;flex:1}
+.fcast-row{display:grid;grid-template-columns:85px 130px 1fr 150px;gap:8px;padding:9px 14px;cursor:pointer;border-bottom:1px solid rgba(0,149,200,0.06);transition:background .15s;align-items:center}
+.fcast-row:hover{background:rgba(0,149,200,0.1)}
+.fcast-row:last-child{border-bottom:none}
+.fcast-tid{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--blue)}
+.fcast-status{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcast-cat{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcast-nrd{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-muted);text-align:right;white-space:nowrap}
 .now-line{position:absolute;left:0;right:0;z-index:8;pointer-events:none;display:flex;align-items:center}
 .now-line::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-left:-4px}
 .now-line::after{content:"";flex:1;height:2px;background:var(--danger)}
