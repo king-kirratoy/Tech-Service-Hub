@@ -1165,19 +1165,20 @@ function findForecastSlot(techId,dayIdx,preferredHour,est,excludeId){
     ...actTix.filter(t=>t.assignedTo===techId&&t.dayIdx===dayIdx).map(t=>({h:t.startHour,e:t.startHour+t.est})),
     ...Object.entries(loadForecast()).filter(([id,f])=>f.techId===techId&&f.dayIdx===dayIdx&&id!==excludeId).map(([,f])=>({h:f.startHour,e:f.startHour+(f.est??0.5)}))
   ].sort((a,b)=>a.h-b.h);
-  let h=snap(Math.max(s.ss,preferredHour));
-  for(let i=0;i<40;i++){
-    if(h+dur>s.se)break;
-    if(h>=s.ls&&h<s.le){h=snap(s.le);continue;}
-    if(h<s.ls&&h+dur>s.ls){h=snap(s.le);continue;}
-    const conf=occ.find(o=>h<o.e&&h+dur>o.h);
-    if(conf){h=snap(conf.e);continue;}
-    return h;
+  function tryFrom(start){
+    let h=snap(Math.max(s.ss,start));
+    for(let i=0;i<40;i++){
+      if(h+dur>s.se)return null;
+      if(h>=s.ls&&h<s.le){h=snap(s.le);continue;}
+      if(h<s.ls&&h+dur>s.ls){h=snap(s.le);continue;}
+      const conf=occ.find(o=>h<o.e&&h+dur>o.h);
+      if(conf){h=snap(conf.e);continue;}
+      return h;
+    }
+    return null;
   }
-  // Fallback: shift start, skipping lunch if needed
-  let fb=snap(s.ss);
-  if(fb<s.ls&&fb+dur>s.ls)fb=snap(s.le);
-  return fb;
+  // Try preferred position first, then from shift start, then clamp (overlap accepted)
+  return tryFrom(preferredHour)??tryFrom(s.ss)??snap(Math.max(s.ss,Math.min(s.se-dur,preferredHour)));
 }
 
 // ── Forecast ticket picker modal ──────────────────────────────────────────────
