@@ -113,7 +113,7 @@ render.yaml                 ← Render deployment config + env var declarations.
 
 `applyOverrides()` skips saved `est` values below 0.5 **unless** `manualResize: true`, preventing legacy `est=0.25` defaults (saved before the minimum changed) from being reinstated.
 
-Auto-clear: if a ticket's SLA or Next Response Date changes between syncs, its override is deleted so the scheduler repositions it fresh.
+Auto-clear: if a ticket's SLA, Next Response Date, or Status changes between syncs, its override is deleted so the scheduler repositions it fresh.
 
 ---
 
@@ -154,7 +154,7 @@ charts{}           // Chart.js instance map
 selTech            // Currently selected tech (null = all)
 loggedInAgent      // {agent_name, role} or null
 isCommander        // true if role === "commander"
-_lastTicketState   // {id: {sla, nrdMs}} — detects SLA/NRD changes for override auto-clear
+_lastTicketState   // {id: {sla, nrdMs, status}} — detects SLA/NRD/status changes for override auto-clear
 _calCtxMenu        // Active right-click context menu DOM element (or null)
 
 // ── Declared at line 152 (between OVERRIDE PERSISTENCE and UTILS) ──
