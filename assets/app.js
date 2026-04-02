@@ -454,6 +454,13 @@ function schedTix(){
     if(!occupied[key])occupied[key]=[];
     occupied[key].push({s:tk.startHour,e:tk.startHour+tk.est});
   });
+  // Also treat forecast placements as occupied so auto-tickets route around them
+  // and NRD breach detection reflects the true load with forecast tickets included
+  Object.values(loadForecast()).forEach(f=>{
+    const key=f.techId+"-"+f.dayIdx;
+    if(!occupied[key])occupied[key]=[];
+    occupied[key].push({s:f.startHour,e:f.startHour+(f.est??0.5)});
+  });
 
   // Enhanced placeTicket that skips occupied slots
   function placeTicketAround(tk){
@@ -994,7 +1001,7 @@ function _bindCalDrag(area){
         rs=null;
         if(isFcast){
           const f=loadForecast();if(f[tid]){f[tid]={...f[tid],est:ne};saveForecast(f);}
-          setTimeout(()=>{renderCal();renderSidebar();},0);
+          setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
         }else{
           setOverride(tk.id,{est:ne,dayIdx:tk.dayIdx,startHour:tk.startHour,manualResize:true});
           setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
@@ -1019,7 +1026,7 @@ function _bindCalDrag(area){
         _calCtxMenu=menu;
         function closeFcastMenu(){menu.remove();el.classList.remove('ctx-open');_calCtxMenu=null;}
         menu.querySelector('.cal-ctx-rmfcast').addEventListener('click',ev=>{
-          ev.stopPropagation();closeFcastMenu();removeForecast(tid);renderCal();renderSidebar();
+          ev.stopPropagation();closeFcastMenu();removeForecast(tid);schedTix();renderCal();renderSidebar();
         });
         setTimeout(()=>{document.addEventListener('pointerdown',function dismiss(ev){if(!menu.contains(ev.target)){closeFcastMenu();}document.removeEventListener('pointerdown',dismiss,true);},{once:true,capture:true});},0);
       }else{
@@ -1080,7 +1087,7 @@ function _bindCalDrag(area){
               f[tid]={...f[tid],dayIdx:dropDay,startHour:clampHour(rawH,fEst,s)};
               saveForecast(f);
             }
-            setTimeout(()=>{renderCal();renderSidebar();},0);
+            setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
           }else{
             const s=getSched(tk.assignedTo);
             setOverride(tk.id,{dayIdx:dropDay,startHour:clampHour(rawH,tk.est,s),est:tk.est});
@@ -1217,7 +1224,7 @@ function showForecastPicker(dayIdx,startHour){
       saveForecast(f);
       closePicker();
       document.removeEventListener('keydown',onKey);
-      renderCal();renderSidebar();
+      schedTix();renderCal();renderSidebar();
     });
   });
 }
