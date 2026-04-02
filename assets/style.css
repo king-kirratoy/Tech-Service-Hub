@@ -136,7 +136,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .tt-override-star{font-size:9px;color:var(--blue);line-height:1;flex-shrink:0;pointer-events:none}
 .tt-forecast-star{font-size:9px;color:#FFD700;line-height:1;flex-shrink:0;pointer-events:none}
 /* --- Forecast ticket (unassigned, placed for planning) --- */
-.tt.tt-forecast{border-style:dashed}
+.tt.tt-forecast{border:2px dashed #FFD700;border-left-width:4px}
 /* --- Forecast picker modal --- */
 .fcast-modal{background:linear-gradient(135deg,rgba(0,40,85,0.97),rgba(0,22,50,0.97));border:1px solid var(--border-bright);border-radius:12px;width:600px;max-width:calc(100vw - 32px);max-height:70vh;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,0.6)}
 .fcast-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}

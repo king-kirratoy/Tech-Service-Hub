@@ -853,7 +853,8 @@ function renderCal(){
       const w=100/totalCols;
       const colStyle=totalCols>1?`left:calc(${col*w}% + 2px);width:calc(${w}% - 4px);right:auto;`:'';
       const starHtml=isFcast?'<span class="tt-forecast-star">★</span>':(isOvr?'<span class="tt-override-star">★</span>':'');
-      h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}${isFcast?' tt-forecast':''}" data-id="${esc(tk.id)}" data-d="${di}"${isFcast?' data-forecast="true"':''} style="top:${top}px;height:${ht}px;border-left-color:${stC};${colStyle}">
+      const borderC=isFcast?'#FFD700':stC;
+      h+=`<div class="tt ${riskClass}${isOvr?' tt-override':''}${isFcast?' tt-forecast':''}" data-id="${esc(tk.id)}" data-d="${di}"${isFcast?' data-forecast="true"':''} style="top:${top}px;height:${ht}px;border-left-color:${borderC};${colStyle}">
         <div class="tt-inner">
           <div class="tt-row1"><span class="ti"${tk.sla==="Initial Response SLA"?' style="color:var(--green)"':''}><a href="#" onclick="openTicket('${esc(tk.id)}',event)">${esc(tk.id)}</a></span>${starHtml}<span class="tit" style="color:${stC}">${esc(tk.status)}</span></div>
           <div class="tt-row2"><span class="tc">${esc(tk.category)}</span><span class="te">${tk.est}h</span></div>
@@ -1074,8 +1075,8 @@ function _bindCalDrag(area){
           if(isFcast){
             const f=loadForecast();
             if(f[tid]){
-              const s=getSched(selTech);
-              f[tid]={...f[tid],dayIdx:dropDay,startHour:clampHour(rawH,f[tid].est??tk.est,s)};
+              const fEst=f[tid].est??tk.est;
+              f[tid]={...f[tid],dayIdx:dropDay,startHour:findForecastSlot(selTech,dropDay,rawH,fEst,tid)};
               saveForecast(f);
             }
             setTimeout(()=>{renderCal();renderSidebar();},0);
@@ -1153,6 +1154,32 @@ function _bindClosedPopups(area){
   });
 }
 
+// ── Forecast ticket slot finder ───────────────────────────────────────────────
+// Finds the earliest valid start hour at or after preferredHour for a forecast
+// ticket, respecting shift bounds, lunch, and all existing tickets (real +
+// forecast). Pass excludeId to skip a specific forecast entry (e.g. on drag).
+function findForecastSlot(techId,dayIdx,preferredHour,est,excludeId){
+  const s=getSched(techId);
+  const dur=Math.ceil(est*4)/4;
+  const occ=[
+    ...actTix.filter(t=>t.assignedTo===techId&&t.dayIdx===dayIdx).map(t=>({h:t.startHour,e:t.startHour+t.est})),
+    ...Object.entries(loadForecast()).filter(([id,f])=>f.techId===techId&&f.dayIdx===dayIdx&&id!==excludeId).map(([,f])=>({h:f.startHour,e:f.startHour+(f.est??0.5)}))
+  ].sort((a,b)=>a.h-b.h);
+  let h=snap(Math.max(s.ss,preferredHour));
+  for(let i=0;i<40;i++){
+    if(h+dur>s.se)break;
+    if(h>=s.ls&&h<s.le){h=snap(s.le);continue;}
+    if(h<s.ls&&h+dur>s.ls){h=snap(s.le);continue;}
+    const conf=occ.find(o=>h<o.e&&h+dur>o.h);
+    if(conf){h=snap(conf.e);continue;}
+    return h;
+  }
+  // Fallback: shift start, skipping lunch if needed
+  let fb=snap(s.ss);
+  if(fb<s.ls&&fb+dur>s.ls)fb=snap(s.le);
+  return fb;
+}
+
 // ── Forecast ticket picker modal ──────────────────────────────────────────────
 function showForecastPicker(dayIdx,startHour){
   const unassigned=actTix.filter(t=>t.assignedTo===0);
@@ -1183,7 +1210,8 @@ function showForecastPicker(dayIdx,startHour){
       const tk=actTix.find(t=>t.id===id);
       if(!tk)return;
       const f=loadForecast();
-      f[id]={techId:selTech,dayIdx,startHour,est:tk.est};
+      const slot=findForecastSlot(selTech,dayIdx,startHour,tk.est);
+      f[id]={techId:selTech,dayIdx,startHour:slot,est:tk.est};
       saveForecast(f);
       closePicker();
       document.removeEventListener('keydown',onKey);
