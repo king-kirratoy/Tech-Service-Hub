@@ -1194,7 +1194,7 @@ function showForecastPicker(dayIdx,startHour){
   const rows=unassigned.map(tk=>{
     const stC=SC[tk.status]||'var(--text-dim)';
     const nrd=tk.nextResponse?tk.nextResponse.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—';
-    return`<div class="fcast-row" data-id="${esc(tk.id)}"><span class="fcast-tid">${esc(tk.id)}</span><span class="fcast-status" style="color:${stC}">${esc(tk.status)}</span><span class="fcast-cat">${esc(tk.category)}</span><span class="fcast-nrd">${nrd}</span></div>`;
+    return`<div class="fcast-row" data-id="${esc(tk.id)}"><span class="fcast-tid"><a href="#" onclick="openTicket('${esc(tk.id)}',event);event.stopPropagation()" style="color:var(--blue);text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${esc(tk.id)}</a></span><span class="fcast-status" style="color:${stC}">${esc(tk.status)}</span><span class="fcast-cat">${esc(tk.category)}</span><span class="fcast-nrd">${nrd}</span></div>`;
   }).join('');
   modal.innerHTML=`<div class="fcast-header"><span class="fcast-title">＋ Unassigned Ticket</span><button class="fcast-close">✕</button></div><div class="fcast-col-hdr"><span>Ticket</span><span>Status</span><span>Category</span><span>Next Response</span></div><div class="fcast-list">${rows}</div>`;
   overlay.appendChild(modal);

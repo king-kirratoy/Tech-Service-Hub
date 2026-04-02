@@ -151,7 +151,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .fcast-tid{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--blue)}
 .fcast-status{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fcast-cat{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcast-nrd{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-muted);text-align:right;white-space:nowrap}
+.fcast-nrd{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-muted);white-space:nowrap}
 .now-line{position:absolute;left:0;right:0;z-index:8;pointer-events:none;display:flex;align-items:center}
 .now-line::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-left:-4px}
 .now-line::after{content:"";flex:1;height:2px;background:var(--danger)}
