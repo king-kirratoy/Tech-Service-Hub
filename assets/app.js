@@ -296,7 +296,7 @@ function procAct(){
 
   // Sort by SLA tier (Initial Response SLA first), then priority status, then Next Response Date
   function _slaPri(tk){return tk.sla==="Initial Response SLA"?0:1}
-  function _statusPri(tk){return(tk.status==="Client Update"||tk.status==="Re-Opened"||tk.status==="Re-Assigned")?0:1}
+  function _statusPri(tk){return(tk.status==="Client Update"||tk.status==="Re-Opened")?0:1}
   actTix.sort((a,b)=>{
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
     const as=_slaPri(a),bs=_slaPri(b);
@@ -352,8 +352,8 @@ function schedTix(){
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
     const as=(a.sla==="Initial Response SLA"?0:1),bs=(b.sla==="Initial Response SLA"?0:1);
     if(as!==bs)return as-bs;
-    const ast=(a.status==="Client Update"||a.status==="Re-Opened"||a.status==="Re-Assigned")?0:1;
-    const bst=(b.status==="Client Update"||b.status==="Re-Opened"||b.status==="Re-Assigned")?0:1;
+    const ast=(a.status==="Client Update"||a.status==="Re-Opened")?0:1;
+    const bst=(b.status==="Client Update"||b.status==="Re-Opened")?0:1;
     if(ast!==bst)return ast-bst;
     const aNrd=a.nextResponse?a.nextResponse.getTime():9e15;
     const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
