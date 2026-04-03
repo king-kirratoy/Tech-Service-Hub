@@ -5,6 +5,7 @@ let isCommander=false;
 let loggedInAgent=null;
 let _lastTicketState={};  // id → {sla, nrdMs, status} — used to detect SLA/NRD/status changes
 let _calCtxMenu=null;     // active right-click context menu element
+let _calWeekOffset=0;     // 0 = current week, 1 = next week
 
 // ═══════════ AUTH & PROXY ═══════════
 const PROXY_BASE="https://service-hub-launcher.onrender.com";
@@ -862,31 +863,89 @@ function layoutTixDay(tks){
   return sorted.map(tk=>({tk,col:colOf[tk.id],totalCols:clMax[find(tk.id)]}));
 }
 
+// ── Next-week overflow placement ─────────────────────────────────────────────
+// Schedules actTix tickets with dayIdx=-1 (overflow) for next week, starting
+// from each tech's Monday shift start. Returns array of ticket objects augmented
+// with _nwDayIdx and _nwStartHour for next-week calendar rendering.
+function _placeOverflowNextWeek(){
+  const sorted=[...actTix].filter(tk=>tk.dayIdx===-1).sort((a,b)=>{
+    if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
+    const as=(a.sla==='Initial Response SLA'?0:1),bs=(b.sla==='Initial Response SLA'?0:1);
+    if(as!==bs)return as-bs;
+    const ast=(a.status==='Client Update'||a.status==='Re-Opened')?0:1;
+    const bst=(b.status==='Client Update'||b.status==='Re-Opened')?0:1;
+    if(ast!==bst)return ast-bst;
+    const aNrd=a.nextResponse?a.nextResponse.getTime():9e15;
+    const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
+    return aNrd-bNrd;
+  });
+  const cursors={};
+  const placed=[];
+  sorted.forEach(tk=>{
+    const s=getSched(tk.assignedTo);
+    if(!cursors[tk.assignedTo])cursors[tk.assignedTo]={d:0,h:snap(s.ss)};
+    const a=cursors[tk.assignedTo];
+    if(a.d>4)return;
+    const dur=Math.ceil(tk.est*4)/4;
+    for(let i=0;i<20;i++){
+      a.h=snap(a.h);
+      if(a.h<s.ss){a.h=snap(s.ss);continue;}
+      if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
+      if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
+      if(a.h+dur>s.se||a.h>=s.se){a.d++;a.h=snap(s.ss);if(a.d>4)return;continue;}
+      break;
+    }
+    if(a.d>4)return;
+    placed.push({...tk,_nwDayIdx:a.d,_nwStartHour:a.h});
+    a.h+=dur;
+    if(a.h>s.ls&&a.h<=s.le)a.h=snap(s.le);
+  });
+  return placed;
+}
+
 // ═══════════ CALENDAR ═══════════
 function renderCal(){
   const area=document.getElementById("ca");
   if(!actTix.length){area.innerHTML='<div class="glass" style="padding:40px;text-align:center;color:var(--text-dim)">Upload active tickets</div>';return}
-  const weekDays=wkD(new Date());
+  const calNow=new Date();
+  const isNextWeek=_calWeekOffset>0;
+  const weekDays=isNextWeek?wkD(new Date(calNow.getTime()+7*24*3600*1000)):wkD(calNow);
   const days=weekDays;
   const gh=(EH-SH)*HH,sc=getSched(selTech||1);
-  const dtm=days.map((_,di)=>actTix.filter(t=>t.assignedTo===selTech&&t.dayIdx===di));
+  // Update week nav display
+  const _wlbl=document.getElementById('calWeekLabel');
+  const _wprev=document.getElementById('calPrevWeek');
+  const _wnext=document.getElementById('calNextWeek');
+  if(_wlbl)_wlbl.textContent=isNextWeek?'Next Week':'Current Week';
+  if(_wprev)_wprev.style.visibility=isNextWeek?'':'hidden';
+  if(_wnext)_wnext.style.visibility=isNextWeek?'hidden':'';
+  // For next-week view: place overflow tickets; for current week: use normal actTix positions
+  const nwTix=isNextWeek?_placeOverflowNextWeek():[];
+  const dtm=days.map((_,di)=>{
+    if(isNextWeek)return nwTix
+      .filter(t=>t.assignedTo===selTech&&t._nwDayIdx===di)
+      // remap _nwStartHour→startHour so the render loop works unchanged
+      .map(tk=>({...tk,startHour:tk._nwStartHour,dayIdx:tk._nwDayIdx}));
+    return actTix.filter(t=>t.assignedTo===selTech&&t.dayIdx===di);
+  });
   const calOvr=loadOverrides();
   const fcst=loadForecast();
   const unassignedPool=selTech>0?actTix.filter(t=>t.assignedTo===0):[];
 
   let h=`<div class="tcw"><div class="tch"><div class="tg"></div>`;
-  days.forEach((day,di)=>{const tks=dtm[di],th=tks.reduce((s,t)=>s+t.est,0),td=isT(day);h+=`<div class="dch ${td?"today":""}"><div class="dn">${fDS(day)}</div><div class="dd">${fD(day)}</div><div class="ds">${tks.length} tix · ${th.toFixed(1)}h</div></div>`});
+  days.forEach((day,di)=>{const tks=dtm[di],th=tks.reduce((s,t)=>s+t.est,0),td=!isNextWeek&&isT(day);h+=`<div class="dch ${td?"today":""}"><div class="dn">${fDS(day)}</div><div class="dd">${fD(day)}</div><div class="ds">${tks.length} tix · ${th.toFixed(1)}h</div></div>`});
   h+=`</div><div class="tcb"><div class="tgut" style="height:${gh}px">`;
   for(let hr=SH+.5;hr<EH;hr+=.5)h+=`<div class="tl${hr===Math.floor(hr)?"":" half"}" style="top:${hY(hr)}px">${hT(hr)}</div>`;
   h+=`</div><div class="dcw">`;
   for(let hr=SH;hr<=EH;hr++){h+=`<div class="hl" style="top:${hY(hr)}px"></div>`;if(hr<EH){h+=`<div class="hhl" style="top:${hY(hr+.25)}px"></div>`;h+=`<div class="hhl" style="top:${hY(hr+.5)}px"></div>`;h+=`<div class="hhl" style="top:${hY(hr+.75)}px"></div>`}}
   days.forEach((day,di)=>{
     const tks=dtm[di];
-    const forecastTks=selTech>0?Object.entries(fcst)
+    // Forecast and time blocks only shown in current-week view (they use current-week dayIdx)
+    const forecastTks=(!isNextWeek&&selTech>0)?Object.entries(fcst)
       .filter(([id,f])=>f.techId===selTech&&f.dayIdx===di)
       .map(([id,f])=>{const src=unassignedPool.find(t=>t.id===id);if(!src)return null;return{...src,startHour:f.startHour,est:f.est??src.est,_forecast:true};})
       .filter(Boolean):[];
-    const tbEntries=selTech>0?Object.entries(loadTimeBlocks()).filter(([,b])=>b.techId===selTech&&b.dayIdx===di):[];
+    const tbEntries=(!isNextWeek&&selTech>0)?Object.entries(loadTimeBlocks()).filter(([,b])=>b.techId===selTech&&b.dayIdx===di):[];
     const allTks=[...tks,...forecastTks];
     h+=`<div class="dc" data-d="${di}" style="height:${gh}px">`;
     if(selTech!==0){
@@ -894,7 +953,7 @@ function renderCal(){
       h+=`<div class="lunch-block" style="top:${hY(sc.ls)}px;height:${(sc.le-sc.ls)*HH}px"><span class="lunch-label">Lunch</span></div>`;
       if(sc.se<EH)h+=`<div class="shift-off" style="top:${hY(sc.se)}px;height:${(EH-sc.se)*HH}px"></div>`;
     }
-    if(isT(day)){const n=new Date(),nh=n.getHours()+n.getMinutes()/60;if(nh>=SH&&nh<=EH)h+=`<div class="now-line" style="top:${hY(nh)}px"></div>`}
+    if(!isNextWeek&&isT(day)){const n=new Date(),nh=n.getHours()+n.getMinutes()/60;if(nh>=SH&&nh<=EH)h+=`<div class="now-line" style="top:${hY(nh)}px"></div>`}
     layoutTixDay(allTks).forEach(({tk,col,totalCols})=>{
       const isFcast=!!tk._forecast;
       const top=hY(tk.startHour),ht=tk.est*HH;
@@ -939,8 +998,8 @@ function renderCal(){
   });
   h+=`</div></div>`;
 
-  // Closed-this-week section: collapsible, defaults to collapsed
-  const anyClosedForTech=closedTix.some(t=>t.assignedTo===selTech);
+  // Closed-this-week section: collapsible, only shown in current-week view
+  const anyClosedForTech=!isNextWeek&&closedTix.some(t=>t.assignedTo===selTech);
   if(anyClosedForTech){
     const closedHt=0.25*HH;
     // Toggle header row
@@ -983,8 +1042,7 @@ function renderCal(){
   h+=`</div>`;
   if(_dragCancel){_dragCancel();_dragCancel=null;}
   area.innerHTML=h;
-  _bindCalDrag(area);
-  _bindClosedPopups(area);
+  if(!isNextWeek){_bindCalDrag(area);_bindClosedPopups(area);}
 }
 
 // ── Drag-to-reposition and resize for calendar tickets ───────────────────────
@@ -1767,6 +1825,9 @@ function buildRiskSection(title,color,tickets,detailFn,subtitle){
 function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateAssigned&&wd.some(d=>isSD(d,t.dateAssigned))).length+closedTix.filter(t=>t.dateAssigned&&wd.some(d=>isSD(d,t.dateAssigned))).length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
 
 // ═══════════ EVENTS ═══════════
+// Week navigation (current ↔ next week)
+document.getElementById("calNextWeek").addEventListener("click",()=>{_calWeekOffset=1;renderCal();});
+document.getElementById("calPrevWeek").addEventListener("click",()=>{_calWeekOffset=0;renderCal();});
 // Login/logout button
 document.getElementById("loginBtn").addEventListener("click",async()=>{
   if(loggedInAgent){
