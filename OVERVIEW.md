@@ -27,7 +27,7 @@ render.yaml                 ← Render deployment config + env var declarations.
 |---|---|---|
 | STATE | 1 | Module globals — `actTix`, `actRaw`, `histRaw`, `roster`, `loggedInAgent`, etc. |
 | AUTH & PROXY | 9 | `supaLogin`, `fetchRetry`, robot config CRUD, `openTicket` |
-| OVERRIDE PERSISTENCE | 90 | localStorage + Supabase sync for manual ticket positions |
+| OVERRIDE PERSISTENCE | 90 | localStorage + Supabase sync for manual ticket positions; forecast persistence (localStorage); time block persistence (localStorage + Supabase) |
 | UTILS | 155 | Date, time, format helpers (`wkD`, `hT`, `snap`, `esc`, `bizH`) |
 | HISTORICAL PROCESSING | 175 | `procHist()` — monthly KPI stats from closed ticket raw data |
 | ACTIVE PROCESSING | 214 | `procAct()` — builds `actTix[]` from HaloPSA raw data; `schedTix()` (line 338) and `renderCampaignCharts()` (line 518) live in this block (no sub-headers) |
@@ -60,6 +60,8 @@ render.yaml                 ← Render deployment config + env var declarations.
 | GET/PATCH | `/api/agent-schedules` | ✓ | Per-agent shift + lunch slot assignments |
 | GET/POST | `/api/ticket-overrides` | ✓ | Manual calendar position overrides |
 | DELETE | `/api/ticket-overrides/<path:ticket_id>` | ✓ | Delete a specific ticket override |
+| GET/POST | `/api/time-blocks` | ✓ | Calendar time blocks (meetings, focus time, etc.) stored in `calendar_time_blocks` |
+| DELETE | `/api/time-blocks/<path:block_id>` | ✓ | Delete a specific time block |
 | GET/POST/PUT/DELETE | `/api/comms-cards` | ✓ | Team comms board cards (PUT/DELETE use `/<card_id>`) |
 | POST | `/api/comms-reactions` | ✓ | Toggle emoji reactions on comms cards |
 | GET | `/api/robots` | ✓ | Load all robot avatar configs |

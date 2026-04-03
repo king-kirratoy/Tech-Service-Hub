@@ -99,6 +99,32 @@ const FCST_KEY='servicehub_forecast';
 function loadForecast(){try{return JSON.parse(localStorage.getItem(FCST_KEY)||'{}')}catch(e){return{}}}
 function saveForecast(f){try{localStorage.setItem(FCST_KEY,JSON.stringify(f))}catch(e){}}
 function removeForecast(id){const f=loadForecast();delete f[id];saveForecast(f);}
+// ── Time Block persistence ─────────────────────────────────────────────────────
+const TB_KEY='servicehub_timeblocks';
+function loadTimeBlocks(){try{return JSON.parse(localStorage.getItem(TB_KEY)||'{}')}catch(e){return{}}}
+function saveTimeBlocks(tb){try{localStorage.setItem(TB_KEY,JSON.stringify(tb))}catch(e){}}
+function setTimeBlock(id,data){const tb=loadTimeBlocks();tb[id]={...tb[id],...data};saveTimeBlocks(tb);pushTimeBlock(id,tb[id]);}
+function removeTimeBlock(id){const tb=loadTimeBlocks();delete tb[id];saveTimeBlocks(tb);deleteTimeBlock(id);}
+async function loadTimeBlocksFromServer(){
+  try{
+    const r=await fetchRetry(PROXY_BASE+"/api/time-blocks",{headers:authH()});
+    if(!r||!r.ok)return;
+    const rows=await r.json();
+    if(!Array.isArray(rows))return;
+    const tb={};
+    rows.forEach(row=>{tb[row.block_id]={techId:row.tech_id,dayIdx:row.day_idx,startHour:row.start_hour,est:row.est,text:row.text||''}});
+    saveTimeBlocks(tb);
+  }catch(e){console.error("Time blocks load error:",e)}
+}
+async function pushTimeBlock(id,data){
+  try{
+    const body={block_id:id,tech_id:data.techId,day_idx:data.dayIdx,start_hour:data.startHour,est:data.est,text:data.text||''};
+    await fetchRetry(PROXY_BASE+"/api/time-blocks",{method:"POST",headers:authH(),body:JSON.stringify(body)});
+  }catch(e){console.error("Time block push error:",e)}
+}
+async function deleteTimeBlock(id){
+  try{await fetchRetry(PROXY_BASE+"/api/time-blocks/"+encodeURIComponent(id),{method:"DELETE",headers:authH()});}catch(e){console.error("Time block delete error:",e)}
+}
 async function loadTicketOverrides(){
   try{
     const r=await fetchRetry(PROXY_BASE+"/api/ticket-overrides",{headers:authH()});
@@ -458,6 +484,12 @@ function schedTix(){
     const key=f.techId+"-"+f.dayIdx;
     if(!occupied[key])occupied[key]=[];
     occupied[key].push({s:f.startHour,e:f.startHour+(f.est??0.5)});
+  });
+  // Treat time blocks as occupied too
+  Object.values(loadTimeBlocks()).forEach(b=>{
+    const key=b.techId+"-"+b.dayIdx;
+    if(!occupied[key])occupied[key]=[];
+    occupied[key].push({s:b.startHour,e:b.startHour+(b.est??1.0)});
   });
 
   // Enhanced placeTicket that skips occupied slots
@@ -837,6 +869,7 @@ function renderCal(){
       .filter(([id,f])=>f.techId===selTech&&f.dayIdx===di)
       .map(([id,f])=>{const src=unassignedPool.find(t=>t.id===id);if(!src)return null;return{...src,startHour:f.startHour,est:f.est??src.est,_forecast:true};})
       .filter(Boolean):[];
+    const tbEntries=selTech>0?Object.entries(loadTimeBlocks()).filter(([,b])=>b.techId===selTech&&b.dayIdx===di):[];
     const allTks=[...tks,...forecastTks];
     h+=`<div class="dc" data-d="${di}" style="height:${gh}px">`;
     if(selTech!==0){
@@ -874,6 +907,14 @@ function renderCal(){
           <div class="pop-row"><span class="pop-label">Est. Remaining</span><span class="pop-val" style="color:#00d4ff">${tk.est}h</span></div>
           <div class="pop-row"><span class="pop-label">Next Response</span><span class="pop-val" style="${nrdColor}">${nrd}</span></div>
         </div>
+        <div class="tt-resize-handle"></div>
+      </div>`;
+    });
+    // ── Time Blocks ──────────────────────────────────────────────────────────
+    tbEntries.forEach(([tbId,b])=>{
+      const top=hY(b.startHour),ht=(b.est??1.0)*HH;
+      h+=`<div class="tt tt-timeblock" data-tb="true" data-id="${esc(tbId)}" data-d="${di}" style="top:${top}px;height:${ht}px">
+        <div class="tt-tb-text">${esc(b.text||'')}</div>
         <div class="tt-resize-handle"></div>
       </div>`;
     });
@@ -1104,13 +1145,111 @@ function _bindCalDrag(area){
       ds=null;
     });
   });
-  // ── Right-click on empty column space → + Unassigned Ticket ─────────────────
+  // ── Time Block drag / resize / context menu ──────────────────────────────────
+  area.querySelectorAll('.tt[data-tb="true"]').forEach(el=>{
+    const tbId=el.dataset.id;
+    // ── Resize ──────────────────────────────────────────────
+    const handle=el.querySelector('.tt-resize-handle');
+    if(handle){
+      let rs=null;
+      handle.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();handle.setPointerCapture(e.pointerId);const b=loadTimeBlocks()[tbId];rs={origY:e.clientY,origEst:b?b.est??1.0:1.0};});
+      handle.addEventListener('pointermove',e=>{
+        if(!rs)return;
+        const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
+        el.style.height=(ne*HH)+'px';
+      });
+      handle.addEventListener('pointerup',e=>{
+        if(!rs)return;
+        const ne=Math.max(0.25,Math.round((rs.origEst+(e.clientY-rs.origY)/HH)*4)/4);
+        rs=null;
+        setTimeBlock(tbId,{est:ne});
+        setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+      });
+    }
+    // ── Right-click context menu ─────────────────────────────
+    el.addEventListener('contextmenu',e=>{
+      e.preventDefault();e.stopPropagation();
+      if(_calCtxMenu){_calCtxMenu._el&&_calCtxMenu._el.classList.remove('ctx-open');_calCtxMenu.remove();_calCtxMenu=null;}
+      const menu=document.createElement('div');
+      menu._el=el;
+      menu.className='cal-ctx-menu';
+      const r=el.getBoundingClientRect();
+      const menuW=168;
+      const left=(r.right+8+menuW>window.innerWidth-8)?r.left-8-menuW:r.right+8;
+      menu.style.cssText=`position:fixed;left:${left}px;top:${r.top}px;z-index:10000`;
+      menu.innerHTML=`<div class="cal-ctx-item cal-ctx-tb-edit">✎ Edit Details</div><div class="cal-ctx-item cal-ctx-tb-rm">✕ Remove block</div>`;
+      document.body.appendChild(menu);
+      el.classList.add('ctx-open');
+      _calCtxMenu=menu;
+      function closeTBMenu(){menu.remove();el.classList.remove('ctx-open');_calCtxMenu=null;}
+      menu.querySelector('.cal-ctx-tb-edit').addEventListener('click',ev=>{
+        ev.stopPropagation();closeTBMenu();showTimeBlockEditor(tbId);
+      });
+      menu.querySelector('.cal-ctx-tb-rm').addEventListener('click',ev=>{
+        ev.stopPropagation();closeTBMenu();removeTimeBlock(tbId);schedTix();renderCal();renderSidebar();
+      });
+      setTimeout(()=>{document.addEventListener('pointerdown',function dismiss(ev){if(!menu.contains(ev.target)){closeTBMenu();}document.removeEventListener('pointerdown',dismiss,true);},{once:true,capture:true});},0);
+    });
+    // ── Drag ────────────────────────────────────────────────
+    let ds=null,ghost=null;
+    el.addEventListener('pointerdown',e=>{
+      if(e.target.closest('.tt-resize-handle')||e.button!==0)return;
+      e.preventDefault();
+      el.setPointerCapture(e.pointerId);
+      const rect=el.getBoundingClientRect();
+      ds={offsetY:e.clientY-rect.top,startX:e.clientX,startY:e.clientY,moved:false,rect};
+      _dragCancel=()=>{if(ghost){ghost.remove();ghost=null;}el.style.opacity='';document.body.style.cursor='';ds=null;};
+    });
+    el.addEventListener('pointermove',e=>{
+      if(!ds)return;
+      if(!ds.moved&&Math.abs(e.clientX-ds.startX)+Math.abs(e.clientY-ds.startY)>5){
+        ds.moved=true;
+        ghost=el.cloneNode(true);
+        ghost.style.cssText=`position:fixed;width:${ds.rect.width}px;height:${ds.rect.height}px;top:${ds.rect.top}px;left:${ds.rect.left}px;opacity:0.8;pointer-events:none;z-index:9999;transition:none;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.5)`;
+        document.body.appendChild(ghost);
+        el.style.opacity='0.2';
+        document.body.style.cursor='grabbing';
+      }
+      if(!ds.moved||!ghost)return;
+      const col=getCol(e.clientX);
+      ghost.style.top=(e.clientY-ds.offsetY)+'px';
+      if(col){const r=col.getBoundingClientRect();ghost.style.left=r.left+'px';ghost.style.width=(r.width-6)+'px';}
+    });
+    el.addEventListener('pointerup',e=>{
+      if(!ds)return;
+      if(ghost){ghost.remove();ghost=null;}
+      el.style.opacity='';
+      document.body.style.cursor='';
+      _dragCancel=null;
+      if(ds.moved){
+        const col=getCol(e.clientX);
+        if(col){
+          const cr=col.getBoundingClientRect();
+          const rawH=SH+(e.clientY-ds.offsetY-cr.top)/HH;
+          const dropDay=parseInt(col.dataset.d);
+          const b=loadTimeBlocks()[tbId];
+          const bEst=b?b.est??1.0:1.0;
+          const s=getSched(selTech);
+          setTimeBlock(tbId,{dayIdx:dropDay,startHour:clampHour(rawH,bEst,s)});
+          setTimeout(()=>{schedTix();renderCal();renderSidebar();},0);
+        }
+      }
+      ds=null;
+    });
+    el.addEventListener('pointercancel',()=>{
+      if(ghost){ghost.remove();ghost=null;}
+      el.style.opacity='';
+      document.body.style.cursor='';
+      _dragCancel=null;
+      ds=null;
+    });
+  });
+  // ── Right-click on empty column space → + Unassigned Ticket / + Time Block ──
   cols.forEach(col=>{
     col.addEventListener('contextmenu',e=>{
       if(e.target.closest('.tt'))return;
       e.preventDefault();
       if(!selTech||selTech===0)return;
-      if(!actTix.some(t=>t.assignedTo===0))return;
       if(_calCtxMenu){_calCtxMenu._el&&_calCtxMenu._el.classList.remove('ctx-open');_calCtxMenu.remove();_calCtxMenu=null;}
       const cr=col.getBoundingClientRect();
       const s=getSched(selTech);
@@ -1119,15 +1258,21 @@ function _bindCalDrag(area){
       const dayIdx=parseInt(col.dataset.d);
       const menu=document.createElement('div');
       menu.className='cal-ctx-menu';
-      menu.innerHTML=`<div class="cal-ctx-item cal-ctx-addfcast">＋ Unassigned Ticket</div>`;
+      const hasUnassigned=actTix.some(t=>t.assignedTo===0);
+      menu.innerHTML=(hasUnassigned?`<div class="cal-ctx-item cal-ctx-addfcast">＋ Unassigned Ticket</div>`:'')+`<div class="cal-ctx-item cal-ctx-addtb">＋ Time Block</div>`;
       const menuW=168;
       const left=(e.clientX+menuW>window.innerWidth-8)?e.clientX-menuW:e.clientX;
       menu.style.cssText=`position:fixed;left:${left}px;top:${e.clientY}px;z-index:10000`;
       document.body.appendChild(menu);
       _calCtxMenu=menu;
       function closeColMenu(){menu.remove();_calCtxMenu=null;}
-      menu.querySelector('.cal-ctx-addfcast').addEventListener('click',ev=>{
-        ev.stopPropagation();closeColMenu();showForecastPicker(dayIdx,snapH);
+      if(hasUnassigned){
+        menu.querySelector('.cal-ctx-addfcast').addEventListener('click',ev=>{
+          ev.stopPropagation();closeColMenu();showForecastPicker(dayIdx,snapH);
+        });
+      }
+      menu.querySelector('.cal-ctx-addtb').addEventListener('click',ev=>{
+        ev.stopPropagation();closeColMenu();addTimeBlock(dayIdx,snapH);
       });
       setTimeout(()=>{document.addEventListener('pointerdown',function dismiss(ev){if(!menu.contains(ev.target)){closeColMenu();}document.removeEventListener('pointerdown',dismiss,true);},{once:true,capture:true});},0);
     });
@@ -1169,7 +1314,8 @@ function findForecastSlot(techId,dayIdx,preferredHour,est,excludeId){
   const dur=Math.ceil(est*4)/4;
   const occ=[
     ...actTix.filter(t=>t.assignedTo===techId&&t.dayIdx===dayIdx).map(t=>({h:t.startHour,e:t.startHour+t.est})),
-    ...Object.entries(loadForecast()).filter(([id,f])=>f.techId===techId&&f.dayIdx===dayIdx&&id!==excludeId).map(([,f])=>({h:f.startHour,e:f.startHour+(f.est??0.5)}))
+    ...Object.entries(loadForecast()).filter(([id,f])=>f.techId===techId&&f.dayIdx===dayIdx&&id!==excludeId).map(([,f])=>({h:f.startHour,e:f.startHour+(f.est??0.5)})),
+    ...Object.values(loadTimeBlocks()).filter(b=>b.techId===techId&&b.dayIdx===dayIdx).map(b=>({h:b.startHour,e:b.startHour+(b.est??1.0)}))
   ].sort((a,b)=>a.h-b.h);
   function tryFrom(start){
     let h=snap(Math.max(s.ss,start));
@@ -1226,6 +1372,44 @@ function showForecastPicker(dayIdx,startHour){
       schedTix();renderCal();renderSidebar();
     });
   });
+}
+
+// ── Time Block add and editor ─────────────────────────────────────────────────
+function addTimeBlock(dayIdx,startHour){
+  const id='tb_'+Date.now();
+  const s=getSched(selTech);
+  const slot=findForecastSlot(selTech,dayIdx,startHour,1.0);
+  setTimeBlock(id,{techId:selTech,dayIdx,startHour:slot,est:1.0,text:''});
+  schedTix();renderCal();renderSidebar();
+}
+function showTimeBlockEditor(tbId){
+  const existing=document.getElementById('tb-editor-overlay');
+  if(existing)existing.remove();
+  const tb=loadTimeBlocks()[tbId];
+  if(!tb)return;
+  const overlay=document.createElement('div');
+  overlay.id='tb-editor-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:11000;display:flex;align-items:center;justify-content:center;background:rgba(0,10,25,0.7);backdrop-filter:blur(4px)';
+  const modal=document.createElement('div');
+  modal.className='tb-editor-modal';
+  modal.innerHTML=`<div class="tb-editor-title">Time Block — Edit Details</div><textarea class="tb-editor-textarea" placeholder="Meeting notes, agenda, focus topic…"></textarea><div class="tb-editor-actions"><button class="tb-editor-cancel">Cancel</button><button class="tb-editor-save">Save</button></div>`;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  const ta=modal.querySelector('.tb-editor-textarea');
+  ta.value=tb.text||'';
+  setTimeout(()=>ta.focus(),50);
+  function close(){overlay.remove();}
+  function save(){
+    const newText=ta.value;
+    setTimeBlock(tbId,{text:newText});
+    renderCal();
+    close();
+  }
+  modal.querySelector('.tb-editor-cancel').addEventListener('click',close);
+  modal.querySelector('.tb-editor-save').addEventListener('click',save);
+  overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)close();});
+  const onKey=e=>{if(e.key==='Escape'){close();document.removeEventListener('keydown',onKey);}};
+  document.addEventListener('keydown',onKey);
 }
 
 // ═══════════ PLAYER CARDS (GAMIFICATION) ═══════════
@@ -1680,7 +1864,7 @@ async function doGateLogin(){
   if(result.error){gst.textContent=result.error;gst.style.color="var(--danger)";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
-  await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
+  await Promise.all([loadAgentSchedules(),loadTicketOverrides(),loadTimeBlocksFromServer()]);
   allRobotConfigs=await loadAllRobots();
   commanderAgentNames=await loadCommanderAgents();
   loadAllHatSprites();
@@ -1703,7 +1887,7 @@ document.getElementById("loginSubmitBtn").addEventListener("click",async()=>{
   if(result.error){st.textContent=result.error;st.style.color="var(--danger)";st.style.display="";return}
   if(result.role==="admin"){isCommander=true;loggedInAgent=result.agent_name||"Commander"}
   else{isCommander=false;loggedInAgent=result.agent_name}
-  await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
+  await Promise.all([loadAgentSchedules(),loadTicketOverrides(),loadTimeBlocksFromServer()]);
   allRobotConfigs=await loadAllRobots();
   commanderAgentNames=await loadCommanderAgents();
   loadAllHatSprites();
@@ -1775,7 +1959,7 @@ function startAutoRefresh(){
   fetchActiveNow();
   autoRefreshTimer=setInterval(async()=>{
     refreshTokenIfNeeded();
-    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadCommsCards(),loadTicketOverrides()]);
+    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadCommsCards(),loadTicketOverrides(),loadTimeBlocksFromServer()]);
     if(results[1])allRobotConfigs=results[1];
     roster.forEach(t=>{const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li}});
     renderCommsBoard();
@@ -1804,7 +1988,7 @@ function stopAutoRefresh(){
     }
   }catch(e){/* network error — stay logged out */}
   if(authToken){
-    await Promise.all([loadAgentSchedules(),loadTicketOverrides()]);
+    await Promise.all([loadAgentSchedules(),loadTicketOverrides(),loadTimeBlocksFromServer()]);
     allRobotConfigs=await loadAllRobots();
     commanderAgentNames=await loadCommanderAgents();
     loadAllHatSprites();
