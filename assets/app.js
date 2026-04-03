@@ -402,10 +402,13 @@ function schedTix(){
     if(!byA[tk.assignedTo]){
       let startH=Math.max(nowSnapped,s.ss);
       let startD=startDayIdx;
-      if(nowSnapped>=s.se){startD=Math.min(startDayIdx+1,4);startH=snap(s.ss)}
+      // Remove Math.min clamp — allow cursor to go past day 4 (off-calendar)
+      if(nowSnapped>=s.se){startD=startDayIdx+1;startH=snap(s.ss)}
       byA[tk.assignedTo]={d:startD,h:snap(startH)};
     }
     const a=byA[tk.assignedTo];
+    // Cursor already past end of week — ticket can't be placed this cycle
+    if(a.d>4){tk.dayIdx=-1;return;}
     const dur=Math.ceil(tk.est*4)/4;
     // Loop until cursor is in a valid window (not in lunch, not overflowing shift end)
     for(let i=0;i<20;i++){
@@ -413,7 +416,12 @@ function schedTix(){
       if(a.h<s.ss){a.h=snap(s.ss);continue;}
       if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
       if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
-      if(a.h+dur>s.se||a.h>=s.se){a.d=Math.min(a.d+1,4);a.h=snap(s.ss);continue;}
+      if(a.h+dur>s.se||a.h>=s.se){
+        // Advance past end of week without clamping — off-calendar instead of wrapping
+        a.d++;a.h=snap(s.ss);
+        if(a.d>4){tk.dayIdx=-1;return;}
+        continue;
+      }
       break;
     }
     tk.dayIdx=a.d;
@@ -429,14 +437,16 @@ function schedTix(){
   // Apply override positions
   overridden.forEach(tk=>{const o=ovr[tk.id];if(o.startHour!=null)tk.startHour=o.startHour;if(o.dayIdx!=null)tk.dayIdx=o.dayIdx;if(o.est!=null)tk.est=o.est});
 
-  // Helper: advance cursor past all lunch/shift/occupied conflicts
+  // Helper: advance cursor past all lunch/shift/occupied conflicts.
+  // Callers must check a.d>4 after calling — ticket is off-calendar this week.
   function advancePast(a,s,dur){
     for(let i=0;i<20;i++){
       a.h=snap(a.h);
       if(a.h<s.ss){a.h=snap(s.ss);continue;}
       if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
       if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
-      if(a.h+dur>s.se||a.h>=s.se){a.d=Math.min(a.d+1,4);a.h=snap(s.ss);continue;}
+      // Advance without clamping at day 4 — off-calendar rather than wrapping
+      if(a.h+dur>s.se||a.h>=s.se){a.d++;a.h=snap(s.ss);if(a.d>4)return;continue;}
       break;
     }
   }
@@ -451,7 +461,8 @@ function schedTix(){
       const dur=Math.ceil(tk.est*4)/4;
       const a={d:startDayIdx,h:Math.max(nowSnapped,s.ss)};
       advancePast(a,s,dur);
-      tk.startHour=a.h;
+      // If pushed off the end of the week, leave at its saved position rather than wrapping
+      if(a.d<=4){tk.startHour=a.h;tk.dayIdx=a.d;}
     });
     // In-memory cascade: re-sort today's overridden tickets per tech and push any
     // that now overlap the previous one forward.
@@ -465,7 +476,7 @@ function schedTix(){
           const dur=Math.ceil(cur.est*4)/4;
           const a={d:cur.dayIdx,h:snap(prev.startHour+prev.est)};
           advancePast(a,s,dur);
-          cur.startHour=a.h;cur.dayIdx=a.d;
+          if(a.d>4){cur.dayIdx=-1;}else{cur.startHour=a.h;cur.dayIdx=a.d;}
         }
       }
     });
@@ -474,6 +485,7 @@ function schedTix(){
   // Build occupied time map per agent per day from overridden tickets
   const occupied={};
   overridden.forEach(tk=>{
+    if(tk.dayIdx<0||tk.dayIdx>4)return;  // skip off-calendar tickets
     const key=tk.assignedTo+"-"+tk.dayIdx;
     if(!occupied[key])occupied[key]=[];
     occupied[key].push({s:tk.startHour,e:tk.startHour+tk.est});
@@ -495,6 +507,7 @@ function schedTix(){
   // Enhanced placeTicket that skips occupied slots
   function placeTicketAround(tk){
     placeTicket(tk);
+    if(tk.dayIdx===-1)return;  // placeTicket already determined no slot this week
     const s=getSched(tk.assignedTo);
     const dur=Math.ceil(tk.est*4)/4;
     const a=byA[tk.assignedTo];
@@ -510,6 +523,7 @@ function schedTix(){
       a.d=tk.dayIdx;
       a.h=snap(maxEnd);
       advancePast(a,s,dur);
+      if(a.d>4){tk.dayIdx=-1;return;}  // pushed off end of week by conflicts
       tk.dayIdx=a.d;tk.startHour=a.h;a.h+=dur;
       if(a.h>s.ls&&a.h<=s.le)a.h=snap(s.le);
     }
@@ -532,15 +546,18 @@ function schedTix(){
     let i=0;
     while(i<tks.length-1){
       const prev=tks[i],cur=tks[i+1];
-      if(cur.dayIdx===prev.dayIdx&&cur.startHour<prev.startHour+prev.est&&!ovrIds.has(cur.id)){
+      // Skip off-calendar tickets and overridden tickets; only push auto tickets that overlap
+      if(cur.dayIdx>=0&&cur.dayIdx<=4&&cur.dayIdx===prev.dayIdx&&prev.dayIdx>=0&&cur.startHour<prev.startHour+prev.est&&!ovrIds.has(cur.id)){
         const s=getSched(cur.assignedTo);
         const dur=Math.ceil(cur.est*4)/4;
         const a={d:cur.dayIdx,h:snap(prev.startHour+prev.est)};
         advancePast(a,s,dur);
-        cur.dayIdx=a.d;cur.startHour=a.h;
-        // Re-sort since dayIdx or startHour changed
-        tks.sort((a,b)=>a.dayIdx!==b.dayIdx?a.dayIdx-b.dayIdx:a.startHour-b.startHour);
-        i=0; // restart scan
+        if(a.d>4){cur.dayIdx=-1;i++;}else{
+          cur.dayIdx=a.d;cur.startHour=a.h;
+          // Re-sort since dayIdx or startHour changed
+          tks.sort((a,b)=>a.dayIdx!==b.dayIdx?a.dayIdx-b.dayIdx:a.startHour-b.startHour);
+          i=0; // restart scan
+        }
       } else {
         i++;
       }
