@@ -230,11 +230,9 @@ function procAct(){
   });
   roster=Object.keys(ac).sort((a,b)=>ac[b]-ac[a]).map((n,i)=>({id:i+1,name:n,color:TCOL[i%TCOL.length]}));
   roster.forEach(t=>{
-    if(!techSched[t.id]){
-      const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;
-      const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;
-      techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li};
-    }
+    const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;
+    const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;
+    techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li};
   });
   // Restore selection by name
   if(prevSelName){const found=roster.find(t=>t.name===prevSelName);if(found)selTech=found.id;}
