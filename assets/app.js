@@ -916,7 +916,7 @@ function renderCal(){
   const _wlbl=document.getElementById('calWeekLabel');
   const _wprev=document.getElementById('calPrevWeek');
   const _wnext=document.getElementById('calNextWeek');
-  if(_wlbl)_wlbl.textContent=isNextWeek?'Next Week':'Current Week';
+  if(_wlbl)_wlbl.textContent=isNextWeek?'Current Week':'Next Week';
   if(_wprev)_wprev.style.visibility=isNextWeek?'':'hidden';
   if(_wnext)_wnext.style.visibility=isNextWeek?'hidden':'';
   // For next-week view: place overflow tickets; for current week: use normal actTix positions
