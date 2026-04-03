@@ -785,6 +785,58 @@ def delete_ticket_override(ticket_id):
     return jsonify({"ok": True})
 
 
+@app.route("/api/time-blocks", methods=["GET"])
+@require_auth
+def get_time_blocks():
+    """Return all calendar time blocks."""
+    resp = supabase_request("GET", "calendar_time_blocks", params={"select": "*"})
+    if resp.status_code != 200:
+        return jsonify({"error": "Failed to fetch time blocks"}), 502
+    return jsonify(resp.json())
+
+
+@app.route("/api/time-blocks", methods=["POST"])
+@require_auth
+@limiter.limit("120 per minute")
+def upsert_time_block():
+    """Upsert a calendar time block by block_id."""
+    data = request.get_json(silent=True) or {}
+    block_id = (data.get("block_id") or "").strip()
+    if not block_id:
+        return jsonify({"error": "block_id required"}), 400
+
+    row = {"block_id": block_id}
+    if data.get("tech_id") is not None:
+        row["tech_id"] = int(data["tech_id"])
+    if data.get("day_idx") is not None:
+        row["day_idx"] = int(data["day_idx"])
+    if data.get("start_hour") is not None:
+        row["start_hour"] = float(data["start_hour"])
+    if data.get("est") is not None:
+        row["est"] = float(data["est"])
+    row["text"] = str(data.get("text") or "")
+
+    resp = supabase_request("POST", "calendar_time_blocks", params={
+        "on_conflict": "block_id"
+    }, body=row)
+    if resp.status_code not in (200, 201):
+        return jsonify({"error": "Failed to save time block"}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/time-blocks/<path:block_id>", methods=["DELETE"])
+@require_auth
+@limiter.limit("120 per minute")
+def delete_time_block_route(block_id):
+    """Delete a specific time block."""
+    resp = supabase_request("DELETE", "calendar_time_blocks", params={
+        "block_id": f"eq.{block_id}"
+    })
+    if resp.status_code not in (200, 204):
+        return jsonify({"error": "Failed to delete time block"}), 502
+    return jsonify({"ok": True})
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config():
     """Return public Supabase config for the frontend."""

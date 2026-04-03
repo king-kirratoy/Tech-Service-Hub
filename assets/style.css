@@ -137,6 +137,20 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .tt-forecast-star{font-size:9px;color:#FFD700;line-height:1;flex-shrink:0;pointer-events:none}
 /* --- Forecast ticket (unassigned, placed for planning) --- */
 .tt.tt-forecast{border:2px dashed #FFD700;border-left-width:4px}
+/* --- Time Block (meetings, focus time, etc.) --- */
+.tt.tt-timeblock{border:1px solid #a29bfe;border-left:4px solid #a29bfe}
+.tt.tt-timeblock:hover{box-shadow:0 0 0 2px #a29bfe,0 4px 20px rgba(0,0,0,0.4);z-index:50;overflow:visible}
+.tt-tb-text{color:var(--text);font-size:10px;line-height:1.4;white-space:pre-wrap;word-break:break-word;padding:3px 7px;height:100%;overflow:hidden}
+/* --- Time Block editor modal --- */
+.tb-editor-modal{background:linear-gradient(135deg,rgba(0,40,85,0.97),rgba(0,22,50,0.97));border:1px solid var(--border-bright);border-radius:12px;width:380px;max-width:calc(100vw - 32px);box-shadow:0 16px 48px rgba(0,0,0,0.6);padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.tb-editor-title{font-size:12px;font-weight:700;font-family:var(--font-heading);text-transform:uppercase;letter-spacing:0.5px;color:#a29bfe}
+.tb-editor-textarea{background:rgba(0,40,85,0.6);border:1px solid var(--border-bright);border-radius:6px;color:var(--text);font-size:11px;line-height:1.5;min-height:90px;padding:8px 10px;resize:vertical;width:100%;box-sizing:border-box;font-family:inherit;white-space:pre-wrap}
+.tb-editor-textarea:focus{outline:none;border-color:#a29bfe}
+.tb-editor-actions{display:flex;gap:8px;justify-content:flex-end}
+.tb-editor-save{background:#a29bfe;border:none;border-radius:5px;color:#000;cursor:pointer;font-size:11px;font-weight:700;padding:5px 14px}
+.tb-editor-save:hover{background:#b8b0ff}
+.tb-editor-cancel{background:none;border:1px solid var(--border-bright);border-radius:5px;color:var(--text-dim);cursor:pointer;font-size:11px;padding:5px 14px}
+.tb-editor-cancel:hover{color:var(--text);border-color:var(--text-dim)}
 /* --- Forecast picker modal --- */
 .fcast-modal{background:linear-gradient(135deg,rgba(0,40,85,0.97),rgba(0,22,50,0.97));border:1px solid var(--border-bright);border-radius:12px;width:600px;max-width:calc(100vw - 32px);max-height:70vh;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,0.6)}
 .fcast-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
@@ -156,7 +170,7 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .now-line::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-left:-4px}
 .now-line::after{content:"";flex:1;height:2px;background:var(--danger)}
 /* --- Calendar right-click context menu --- */
-.cal-ctx-menu{background:var(--surface);border:1px solid var(--border-bright);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.5);min-width:160px;padding:4px 0;user-select:none}
+.cal-ctx-menu{background:rgba(0,22,50,0.97);border:1px solid var(--border-bright);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.5);min-width:168px;padding:4px 0;user-select:none}
 .cal-ctx-item{color:var(--text);cursor:pointer;font-size:11px;padding:7px 14px;white-space:nowrap}
 .cal-ctx-item:hover{background:rgba(0,149,200,0.15);color:var(--blue)}
 .tt.ctx-open .tt-popup{display:none!important}
