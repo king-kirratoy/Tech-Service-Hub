@@ -139,6 +139,10 @@ body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg
 .tt.tt-forecast{border:2px dashed #FFD700;border-left-width:4px}
 /* --- Time Block (meetings, focus time, etc.) --- */
 .tt.tt-timeblock{border:1px solid #a29bfe;border-left:4px solid #a29bfe}
+/* --- Week navigation --- */
+.cal-week-btn{background:rgba(0,149,200,0.08);border:1px solid var(--border-bright);border-radius:5px;color:var(--text-dim);cursor:pointer;font-size:11px;font-weight:700;line-height:1;padding:5px 9px;transition:all .15s}
+.cal-week-btn:hover{background:rgba(0,149,200,0.2);border-color:var(--blue);color:var(--blue)}
+.cal-week-label{font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-dim);min-width:90px;text-align:center}
 .tt.tt-timeblock:hover{box-shadow:0 0 0 2px #a29bfe,0 4px 20px rgba(0,0,0,0.4);z-index:50;overflow:visible}
 .tt-tb-text{color:var(--text);font-size:10px;line-height:1.4;white-space:pre-wrap;word-break:break-word;padding:3px 7px;height:100%;overflow:hidden}
 /* --- Time Block editor modal --- */

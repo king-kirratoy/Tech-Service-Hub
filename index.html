@@ -136,9 +136,16 @@
     </div>
   </div>
   <div id="capTab" class="hidden">
-    <div style="margin-bottom:20px">
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Deployment</h2>
-      <p style="font-size:12px;color:var(--text-muted)">Squad capacity overview.</p>
+    <div style="display:flex;align-items:center;margin-bottom:20px">
+      <div>
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Deployment</h2>
+        <p style="font-size:12px;color:var(--text-muted)">Squad capacity overview.</p>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <button id="calPrevWeek" class="cal-week-btn" style="visibility:hidden">◀</button>
+        <span id="calWeekLabel" class="cal-week-label">Current Week</span>
+        <button id="calNextWeek" class="cal-week-btn">▶</button>
+      </div>
     </div>
     <!-- Hidden selects used for agent filtering in JS -->
     <select id="kpiAgent" style="display:none"><option value=""></option></select>
