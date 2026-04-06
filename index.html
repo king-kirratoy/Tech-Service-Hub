@@ -71,9 +71,7 @@
   <div id="mainContent" class="hidden">
   <div class="tabs">
     <button class="tab active" data-tab="barracks"><svg style="width:16px;height:16px"><use href="#iad"/></svg> Barracks</button>
-    <button class="tab" data-tab="comms"><svg style="width:16px;height:16px"><use href="#icomms"/></svg> Comms</button>
     <button class="tab" data-tab="capacity"><svg style="width:16px;height:16px"><use href="#iu"/></svg> Deployment</button>
-    <button class="tab" data-tab="campaign"><svg style="width:16px;height:16px"><use href="#ic"/></svg> Campaign</button>
     <button class="tab" data-tab="risk"><svg style="width:16px;height:16px"><use href="#iw"/></svg> Radar <span id="riskBadge" style="display:none;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   </div>
 
@@ -134,6 +132,58 @@
       <h3 style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px">Commanders</h3>
       <div id="commanderGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
     </div>
+    <div style="margin-top:2rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Comms</h2>
+          <p style="font-size:12px;color:var(--text-muted)">Squad communication board - drop transmissions for others to see.</p>
+        </div>
+        <button class="btn" id="commsNewBtn" style="display:none;gap:8px"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Transmission</button>
+      </div>
+      <!-- Card Creator Panel -->
+      <div id="commsCreator" class="comms-creator hidden">
+        <div class="glass">
+          <div class="comms-creator-preview">
+            <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:block">Preview</label>
+            <div id="commsPreviewCard" style="width:200px"></div>
+          </div>
+          <div class="comms-creator-fields">
+            <div>
+              <label>Title</label>
+              <input type="text" id="commsCardTitle" placeholder="Transmission title..." maxlength="80">
+            </div>
+            <div>
+              <label>Message</label>
+              <textarea id="commsCardBody" placeholder="What does your squad need to know?" maxlength="500"></textarea>
+            </div>
+            <div>
+              <label>Icon</label>
+              <div id="commsIconPicker" class="comms-icon-picker"></div>
+            </div>
+            <div>
+              <label>Background Color</label>
+              <div id="commsBgColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
+            <div>
+              <label>Border Color</label>
+              <div id="commsBorderColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+              <button class="btn-accent" id="commsSaveBtn" style="padding:8px 16px;font-size:11px;width:fit-content">Deploy Transmission</button>
+              <button class="btn" id="commsCancelBtn" style="padding:8px 16px;font-size:11px">Cancel</button>
+              <button class="btn" id="commsDeleteBtn" style="padding:8px 16px;font-size:11px;color:var(--danger);border-color:var(--danger);display:none">Delete</button>
+            </div>
+            <span id="commsSaveStatus" style="font-size:10px;color:var(--text-muted)"></span>
+          </div>
+        </div>
+      </div>
+      <!-- The Board -->
+      <div id="commsBoard" class="comms-board"></div>
+      <div id="commsBoardEmpty" style="text-align:center;padding:40px 20px;color:var(--text-dim);font-size:13px;display:none">
+        <p style="margin-bottom:8px;font-size:24px;opacity:0.3">📡</p>
+        <p>No transmissions yet. Sign in to deploy the first one.</p>
+      </div>
+    </div>
   </div>
   <div id="capTab" class="hidden">
     <div style="display:flex;align-items:center;margin-bottom:20px">
@@ -159,72 +209,18 @@
         <div id="ca"></div>
       </div>
     </div>
-  </div>
-  <!-- COMMS Tab -->
-  <div id="commsTab" class="hidden">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div>
-        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Comms</h2>
-        <p style="font-size:12px;color:var(--text-muted)">Squad communication board - drop transmissions for others to see.</p>
+    <div style="margin-top:2rem">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Campaign</h2>
+        <p style="font-size:12px;color:var(--text-muted)">Squad mission progress.</p>
       </div>
-      <button class="btn" id="commsNewBtn" style="display:none;gap:8px"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Transmission</button>
-    </div>
-    <!-- Card Creator Panel -->
-    <div id="commsCreator" class="comms-creator hidden">
-      <div class="glass">
-        <div class="comms-creator-preview">
-          <label style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:block">Preview</label>
-          <div id="commsPreviewCard" style="width:200px"></div>
-        </div>
-        <div class="comms-creator-fields">
-          <div>
-            <label>Title</label>
-            <input type="text" id="commsCardTitle" placeholder="Transmission title..." maxlength="80">
-          </div>
-          <div>
-            <label>Message</label>
-            <textarea id="commsCardBody" placeholder="What does your squad need to know?" maxlength="500"></textarea>
-          </div>
-          <div>
-            <label>Icon</label>
-            <div id="commsIconPicker" class="comms-icon-picker"></div>
-          </div>
-          <div>
-            <label>Background Color</label>
-            <div id="commsBgColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          </div>
-          <div>
-            <label>Border Color</label>
-            <div id="commsBorderColorPicker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-            <button class="btn-accent" id="commsSaveBtn" style="padding:8px 16px;font-size:11px;width:fit-content">Deploy Transmission</button>
-            <button class="btn" id="commsCancelBtn" style="padding:8px 16px;font-size:11px">Cancel</button>
-            <button class="btn" id="commsDeleteBtn" style="padding:8px 16px;font-size:11px;color:var(--danger);border-color:var(--danger);display:none">Delete</button>
-          </div>
-          <span id="commsSaveStatus" style="font-size:10px;color:var(--text-muted)"></span>
-        </div>
+      <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
+        <label>Agent:</label>
+        <select id="campaignAgent"><option value="">— All Agents —</option></select>
       </div>
+      <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
+      <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
     </div>
-    <!-- The Board -->
-    <div id="commsBoard" class="comms-board"></div>
-    <div id="commsBoardEmpty" style="text-align:center;padding:40px 20px;color:var(--text-dim);font-size:13px;display:none">
-      <p style="margin-bottom:8px;font-size:24px;opacity:0.3">📡</p>
-      <p>No transmissions yet. Sign in to deploy the first one.</p>
-    </div>
-  </div>
-
-  <div id="campaignTab" class="hidden">
-    <div style="margin-bottom:20px">
-      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">Campaign</h2>
-      <p style="font-size:12px;color:var(--text-muted)">Squad mission progress.</p>
-    </div>
-    <div class="qbr-select" style="margin-bottom:20px;flex-wrap:wrap">
-      <label>Agent:</label>
-      <select id="campaignAgent"><option value="">— All Agents —</option></select>
-    </div>
-    <div class="chart-grid"><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--blue)"></span>Tickets Assigned</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cAssigned"></canvas></div><div class="glass chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between"><span><span class="cdot" style="background:var(--green)"></span>Tickets Closed</span><span style="font-size:9px;font-weight:400;letter-spacing:0;text-transform:none;display:flex;gap:10px"><span style="color:#0095C8">● Email/Web</span><span style="color:#84BD00">● Phone/Manual</span><span style="color:#a29bfe">● Other</span></span></h3><canvas id="cVol"></canvas></div></div>
-    <div class="chart-grid"><div class="glass chart-card"><h3><span class="cdot" style="background:#74b9ff"></span>Response SLA %</h3><canvas id="cRespSla"></canvas></div><div class="glass chart-card"><h3><span class="cdot" style="background:#84BD00"></span>Resolution SLA %</h3><canvas id="cResSla"></canvas></div></div>
   </div>
 
 </div><!-- /mainContent -->
