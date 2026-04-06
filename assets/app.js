@@ -2002,15 +2002,8 @@ function applyLoginState(){
   const loggedInUserEl=document.getElementById("loggedInUser");
   const agentLabel=document.querySelector('label[for="kpiAgent"]')||document.querySelector('#capTab .qbr-select label:nth-of-type(2)');
   const agentSelect=document.getElementById("kpiAgent");
-  // Find the agent filter label+select wrapper elements (Deployment tab)
-  const agentFilterEls=document.querySelectorAll('#capTab .qbr-select > *');
-  let agentLabelEl=null,agentSelectEl=null;
-  agentFilterEls.forEach(el=>{
-    if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")agentLabelEl=el;
-    if(el.id==="kpiAgent")agentSelectEl=el;
-  });
-  // Find the agent filter label+select wrapper elements (Campaign tab)
-  const campFilterEls=document.querySelectorAll('#campaignTab .qbr-select > *');
+  // Find the agent filter label+select wrapper elements (Campaign section, now in Deployment tab)
+  const campFilterEls=document.querySelectorAll('#capTab .qbr-select > *');
   let campAgentLabelEl=null,campAgentSelectEl=null;
   campFilterEls.forEach(el=>{
     if(el.tagName==="LABEL"&&el.textContent.trim()==="Agent:")campAgentLabelEl=el;
@@ -2019,8 +2012,6 @@ function applyLoginState(){
   const robotCustomizer=document.getElementById("robotCustomizer");
   if(isCommander){
     riskTab.style.display="";
-    if(agentLabelEl)agentLabelEl.style.display="";
-    if(agentSelectEl){agentSelectEl.style.display="";agentSelectEl.value="";}
     if(campAgentLabelEl)campAgentLabelEl.style.display="";
     if(campAgentSelectEl){campAgentSelectEl.style.display="";campAgentSelectEl.value="";}
   }else{
@@ -2031,8 +2022,6 @@ function applyLoginState(){
       document.querySelector('.tab[data-tab="barracks"]').classList.add("active");
       document.getElementById("barracksTab").classList.remove("hidden");
     }
-    if(agentLabelEl)agentLabelEl.style.display="none";
-    if(agentSelectEl)agentSelectEl.style.display="none";
     if(campAgentLabelEl)campAgentLabelEl.style.display="none";
     if(campAgentSelectEl)campAgentSelectEl.style.display="none";
   }
@@ -2117,7 +2106,7 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isCommander&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","commsTab","campaignTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",comms:"commsTab",campaign:"campaignTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden");if(tg==="comms")renderCommsBoard()})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isCommander&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden")})});
 
 document.getElementById("campaignAgent").addEventListener("change",()=>{renderCampaignCharts()});
 
