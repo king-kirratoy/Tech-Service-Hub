@@ -534,7 +534,117 @@ function schedTix(){
     occupied[key2].push({s:tk.startHour,e:tk.startHour+dur});
   }
 
-  autoSchedule.forEach(placeTicketAround);
+  // ── NRD-anchored placement ─────────────────────────────────────────────────
+  // Split autoSchedule: priority (Initial Response SLA / Client Update / Re-Opened)
+  // keep existing greedy behavior; NRD-tier gets the new anchor logic.
+  const priorityAuto=autoSchedule.filter(tk=>
+    tk.sla==='Initial Response SLA'||tk.status==='Client Update'||tk.status==='Re-Opened'
+  );
+  const nrdAuto=autoSchedule.filter(tk=>
+    tk.sla!=='Initial Response SLA'&&tk.status!=='Client Update'&&tk.status!=='Re-Opened'
+  );
+
+  // Place priority tickets first using existing greedy behavior (unchanged)
+  priorityAuto.forEach(placeTicketAround);
+
+  // Helper: find the latest start on (techId, dayIdx) where dur fits ending ≤ latestEnd.
+  // Respects shift bounds, lunch window, and occupied slots. Returns null if no slot found.
+  function findLatestFit(techId,dayIdx,dur,latestEnd){
+    const s=getSched(techId);
+    const occ=(occupied[techId+'-'+dayIdx]||[]).slice().sort((a,b)=>a.s-b.s);
+    const deadline=Math.min(latestEnd,s.se);
+    let candidate=snap(deadline-dur);
+    for(let tries=0;tries<100;tries++){
+      candidate=snap(candidate);
+      if(candidate<s.ss)return null;
+      // Move before lunch if ticket straddles or falls inside it
+      if(candidate<s.ls&&candidate+dur>s.ls){candidate=snap(s.ls-dur);continue;}
+      if(candidate>=s.ls&&candidate<s.le){candidate=snap(s.ls-dur);continue;}
+      if(candidate<s.ss)return null;
+      const conflicts=occ.filter(o=>candidate<o.e&&candidate+dur>o.s);
+      if(!conflicts.length)return candidate;
+      // Jump back past the earliest conflicting slot
+      const minS=conflicts.reduce((m,o)=>o.s<m?o.s:m,Infinity);
+      candidate=snap(minS-dur);
+    }
+    return null;
+  }
+
+  // Within same-tech, same-NRD groups sort by est ascending so the ticket with the
+  // latest ideal start is processed first (stacks cleanly working backward from NRD).
+  nrdAuto.sort((a,b)=>{
+    if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
+    const aNrd=a.nextResponse?a.nextResponse.getTime():9e15;
+    const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
+    if(aNrd!==bNrd)return aNrd-bNrd;
+    return a.est-b.est; // same NRD: smaller est → later ideal start → place first
+  });
+
+  const nrdFallback=[];
+  nrdAuto.forEach(tk=>{
+    // No NRD or NRD not in this work week → greedy fallback
+    if(!tk.nextResponse){nrdFallback.push(tk);return;}
+    const nrd=tk.nextResponse;
+    const nrdDayIdx=weekDays.findIndex(d=>isSD(d,nrd));
+    if(nrdDayIdx<0){nrdFallback.push(tk);return;}
+
+    const nrdHour=nrd.getHours()+nrd.getMinutes()/60;
+    const dur=Math.ceil(tk.est*4)/4;
+    const idealStart=snap(nrdHour-tk.est-1.0);
+
+    // NRD day already past, or today and ideal start is in the past → greedy fallback
+    if(nrdDayIdx<startDayIdx){nrdFallback.push(tk);return;}
+    if(nrdDayIdx===startDayIdx&&idealStart<nowSnapped){nrdFallback.push(tk);return;}
+
+    const s=getSched(tk.assignedTo);
+    let placed=false;
+    let bestStart=null;
+
+    // Attempt 1: latest slot ending at or before NRD − 1 h (full buffer)
+    bestStart=findLatestFit(tk.assignedTo,nrdDayIdx,dur,nrdHour-1.0);
+    if(bestStart!==null&&(nrdDayIdx>startDayIdx||bestStart>=nowSnapped)){
+      tk.dayIdx=nrdDayIdx;tk.startHour=bestStart;placed=true;
+    }
+
+    // Attempt 2: latest slot ending at or before NRD (no buffer)
+    if(!placed){
+      bestStart=findLatestFit(tk.assignedTo,nrdDayIdx,dur,nrdHour);
+      if(bestStart!==null&&(nrdDayIdx>startDayIdx||bestStart>=nowSnapped)){
+        tk.dayIdx=nrdDayIdx;tk.startHour=bestStart;placed=true;
+      }
+    }
+
+    // Attempt 3: any available slot on NRD day (greedy forward from earliest available)
+    if(!placed){
+      const dayStartH=(nrdDayIdx===startDayIdx)?Math.max(nowSnapped,s.ss):s.ss;
+      const a={d:nrdDayIdx,h:snap(dayStartH)};
+      advancePast(a,s,dur);
+      if(a.d===nrdDayIdx){
+        let tries=20;
+        while(tries-->0){
+          const occ=occupied[tk.assignedTo+'-'+a.d]||[];
+          const conflicts=occ.filter(o=>a.h<o.e&&a.h+dur>o.s);
+          if(!conflicts.length)break;
+          const maxEnd=conflicts.reduce((m,o)=>o.e>m?o.e:m,0);
+          a.h=snap(maxEnd);
+          advancePast(a,s,dur);
+          if(a.d!==nrdDayIdx)break;
+        }
+        if(a.d===nrdDayIdx){tk.dayIdx=nrdDayIdx;tk.startHour=a.h;placed=true;}
+      }
+      if(!placed)nrdFallback.push(tk);
+    }
+
+    if(placed){
+      // Register placement in occupied map so subsequent tickets route around it
+      const key=tk.assignedTo+'-'+tk.dayIdx;
+      if(!occupied[key])occupied[key]=[];
+      occupied[key].push({s:tk.startHour,e:tk.startHour+dur});
+    }
+  });
+
+  // Place NRD fallback tickets using existing greedy behavior
+  nrdFallback.forEach(placeTicketAround);
 
   // Safety pass: scan all tickets per tech sorted by (day, startHour) and push any
   // auto ticket that still overlaps the previous ticket forward.
