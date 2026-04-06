@@ -592,11 +592,34 @@ function schedTix(){
     const dur=Math.ceil(tk.est*4)/4;
     const idealStart=snap(nrdHour-tk.est-1.0);
 
-    // NRD day already past, or today and ideal start is in the past → greedy fallback
+    // NRD day already past → greedy fallback
     if(nrdDayIdx<startDayIdx){nrdFallback.push(tk);return;}
-    if(nrdDayIdx===startDayIdx&&idealStart<nowSnapped){nrdFallback.push(tk);return;}
 
     const s=getSched(tk.assignedTo);
+
+    // idealStart crosses midnight backward (before NRD day's shift start): try the
+    // previous business day's latest available slot rather than placing on NRD morning.
+    if(idealStart<s.ss){
+      const prevDayIdx=nrdDayIdx-1;
+      // No-past rule: previous day must be at or after today and within Mon–Fri (≥0)
+      if(prevDayIdx>=startDayIdx&&prevDayIdx>=0){
+        const bestPrev=findLatestFit(tk.assignedTo,prevDayIdx,dur,s.se);
+        // No-past guard on today: no placement before nowSnapped
+        if(bestPrev!==null&&(prevDayIdx>startDayIdx||bestPrev>=nowSnapped)){
+          tk.dayIdx=prevDayIdx;tk.startHour=bestPrev;
+          const key=tk.assignedTo+'-'+prevDayIdx;
+          if(!occupied[key])occupied[key]=[];
+          occupied[key].push({s:tk.startHour,e:tk.startHour+dur});
+          return;
+        }
+      }
+      // Previous day unavailable or before today → greedy fallback
+      nrdFallback.push(tk);return;
+    }
+
+    // NRD is today and ideal start is already in the past → greedy fallback
+    if(nrdDayIdx===startDayIdx&&idealStart<nowSnapped){nrdFallback.push(tk);return;}
+
     let placed=false;
     let bestStart=null;
 
