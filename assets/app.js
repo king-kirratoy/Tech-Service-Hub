@@ -2183,10 +2183,9 @@ function startAutoRefresh(){
   fetchActiveNow();
   autoRefreshTimer=setInterval(async()=>{
     refreshTokenIfNeeded();
-    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadCommsCards(),loadTicketOverrides(),loadTimeBlocksFromServer()]);
+    const results=await Promise.all([loadAgentSchedules(),loadAllRobots(),loadTicketOverrides(),loadTimeBlocksFromServer()]);
     if(results[1])allRobotConfigs=results[1];
     roster.forEach(t=>{const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;techSched[t.id]={ss:SHIFTS[si].s,se:SHIFTS[si].e,ls:LUNCHES[li].s,le:LUNCHES[li].e,si,li}});
-    renderCommsBoard();
     fetchActiveNow();
   },60*1000);
 }
