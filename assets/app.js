@@ -6,6 +6,7 @@ let loggedInAgent=null;
 let _lastTicketState={};  // id → {sla, nrdMs, status} — used to detect SLA/NRD/status changes
 let _calCtxMenu=null;     // active right-click context menu element
 let _calWeekOffset=0;     // 0 = current week, 1 = next week
+let _closedExpanded=false; // closed-tickets section expand state; survives syncs, resets on tech change
 
 // ═══════════ AUTH & PROXY ═══════════
 const PROXY_BASE="https://service-hub-launcher.onrender.com";
@@ -244,6 +245,15 @@ function procHist(){
 }
 
 // ═══════════ ACTIVE PROCESSING ═══════════
+// Stable numeric ID for an agent, derived from their name via FNV-1a hash.
+// Unlike a position-based i+1 index, this never shifts when ticket counts change
+// order — preventing time blocks and forecast entries from drifting to the wrong
+// agent's calendar after a sync.
+function agentId(name){
+  let h=0;
+  for(let i=0;i<name.length;i++){h=((h<<5)-h+name.charCodeAt(i))|0;}
+  return(Math.abs(h)%2000000000)+1; // range 1–2B, always fits in a 32-bit int column
+}
 function procAct(){
   if(!actRaw.length)return;
   // Preserve selected tech by name across roster rebuilds
@@ -255,7 +265,7 @@ function procAct(){
       ac[a]=(ac[a]||0)+1;
     }
   });
-  roster=Object.keys(ac).sort((a,b)=>ac[b]-ac[a]).map((n,i)=>({id:i+1,name:n,color:TCOL[i%TCOL.length]}));
+  roster=Object.keys(ac).sort((a,b)=>ac[b]-ac[a]).map((n,i)=>({id:agentId(n),name:n,color:TCOL[i%TCOL.length]}));
   roster.forEach(t=>{
     const li=AGENT_LUNCH[t.name]!=null?AGENT_LUNCH[t.name]:1;
     const si=AGENT_SHIFT[t.name]!=null?AGENT_SHIFT[t.name]:1;
@@ -927,7 +937,9 @@ function renderSidebar(){
   // Bind tech selection (click on the option row, but not the gear)
   l.querySelectorAll(".tech-option").forEach(el=>{el.addEventListener("click",e=>{
     if(e.target.closest(".tech-gear"))return;
-    selTech=parseInt(el.dataset.t);renderSidebar();renderCal();
+    const newTech=parseInt(el.dataset.t);
+    if(newTech!==selTech)_closedExpanded=false; // reset collapsed state for the new tech's calendar
+    selTech=newTech;renderSidebar();renderCal();
   })});
   // Bind gear buttons
   l.querySelectorAll(".tech-gear").forEach(btn=>{btn.addEventListener("click",e=>{
@@ -1037,6 +1049,13 @@ function _placeOverflowNextWeek(){
 }
 
 // ═══════════ CALENDAR ═══════════
+// Toggle the closed-tickets section and keep _closedExpanded in sync so the
+// state survives DOM rebuilds during auto-sync.
+function toggleClosedSection(el){
+  el.parentElement.classList.toggle('closed-expanded');
+  el.querySelector('.closed-chev').classList.toggle('closed-chev-open');
+  _closedExpanded=el.parentElement.classList.contains('closed-expanded');
+}
 function renderCal(){
   const area=document.getElementById("ca");
   if(!actTix.length){area.innerHTML='<div class="glass" style="padding:40px;text-align:center;color:var(--text-dim)">Upload active tickets</div>';return}
@@ -1136,8 +1155,8 @@ function renderCal(){
   if(anyClosedForTech){
     const closedHt=0.25*HH;
     // Toggle header row
-    h+=`<div style="border-top:1px solid var(--border-bright)">`;
-    h+=`<div onclick="this.parentElement.classList.toggle('closed-expanded');this.querySelector('.closed-chev').classList.toggle('closed-chev-open')" style="cursor:pointer;padding:6px 12px;display:flex;align-items:center;gap:6px;user-select:none">`;
+    h+=`<div class="cal-closed-section" style="border-top:1px solid var(--border-bright)">`;
+    h+=`<div onclick="toggleClosedSection(this)" style="cursor:pointer;padding:6px 12px;display:flex;align-items:center;gap:6px;user-select:none">`;
     h+=`<svg class="closed-chev" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;color:var(--text-dim)" viewBox="0 0 10 10"><path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     h+=`<span style="font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-dim)">Closed</span>`;
     h+=`</div>`;
@@ -1175,6 +1194,11 @@ function renderCal(){
   h+=`</div>`;
   if(_dragCancel){_dragCancel();_dragCancel=null;}
   area.innerHTML=h;
+  // Restore closed-section expand state that was active before the DOM rebuild
+  if(_closedExpanded){
+    const sec=area.querySelector('.cal-closed-section');
+    if(sec){sec.classList.add('closed-expanded');sec.querySelector('.closed-chev')?.classList.add('closed-chev-open');}
+  }
   if(!isNextWeek){_bindCalDrag(area);_bindClosedPopups(area);}
 }
 
