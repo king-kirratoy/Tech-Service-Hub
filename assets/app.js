@@ -384,6 +384,42 @@ function procAct(){
   setTimeout(()=>{renderSidebar();renderCal();renderRisk();renderPlayerCards();updateBanner();BF.refresh();},0);
 }
 
+// ── Shared scheduler helpers ──────────────────────────────────────────────────
+// Advance cursor {d,h} past shift/lunch bounds. Callers must check a.d>4 after
+// calling — ticket is off-calendar when the cursor overflows day 4.
+function advancePast(a,s,dur){
+  for(let i=0;i<20;i++){
+    a.h=snap(a.h);
+    if(a.h<s.ss){a.h=snap(s.ss);continue;}
+    if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
+    if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
+    if(a.h+dur>s.se||a.h>=s.se){a.d++;a.h=snap(s.ss);if(a.d>4)return;continue;}
+    break;
+  }
+}
+
+// Find the latest start on (techId, dayIdx) where dur fits ending ≤ latestEnd.
+// occMap is the occupied-slot map for this scheduling context (keyed "techId-dayIdx").
+// Returns null if no valid slot exists within shift/lunch bounds.
+function findLatestFit(techId,dayIdx,dur,latestEnd,occMap){
+  const s=getSched(techId);
+  const occ=((occMap||{})[techId+'-'+dayIdx]||[]).slice().sort((a,b)=>a.s-b.s);
+  const deadline=Math.min(latestEnd,s.se);
+  let candidate=snap(deadline-dur);
+  for(let tries=0;tries<100;tries++){
+    candidate=snap(candidate);
+    if(candidate<s.ss)return null;
+    if(candidate<s.ls&&candidate+dur>s.ls){candidate=snap(s.ls-dur);continue;}
+    if(candidate>=s.ls&&candidate<s.le){candidate=snap(s.ls-dur);continue;}
+    if(candidate<s.ss)return null;
+    const conflicts=occ.filter(o=>candidate<o.e&&candidate+dur>o.s);
+    if(!conflicts.length)return candidate;
+    const minS=conflicts.reduce((m,o)=>o.s<m?o.s:m,Infinity);
+    candidate=snap(minS-dur);
+  }
+  return null;
+}
+
 function schedTix(){
   const now=new Date();
   const nowHour=now.getHours()+now.getMinutes()/60;
@@ -447,20 +483,6 @@ function schedTix(){
   const autoSchedule=sorted.filter(tk=>!ovr[tk.id]||ovr[tk.id].startHour==null);
   // Apply override positions
   overridden.forEach(tk=>{const o=ovr[tk.id];if(o.startHour!=null)tk.startHour=o.startHour;if(o.dayIdx!=null)tk.dayIdx=o.dayIdx;if(o.est!=null)tk.est=o.est});
-
-  // Helper: advance cursor past all lunch/shift/occupied conflicts.
-  // Callers must check a.d>4 after calling — ticket is off-calendar this week.
-  function advancePast(a,s,dur){
-    for(let i=0;i<20;i++){
-      a.h=snap(a.h);
-      if(a.h<s.ss){a.h=snap(s.ss);continue;}
-      if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
-      if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
-      // Advance without clamping at day 4 — off-calendar rather than wrapping
-      if(a.h+dur>s.se||a.h>=s.se){a.d++;a.h=snap(s.ss);if(a.d>4)return;continue;}
-      break;
-    }
-  }
 
   // Time-shift: for overridden tickets on today whose saved position is now in the past,
   // advance them to at least nowSnapped (in-memory only — saved overrides are unchanged).
@@ -557,29 +579,6 @@ function schedTix(){
   // Place priority tickets first using existing greedy behavior (unchanged)
   priorityAuto.forEach(placeTicketAround);
 
-  // Helper: find the latest start on (techId, dayIdx) where dur fits ending ≤ latestEnd.
-  // Respects shift bounds, lunch window, and occupied slots. Returns null if no slot found.
-  function findLatestFit(techId,dayIdx,dur,latestEnd){
-    const s=getSched(techId);
-    const occ=(occupied[techId+'-'+dayIdx]||[]).slice().sort((a,b)=>a.s-b.s);
-    const deadline=Math.min(latestEnd,s.se);
-    let candidate=snap(deadline-dur);
-    for(let tries=0;tries<100;tries++){
-      candidate=snap(candidate);
-      if(candidate<s.ss)return null;
-      // Move before lunch if ticket straddles or falls inside it
-      if(candidate<s.ls&&candidate+dur>s.ls){candidate=snap(s.ls-dur);continue;}
-      if(candidate>=s.ls&&candidate<s.le){candidate=snap(s.ls-dur);continue;}
-      if(candidate<s.ss)return null;
-      const conflicts=occ.filter(o=>candidate<o.e&&candidate+dur>o.s);
-      if(!conflicts.length)return candidate;
-      // Jump back past the earliest conflicting slot
-      const minS=conflicts.reduce((m,o)=>o.s<m?o.s:m,Infinity);
-      candidate=snap(minS-dur);
-    }
-    return null;
-  }
-
   // Within same-tech, same-NRD groups sort by est ascending so the ticket with the
   // latest ideal start is processed first (stacks cleanly working backward from NRD).
   nrdAuto.sort((a,b)=>{
@@ -613,7 +612,7 @@ function schedTix(){
       const prevDayIdx=nrdDayIdx-1;
       // No-past rule: previous day must be at or after today and within Mon–Fri (≥0)
       if(prevDayIdx>=startDayIdx&&prevDayIdx>=0){
-        const bestPrev=findLatestFit(tk.assignedTo,prevDayIdx,dur,s.se);
+        const bestPrev=findLatestFit(tk.assignedTo,prevDayIdx,dur,s.se,occupied);
         // No-past guard on today: no placement before nowSnapped
         if(bestPrev!==null&&(prevDayIdx>startDayIdx||bestPrev>=nowSnapped)){
           tk.dayIdx=prevDayIdx;tk.startHour=bestPrev;
@@ -634,14 +633,14 @@ function schedTix(){
     let bestStart=null;
 
     // Attempt 1: latest slot ending at or before NRD − 1 h (full buffer)
-    bestStart=findLatestFit(tk.assignedTo,nrdDayIdx,dur,nrdHour-1.0);
+    bestStart=findLatestFit(tk.assignedTo,nrdDayIdx,dur,nrdHour-1.0,occupied);
     if(bestStart!==null&&(nrdDayIdx>startDayIdx||bestStart>=nowSnapped)){
       tk.dayIdx=nrdDayIdx;tk.startHour=bestStart;placed=true;
     }
 
     // Attempt 2: latest slot ending at or before NRD (no buffer)
     if(!placed){
-      bestStart=findLatestFit(tk.assignedTo,nrdDayIdx,dur,nrdHour);
+      bestStart=findLatestFit(tk.assignedTo,nrdDayIdx,dur,nrdHour,occupied);
       if(bestStart!==null&&(nrdDayIdx>startDayIdx||bestStart>=nowSnapped)){
         tk.dayIdx=nrdDayIdx;tk.startHour=bestStart;placed=true;
       }
@@ -1013,7 +1012,16 @@ function layoutTixDay(tks){
 // from each tech's Monday shift start. Returns array of ticket objects augmented
 // with _nwDayIdx and _nwStartHour for next-week calendar rendering.
 function _placeOverflowNextWeek(){
-  const sorted=[...actTix].filter(tk=>tk.dayIdx===-1).sort((a,b)=>{
+  const now=new Date();
+  const nwDays=wkD(new Date(now.getTime()+7*24*3600*1000)); // Mon–Fri of next week
+
+  // Only tickets that overflowed the current week
+  const candidates=[...actTix].filter(tk=>tk.dayIdx===-1);
+
+  // Split into same two priority tiers as schedTix()
+  const priorityNext=candidates.filter(tk=>
+    tk.sla==='Initial Response SLA'||tk.status==='Client Update'||tk.status==='Re-Opened'
+  ).sort((a,b)=>{
     if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
     const as=(a.sla==='Initial Response SLA'?0:1),bs=(b.sla==='Initial Response SLA'?0:1);
     if(as!==bs)return as-bs;
@@ -1024,27 +1032,140 @@ function _placeOverflowNextWeek(){
     const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
     return aNrd-bNrd;
   });
-  const cursors={};
+  // NRD tier: sort by assignedTo, then NRD asc, then est asc (smaller est → later idealStart → place first)
+  const nrdNext=candidates.filter(tk=>
+    tk.sla!=='Initial Response SLA'&&tk.status!=='Client Update'&&tk.status!=='Re-Opened'
+  ).sort((a,b)=>{
+    if(a.assignedTo!==b.assignedTo)return a.assignedTo-b.assignedTo;
+    const aNrd=a.nextResponse?a.nextResponse.getTime():9e15;
+    const bNrd=b.nextResponse?b.nextResponse.getTime():9e15;
+    if(aNrd!==bNrd)return aNrd-bNrd;
+    return a.est-b.est;
+  });
+
+  const occNW={};   // occupied-slot map for next-week (keyed "techId-dayIdx")
   const placed=[];
-  sorted.forEach(tk=>{
+  const cursors={};
+
+  // ── Greedy placer — used for priority tier and NRD fallback ─────────────────
+  function placeNextGreedy(tk){
     const s=getSched(tk.assignedTo);
     if(!cursors[tk.assignedTo])cursors[tk.assignedTo]={d:0,h:snap(s.ss)};
     const a=cursors[tk.assignedTo];
-    if(a.d>4)return;
     const dur=Math.ceil(tk.est*4)/4;
-    for(let i=0;i<20;i++){
-      a.h=snap(a.h);
-      if(a.h<s.ss){a.h=snap(s.ss);continue;}
-      if(a.h>=s.ls&&a.h<s.le){a.h=snap(s.le);continue;}
-      if(a.h<s.ls&&a.h+dur>s.ls){a.h=snap(s.le);continue;}
-      if(a.h+dur>s.se||a.h>=s.se){a.d++;a.h=snap(s.ss);if(a.d>4)return;continue;}
-      break;
+    advancePast(a,s,dur);
+    if(a.d>4)return;
+    // Route around any already-placed slots
+    let maxTries=20;
+    while(maxTries-->0){
+      const occ=occNW[tk.assignedTo+'-'+a.d]||[];
+      const conflicts=occ.filter(o=>a.h<o.e&&a.h+dur>o.s);
+      if(!conflicts.length)break;
+      const maxEnd=conflicts.reduce((m,o)=>o.e>m?o.e:m,0);
+      a.h=snap(maxEnd);
+      advancePast(a,s,dur);
+      if(a.d>4)return;
     }
     if(a.d>4)return;
     placed.push({...tk,_nwDayIdx:a.d,_nwStartHour:a.h});
+    const key=tk.assignedTo+'-'+a.d;
+    if(!occNW[key])occNW[key]=[];
+    occNW[key].push({s:a.h,e:a.h+dur});
     a.h+=dur;
     if(a.h>s.ls&&a.h<=s.le)a.h=snap(s.le);
+  }
+
+  // Priority tier: greedy from next-week Monday
+  priorityNext.forEach(placeNextGreedy);
+
+  // ── NRD-anchored placement for NRD tier ─────────────────────────────────────
+  const nrdFallbackNW=[];
+  nrdNext.forEach(tk=>{
+    // No NRD, or NRD not landing in next week → greedy fallback
+    if(!tk.nextResponse){nrdFallbackNW.push(tk);return;}
+    const nrd=tk.nextResponse;
+    const nrdDayIdx=nwDays.findIndex(d=>isSD(d,nrd));
+    if(nrdDayIdx<0){nrdFallbackNW.push(tk);return;}
+
+    const nrdHour=nrd.getHours()+nrd.getMinutes()/60;
+    const dur=Math.ceil(tk.est*4)/4;
+    const idealStart=snap(nrdHour-tk.est-1.0);
+    const s=getSched(tk.assignedTo);
+
+    // idealStart before shift start → walk back within next week.
+    // Next-week Monday (dayIdx 0) is the earliest — no crossing back into current week.
+    if(idealStart<s.ss){
+      const prevDayIdx=nrdDayIdx-1;
+      if(prevDayIdx>=0){
+        const bestPrev=findLatestFit(tk.assignedTo,prevDayIdx,dur,s.se,occNW);
+        if(bestPrev!==null){
+          placed.push({...tk,_nwDayIdx:prevDayIdx,_nwStartHour:bestPrev});
+          const key=tk.assignedTo+'-'+prevDayIdx;
+          if(!occNW[key])occNW[key]=[];
+          occNW[key].push({s:bestPrev,e:bestPrev+dur});
+          return;
+        }
+      }
+      nrdFallbackNW.push(tk);return;
+    }
+
+    // No no-past guard — all next-week days are in the future
+
+    let isPlaced=false;
+    let bestStart=null;
+
+    // Attempt 1: latest slot ending at or before NRD − 1h (full buffer)
+    bestStart=findLatestFit(tk.assignedTo,nrdDayIdx,dur,nrdHour-1.0,occNW);
+    if(bestStart!==null){
+      placed.push({...tk,_nwDayIdx:nrdDayIdx,_nwStartHour:bestStart});
+      const key=tk.assignedTo+'-'+nrdDayIdx;
+      if(!occNW[key])occNW[key]=[];
+      occNW[key].push({s:bestStart,e:bestStart+dur});
+      isPlaced=true;
+    }
+
+    // Attempt 2: latest slot ending at or before NRD (no buffer)
+    if(!isPlaced){
+      bestStart=findLatestFit(tk.assignedTo,nrdDayIdx,dur,nrdHour,occNW);
+      if(bestStart!==null){
+        placed.push({...tk,_nwDayIdx:nrdDayIdx,_nwStartHour:bestStart});
+        const key=tk.assignedTo+'-'+nrdDayIdx;
+        if(!occNW[key])occNW[key]=[];
+        occNW[key].push({s:bestStart,e:bestStart+dur});
+        isPlaced=true;
+      }
+    }
+
+    // Attempt 3: greedy forward from shift start on NRD day
+    if(!isPlaced){
+      const a={d:nrdDayIdx,h:snap(s.ss)};
+      advancePast(a,s,dur);
+      if(a.d===nrdDayIdx){
+        let tries=20;
+        while(tries-->0){
+          const occ=occNW[tk.assignedTo+'-'+a.d]||[];
+          const conflicts=occ.filter(o=>a.h<o.e&&a.h+dur>o.s);
+          if(!conflicts.length)break;
+          const maxEnd=conflicts.reduce((m,o)=>o.e>m?o.e:m,0);
+          a.h=snap(maxEnd);
+          advancePast(a,s,dur);
+          if(a.d!==nrdDayIdx)break;
+        }
+        if(a.d===nrdDayIdx){
+          placed.push({...tk,_nwDayIdx:nrdDayIdx,_nwStartHour:a.h});
+          const key=tk.assignedTo+'-'+nrdDayIdx;
+          if(!occNW[key])occNW[key]=[];
+          occNW[key].push({s:a.h,e:a.h+dur});
+          isPlaced=true;
+        }
+      }
+      if(!isPlaced)nrdFallbackNW.push(tk);
+    }
   });
+
+  // NRD fallback: greedy from wherever the cursor is
+  nrdFallbackNW.forEach(placeNextGreedy);
+
   return placed;
 }
 
@@ -1076,8 +1197,20 @@ function renderCal(){
   const dtm=days.map((_,di)=>{
     if(isNextWeek)return nwTix
       .filter(t=>t.assignedTo===selTech&&t._nwDayIdx===di)
-      // remap _nwStartHour→startHour so the render loop works unchanged
-      .map(tk=>({...tk,startHour:tk._nwStartHour,dayIdx:tk._nwDayIdx}));
+      // remap _nwStartHour→startHour and compute NRD breach for next-week slots
+      .map(tk=>{
+        let nwNrdAtRisk=false;
+        if(tk.nextResponse){
+          if(tk.nextResponse<calNow){nwNrdAtRisk=true;}
+          else{
+            const endH=tk._nwStartHour+tk.est;
+            const schedEnd=new Date(days[di]);
+            schedEnd.setHours(Math.floor(endH),Math.round((endH%1)*60),0,0);
+            if(schedEnd>tk.nextResponse)nwNrdAtRisk=true;
+          }
+        }
+        return{...tk,startHour:tk._nwStartHour,dayIdx:tk._nwDayIdx,nrdAtRisk:nwNrdAtRisk};
+      });
     return actTix.filter(t=>t.assignedTo===selTech&&t.dayIdx===di);
   });
   const calOvr=loadOverrides();
