@@ -2267,7 +2267,8 @@ const HAT_SPRITE_MAP={
   spacehelmet:"tech-sprite-hat16",
   propellercap:"tech-sprite-hat17",
   hockeymask:"tech-sprite-hat18",
-  paperbag:"tech-sprite-hat19"
+  paperbag:"tech-sprite-hat19",
+  strawhat:"tech-sprite-hat20"
 };
 const ROBOT_ACCESSORIES=[
   {id:"none",label:"None"},
@@ -2290,6 +2291,7 @@ const ROBOT_ACCESSORIES=[
   {id:"propellercap",label:"Propeller Cap"},
   {id:"hockeymask",label:"Hockey Mask"},
   {id:"paperbag",label:"Paper Bag"},
+  {id:"strawhat",label:"Straw Hat"},
 ];
 
 let currentRobot={color:"blue",eyes:"visor",antenna:"spike",accessory:"none",robot_name:""};
