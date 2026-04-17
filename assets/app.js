@@ -381,7 +381,7 @@ function procAct(){
     if(!loggedInAgent||isCommander){selTech=0}
     else{const me=roster.find(t=>t.name===loggedInAgent);selTech=me?me.id:0}
   }
-  setTimeout(()=>{renderSidebar();renderCal();renderRisk();renderPlayerCards();updateBanner();BF.refresh();},0);
+  setTimeout(()=>{renderSidebar();renderCal();renderPlayerCards();updateBanner();BF.refresh();},0);
 }
 
 // ── Shared scheduler helpers ──────────────────────────────────────────────────
@@ -1974,142 +1974,6 @@ function renderPlayerCards(){
   });
 }
 
-// ═══════════ RADAR ═══════════
-
-
-// ═══════════ RADAR ═══════════
-function renderRisk(){
-  if(!actTix.length){
-    document.getElementById("riskInsights").innerHTML="";
-    document.getElementById("riskSections").innerHTML='<div class="glass" style="padding:30px;text-align:center;color:var(--text-dim)">Upload active tickets to detect risks</div>';
-    return;
-  }
-  const now=new Date();
-
-  // 1. Resolution SLA Breached (exclude tickets with "Excluded from SLA")
-  const slaBreach=[];
-  actTix.forEach(tk=>{
-    if(tk.sla&&tk.sla.toLowerCase().includes("excluded"))return;
-    if(tk.type&&tk.type.toLowerCase().includes("user termination"))return;
-    const raw=actRaw.find(r=>r.Ticket_ID===tk.id);
-    const slaTgt=raw?pD(raw.SLA_Resolution_Target):null;
-    if(!slaTgt)return;
-    if(now>slaTgt){
-      const overdueH=bizH(slaTgt,now);
-      if(overdueH>16)slaBreach.push({...tk,overdueH,slaTgt,severity:overdueH>=48?"high":overdueH>=32?"med":"low"});
-    }
-  });
-
-  // 2. Response SLA Breached (Next Response Date overdue, only if resolution target NOT breached)
-  const resBreachedIds=new Set();
-  actTix.forEach(tk=>{
-    if(tk.sla&&tk.sla.toLowerCase().includes("excluded"))return;
-    const raw=actRaw.find(r=>r.Ticket_ID===tk.id);
-    const slaTgt=raw?pD(raw.SLA_Resolution_Target):null;
-    if(slaTgt&&now>slaTgt)resBreachedIds.add(tk.id);
-  });
-  const overdueResp=[];
-  actTix.forEach(tk=>{
-    if(tk.sla&&tk.sla.toLowerCase().includes("excluded"))return;
-    if(!tk.nextResponse)return;
-    if(resBreachedIds.has(tk.id))return; // resolution target breached, skip
-    if(now>tk.nextResponse){
-      const overdueBizH=bizH(tk.nextResponse,now);
-      if(overdueBizH>16)overdueResp.push({...tk,overdueBizH,severity:overdueBizH>=40?"high":overdueBizH>32?"med":"low"});
-    }
-  });
-
-  // 3. Time Overruns (>=4h total time worked)
-  const timeOverAll=[];
-  actTix.forEach(tk=>{
-    const raw=actRaw.find(r=>r.Ticket_ID===tk.id);
-    if(!raw)return;
-    const tw=parseFloat(raw.Time_Taken||raw.time_taken||"0");
-    if(!isNaN(tw)&&tw>=4){
-      timeOverAll.push({...tk,timeWorked:tw,severity:tw>=8?"high":tw>=6?"med":"low"});
-    }
-  });
-
-  // Badge on tab
-  const totalFlags=slaBreach.length+overdueResp.length+timeOverAll.length;
-  const badge=document.getElementById("riskBadge");
-  if(totalFlags>0){badge.style.display="inline";badge.textContent=totalFlags}else{badge.style.display="none"}
-
-  // Broad flagging for At-Risk Agent card (any breach, no hour threshold)
-  const broadFlagIds=new Set();
-  actTix.forEach(tk=>{
-    const raw=actRaw.find(r=>r.Ticket_ID===tk.id);
-    const slaTgt=raw?pD(raw.SLA_Resolution_Target):null;
-    if(slaTgt&&now>slaTgt)broadFlagIds.add(tk.id);
-    if(tk.nextResponse&&now>tk.nextResponse)broadFlagIds.add(tk.id);
-    const tw=parseFloat(raw?.Time_Taken||raw?.time_taken||"0");
-    if(!isNaN(tw)&&tw>=4)broadFlagIds.add(tk.id);
-  });
-  const allRiskyBroad=actTix.filter(tk=>broadFlagIds.has(tk.id));
-
-  // At-Risk Agent: most flagged tickets (using broad set)
-  const agentRiskCount={};
-  allRiskyBroad.forEach(tk=>{const a=tk.agent||"Unknown";agentRiskCount[a]=(agentRiskCount[a]||0)+1});
-  const topRiskAgent=Object.entries(agentRiskCount).sort((a,b)=>b[1]-a[1])[0];
-
-  // Heaviest Workload: agent with most active tickets, tiebreaker by est hours
-  const agentWorkload={};
-  actTix.filter(x=>x.assignedTo>0).forEach(tk=>{
-    if(!agentWorkload[tk.agent])agentWorkload[tk.agent]={tix:0,hrs:0};
-    agentWorkload[tk.agent].tix++;
-    agentWorkload[tk.agent].hrs+=tk.est;
-  });
-  const topWorkload=Object.entries(agentWorkload).sort((a,b)=>b[1].tix-a[1].tix||b[1].hrs-a[1].hrs)[0];
-
-
-  document.getElementById("riskInsights").innerHTML=[
-    {l:"At-Risk Agent",v:topRiskAgent?topRiskAgent[0]:"—",sub:topRiskAgent?`${topRiskAgent[1]} flagged ticket${topRiskAgent[1]>1?"s":""}`:"No risks detected",c:topRiskAgent?"var(--danger)":"var(--green)"},
-    {l:"Heaviest Workload",v:topWorkload?topWorkload[0]:"—",sub:topWorkload?`${topWorkload[1].tix} active · ${topWorkload[1].hrs.toFixed(1)}h est`:"No data",c:topWorkload?"var(--warning)":"var(--text-dim)"},
-  ].map((c,i)=>`<div class="glass stat-card animate-in" style="animation-delay:${(i+4)*.04}s"><div class="stat-label">${c.l}</div><div class="stat-value-row"><span class="stat-value" style="color:${c.c};font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block" title="${c.v}">${c.v}</span></div><div class="stat-trend" style="color:var(--text-dim)">${c.sub}</div></div>`).join("");
-
-  // Build sections
-  let html="";
-
-  if(overdueResp.length){
-    html+=buildRiskSection("Response SLA Breached","#fd79a8",overdueResp.sort((a,b)=>b.overdueBizH-a.overdueBizH),tk=>{
-      return`<span style="color:#fd79a8">${tk.overdueBizH.toFixed(1)}h overdue</span>`;
-    },"Showing > 16h overdue");
-  }
-
-  if(slaBreach.length){
-    html+=buildRiskSection("Resolution SLA Breached","var(--danger)",slaBreach.sort((a,b)=>b.overdueH-a.overdueH),tk=>{
-      return`<span style="color:var(--danger)">${tk.overdueH.toFixed(1)}h overdue</span>`;
-    },"Showing > 16h overdue");
-  }
-
-  if(timeOverAll.length){
-    html+=buildRiskSection("TIME TAKEN SLA BREACHED","#a29bfe",timeOverAll.sort((a,b)=>b.timeWorked-a.timeWorked),tk=>{
-      return`<span style="color:#a29bfe">${tk.timeWorked.toFixed(1)}h worked</span>`;
-    },"Showing > 4h worked");
-  }
-
-  if(!html)html='<div class="glass" style="padding:30px;text-align:center;color:var(--green);font-weight:600">✓ No risks detected — all tickets look healthy</div>';
-
-  document.getElementById("riskSections").innerHTML=html;
-
-  // Bind collapsible headers
-  document.querySelectorAll(".risk-header").forEach(h=>{
-    h.addEventListener("click",()=>h.classList.toggle("open"));
-  });
-}
-
-function buildRiskSection(title,color,tickets,detailFn,subtitle){
-  let h=`<div class="glass risk-section"><div class="risk-header open"><h3><svg style="width:14px;height:14px;stroke:${color}"><use href="#iw"/></svg> ${title} <span class="risk-badge" style="background:${color}">${tickets.length}</span>${subtitle?`<span style="font-size:9px;font-weight:400;color:var(--text-dim);margin-left:10px;letter-spacing:0;text-transform:none">${subtitle}</span>`:""}</h3><span class="risk-arrow">▶</span></div><div class="risk-body" style="display:block">`;
-  tickets.forEach(tk=>{
-    const sev=tk.severity==="high"?"sev-high":tk.severity==="med"?"sev-med":"sev-low";
-    const dateCreated=tk.dateCreated?tk.dateCreated.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+tk.dateCreated.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"—";
-    h+=`<div class="risk-row ${sev}"><span class="risk-id"><a href="#" onclick="openTicket('${esc(tk.id)}',event)">${esc(tk.id)}</a></span><span class="risk-title">${esc(tk.category)}</span><span class="risk-agent">${esc(tk.agent)||"Unassigned"}</span><span class="risk-date">${dateCreated}</span><span class="risk-detail">${detailFn(tk)}</span></div>`;
-  });
-  h+=`</div></div>`;
-  return h;
-}
-
-
 
 // ═══════════ BANNER ═══════════
 function updateBanner(){const h=document.getElementById("headerStats");if(!h)return;const parts=[];if(actTix.length||closedTix.length){const wd=wkD(new Date());const assignedWeek=actTix.filter(t=>t.dateAssigned&&wd.some(d=>isSD(d,t.dateAssigned))).length+closedTix.filter(t=>t.dateAssigned&&wd.some(d=>isSD(d,t.dateAssigned))).length;parts.push(`<b style="color:var(--green)">${actTix.length}</b> active`);parts.push(`<b style="color:var(--green)">${assignedWeek}</b> assigned this week`);parts.push(`<b style="color:var(--green)">${closedTix.length}</b> closed this week`);parts.push(`<b style="color:var(--green)">${roster.length}</b> techs`)}if(histRaw.length){parts.push(`<b style="color:var(--green)">${Object.keys(catStats).length}</b> categories`)}h.innerHTML=parts.join('<span style="color:rgba(0,149,200,0.3)">·</span>')}
@@ -2153,7 +2017,6 @@ function applyLoginState(){
     if(loginGate)loginGate.classList.add("hidden");
     if(loginBtnWrap)loginBtnWrap.style.display="";
   }
-  const riskTab=document.querySelector('.tab[data-tab="risk"]');
   const st=document.getElementById("loginStatus");
   const btnLabel=document.getElementById("loginBtnLabel");
   const loggedInUserEl=document.getElementById("loggedInUser");
@@ -2168,17 +2031,9 @@ function applyLoginState(){
   });
   const robotCustomizer=document.getElementById("robotCustomizer");
   if(isCommander){
-    riskTab.style.display="";
     if(campAgentLabelEl)campAgentLabelEl.style.display="";
     if(campAgentSelectEl){campAgentSelectEl.style.display="";campAgentSelectEl.value="";}
   }else{
-    riskTab.style.display="none";
-    if(riskTab.classList.contains("active")){
-      riskTab.classList.remove("active");
-      document.getElementById("riskTab").classList.add("hidden");
-      document.querySelector('.tab[data-tab="barracks"]').classList.add("active");
-      document.getElementById("barracksTab").classList.remove("hidden");
-    }
     if(campAgentLabelEl)campAgentLabelEl.style.display="none";
     if(campAgentSelectEl)campAgentSelectEl.style.display="none";
   }
@@ -2263,7 +2118,7 @@ function updateLastSync(){
   const now=new Date();
   document.getElementById("lastSync").textContent=`Last sync: ${now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
 }
-document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{if(!isCommander&&tab.dataset.tab==="risk")return;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab","riskTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab",risk:"riskTab"};document.getElementById(map[tg]).classList.remove("hidden")})});
+document.querySelectorAll(".tab").forEach(tab=>{tab.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));tab.classList.add("active");const tg=tab.dataset.tab;["barracksTab","capTab"].forEach(id=>document.getElementById(id).classList.add("hidden"));const map={barracks:"barracksTab",capacity:"capTab"};document.getElementById(map[tg]).classList.remove("hidden")})});
 
 document.getElementById("campaignAgent").addEventListener("change",()=>{renderCampaignCharts()});
 

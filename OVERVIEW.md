@@ -35,7 +35,6 @@ render.yaml                 ← Render deployment config + env var declarations.
 | TECH SIDEBAR | 656 | `renderSidebar()` — ticket list per tech |
 | CALENDAR | 794 | `renderCal()`, `_bindCalDrag()` — weekly drag/resize calendar |
 | PLAYER CARDS (GAMIFICATION) | 1083 | `renderPlayerCards()` — gamified tech stat cards |
-| RADAR | 1280 | `renderRisk()` — at-risk ticket detection (duplicate header at 1283; `renderRisk()` starts at 1284) |
 | BANNER | 1417 | Header stats bar |
 | EVENTS | 1420 | Tab switching, keyboard, button wiring, `applyLoginState()` |
 | HALOPSA LIVE FETCH | 1582 | `fetchHaloReport()`, `fetchActiveNow()`, auto-refresh |
